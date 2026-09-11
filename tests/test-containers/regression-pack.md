@@ -29,6 +29,7 @@ dist/test-reports/regression-pack/
 | `st001` | Runs the ST-001 provider/consumer simulator socket and HTTP container scenarios. |
 | `st002` | Runs the ST-002 provider/consumer simulator socket and HTTP container scenarios. |
 | `st004` | Runs the ST-004 provider/consumer Keycloak authorization container scenario. |
+| `vector-plugin-e2e` | Starts a provider and Vector-backed consumer, then verifies the provider can see the Vector plugin reporting health and the Vector self-monitoring config writes output. |
 | `config-service-ui-playwright-batch` | Builds the Config Service wheel, builds the Playwright batch container, starts Config Service in-container, and runs chapter YAML validation through Playwright. |
 
 The pack stops on the first failing test by default. Use

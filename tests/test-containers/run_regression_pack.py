@@ -66,6 +66,8 @@ def _ensure_regression_directories(repo_root: Path) -> None:
         repo_root / "dist" / "test-reports" / "opamp-consumer-deployment" / "fluentbit",
         repo_root / "dist" / "test-reports" / "opamp-consumer-deployment" / "fluentd",
         repo_root / "dist" / "test-reports" / "opamp-consumer-deployment" / "elastic-heartbeat",
+        repo_root / "dist" / "test-reports" / "vector-plugin-e2e",
+        repo_root / "dist" / "test-reports" / "vector-plugin-e2e" / "consumer-vector",
         repo_root / "dist" / "test-reports" / "config-service-ui-playwright-batch",
         repo_root / "config-service" / "dist",
     ):
@@ -231,6 +233,14 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
             test_id="st004",
             description="Runs ST-004 Keycloak authorization container scenario.",
             commands=((bash, _bash_path(repo_root / "tests/test-containers/st004/scripts/run_st004.sh"), "keycloak"),),
+        ),
+        RegressionTest(
+            test_id="vector-plugin-e2e",
+            description=(
+                "Runs a provider plus Vector-supervising consumer and verifies "
+                "Vector health/output evidence."
+            ),
+            commands=((bash, _bash_path(repo_root / "tests/test-containers/vector-plugin-e2e/scripts/run_vector_plugin_e2e.sh")),),
         ),
         RegressionTest(
             test_id="config-service-ui-playwright-batch",
