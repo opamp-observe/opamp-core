@@ -1,0 +1,46 @@
+# Licensed under the Apache License, Version 2.0.
+# Copyright 2026 mp3monster.org
+
+name: opamp-vector-plugin-e2e
+
+services:
+  provider:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: opamp-vector-plugin-e2e:latest
+    command: ["/usr/local/bin/vector-e2e-provider-entrypoint"]
+    environment:
+      OPAMP_USE_LOCAL_SOURCE: "${VECTOR_E2E_USE_LOCAL_SOURCE:-true}"
+      OPAMP_SOURCE_REPO: "${VECTOR_E2E_SOURCE_REPO:-https://github.com/mp3monster/fluent-opamp.git}"
+      OPAMP_SOURCE_REF: "${VECTOR_E2E_SOURCE_REF:-main}"
+    ports:
+      - "${VECTOR_E2E_PROVIDER_PORT:-18180}:8080"
+    volumes:
+      - ../../..:/workspace/source:ro
+      - ./config/provider:/config:ro
+      - ../../../dist/test-reports/vector-plugin-e2e/provider:/evidence
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/api/clients"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+
+  consumer-vector:
+    image: opamp-vector-plugin-e2e:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["/usr/local/bin/vector-e2e-consumer-entrypoint"]
+    depends_on:
+      provider:
+        condition: service_healthy
+    environment:
+      OPAMP_USE_LOCAL_SOURCE: "${VECTOR_E2E_USE_LOCAL_SOURCE:-true}"
+      OPAMP_SOURCE_REPO: "${VECTOR_E2E_SOURCE_REPO:-https://github.com/mp3monster/fluent-opamp.git}"
+      OPAMP_SOURCE_REF: "${VECTOR_E2E_SOURCE_REF:-main}"
+      APP_ENABLE_DEV_FEATURES: "true"
+    volumes:
+      - ../../..:/workspace/source:ro
+      - ./config/consumer:/config:ro
+      - ../../../dist/test-reports/vector-plugin-e2e/consumer-vector:/evidence
