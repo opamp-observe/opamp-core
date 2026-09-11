@@ -51,6 +51,13 @@ PLUGIN_SPECS = [
         "client_class": "SimulatorOpAMPClient",
         "agent_filename": "simulator-agent.yaml",
     },
+    {
+        "service_type": "vector",
+        "entry_point": "opamp_consumer.vector.client:main",
+        "module": "opamp_consumer.vector.client",
+        "client_class": "VectorOpAMPClient",
+        "agent_filename": "vector.yaml",
+    },
 ]
 
 
@@ -124,6 +131,24 @@ def _write_agent_configs(work_dir: Path) -> dict[str, Path]:
             "  hosts: ['127.0.0.1:5044']\n"
         ),
         "simulator-agent.yaml": "simulator: true\n",
+        "vector.yaml": (
+            "api:\n"
+            "  enabled: true\n"
+            "  address: 127.0.0.1:8686\n"
+            "sources:\n"
+            "  vector_internal_metrics:\n"
+            "    type: internal_metrics\n"
+            "transforms:\n"
+            "  as_logs:\n"
+            "    type: metric_to_log\n"
+            "    inputs: [vector_internal_metrics]\n"
+            "sinks:\n"
+            "  out:\n"
+            "    type: console\n"
+            "    inputs: [as_logs]\n"
+            "    encoding:\n"
+            "      codec: json\n"
+        ),
     }
     paths: dict[str, Path] = {}
     for filename, content in configs.items():
@@ -184,6 +209,12 @@ def _consumer_config(
             "home_path": str(work_dir / "elastic-heartbeat-home"),
             "api_host": "127.0.0.1",
             "api_port": 5066,
+            "status_timeout_seconds": 1,
+        },
+        "vector": {
+            "executable_path": "/bin/true",
+            "api_host": "127.0.0.1",
+            "api_port": 8686,
             "status_timeout_seconds": 1,
         },
     }
@@ -292,6 +323,18 @@ def _probe_service(service_type: str, config_path: Path) -> dict[str, Any]:
                 default_service_name="opamp-consumer-simulator",
             )
             client = module.SimulatorOpAMPClient(config.server_url, config)
+        elif service_type == "vector":
+            config = module.load_vector_config(config)
+            config = validate_runtime_server_config(
+                config=config,
+                localhost_base=LOCALHOST_BASE,
+                missing_status_port_error="client_status_port not found for Vector",
+            )
+            configure_observability_for_config(
+                config=config,
+                default_service_name="opamp-consumer-vector",
+            )
+            client = module.VectorOpAMPClient(config.server_url, config)
         else:
             raise ValueError(f"unsupported regression service_type: {service_type}")
 

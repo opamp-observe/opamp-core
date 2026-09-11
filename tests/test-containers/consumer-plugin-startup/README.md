@@ -11,6 +11,7 @@ Covered service types:
 - `elastic_agent`
 - `elastic_heartbeat`
 - `simulator`
+- `vector`
 
 The probe intentionally stops before launching external agent binaries or
 connecting to an OpAMP provider. That keeps the test deterministic while still
