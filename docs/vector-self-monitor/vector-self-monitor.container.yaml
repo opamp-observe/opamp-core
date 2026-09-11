@@ -1,0 +1,41 @@
+# config-service: config_type=Vector
+# agent_description: Vector container self-monitoring demo
+# config_version: 2026.09.10
+# configuration_date: 2026-09-10
+# SCM_source_name: docs/vector-self-monitor
+# SCM_config_version: main
+# service_instance_id: vector-container-self-monitor
+data_dir: /tmp/vector-data
+
+api:
+  enabled: true
+  address: 127.0.0.1:8686
+
+sources:
+  vector_internal_metrics:
+    type: internal_metrics
+    namespace: vector
+    scrape_interval_secs: 1
+
+transforms:
+  vector_internal_metrics_as_logs:
+    type: metric_to_log
+    inputs:
+      - vector_internal_metrics
+
+sinks:
+  vector_self_monitor_console:
+    type: console
+    inputs:
+      - vector_internal_metrics_as_logs
+    encoding:
+      codec: json
+    target: stdout
+
+  vector_self_monitor_file:
+    type: file
+    inputs:
+      - vector_internal_metrics_as_logs
+    encoding:
+      codec: json
+    path: /evidence/vector-self-monitor.log
