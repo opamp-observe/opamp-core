@@ -601,6 +601,8 @@ class ElasticHeartbeatOpAMPClient(AbstractOpAMPClient):
     _json_key_agent = "beat"
     SUPPORTED_AGENT_CAPABILITY_NAMES = (
         *consumer_config.MANDATORY_AGENT_CAPABILITY_NAMES,
+        "AcceptsRemoteConfig",
+        "ReportsEffectiveConfig",
         "ReportsHeartbeat",
     )
 

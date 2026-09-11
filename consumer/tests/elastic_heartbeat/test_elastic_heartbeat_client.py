@@ -282,6 +282,16 @@ def test_heartbeat_health_transform_populates_component(tmp_path: Path) -> None:
     assert message.health.component_health_map["Elastic Heartbeat"].status == "ok"
 
 
+def test_heartbeat_supports_remote_config_capabilities(tmp_path: Path) -> None:
+    config = _heartbeat_config(tmp_path)
+    client = ElasticHeartbeatOpAMPClient(config.server_url or "", config)
+
+    supported = client.get_supported_capabilities()
+
+    assert "AcceptsRemoteConfig" in supported
+    assert "ReportsEffectiveConfig" in supported
+
+
 def test_heartbeat_config_test_uses_beat_test_config_command(monkeypatch, tmp_path: Path) -> None:
     config = _heartbeat_config(tmp_path)
     client = ElasticHeartbeatOpAMPClient(config.server_url or "", config)

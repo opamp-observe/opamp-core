@@ -842,3 +842,13 @@ def test_elastic_health_transform_handles_numeric_state_payload(tmp_path) -> Non
         == "degraded: Recoverable: logstash request failed"
     )
     assert message.health.component_health_map["http/metrics-monitoring"].healthy is True
+
+
+def test_elastic_agent_supports_remote_config_capabilities(tmp_path) -> None:
+    config = _elastic_config(tmp_path)
+    client = ElasticAgentOpAMPClient(config.server_url or "", config)
+
+    supported = client.get_supported_capabilities()
+
+    assert "AcceptsRemoteConfig" in supported
+    assert "ReportsEffectiveConfig" in supported

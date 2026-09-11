@@ -118,6 +118,8 @@ SERVICE_TYPE_ELASTIC_HEARTBEAT = "elastic_heartbeat"
 # Service type value selecting Elastic Heartbeat client behavior.
 SERVICE_TYPE_SIMULATOR = "simulator"
 # Service type value selecting scripted simulator client behavior.
+SERVICE_TYPE_VECTOR = "vector"
+# Service type value selecting Vector client behavior.
 DEFAULT_SERVICE_TYPE = SERVICE_TYPE_FLUENTBIT  # Default service type when none is configured.
 PROCESS_TRACKING_SUPERVISOR = "supervisor"
 PROCESS_TRACKING_OBSERVER = "observer"

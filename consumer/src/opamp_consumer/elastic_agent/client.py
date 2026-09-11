@@ -759,6 +759,8 @@ class ElasticAgentOpAMPClient(AbstractOpAMPClient):
     _elastic_cli_lifecycle: ElasticAgentCliLifecycle | None = None
     SUPPORTED_AGENT_CAPABILITY_NAMES = (
         *consumer_config.MANDATORY_AGENT_CAPABILITY_NAMES,
+        "AcceptsRemoteConfig",
+        "ReportsEffectiveConfig",
         "ReportsHeartbeat",
     )
 

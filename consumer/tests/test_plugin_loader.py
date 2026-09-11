@@ -16,14 +16,17 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
 import types
+from pathlib import Path
 
 import pytest
 
 from opamp_consumer.config import ConsumerConfig
 from opamp_consumer.plugin_loader import (
+    _load_builtin_consumer_plugins,
     build_consumer_plugin_registry,
     load_consumer_plugin,
 )
@@ -46,20 +49,21 @@ def test_unknown_service_type_reports_supported_plugins(monkeypatch, caplog) -> 
         "fluentbit",
         "fluentd",
         "simulator",
+        "vector",
     ]
     with pytest.raises(
         ValueError,
         match=(
             "unsupported consumer.service_type 'custom_agent'; "
             "configured/installed plugins: elastic_agent, elastic_heartbeat, "
-            "fluentbit, fluentd, simulator"
+            "fluentbit, fluentd, simulator, vector"
         ),
     ):
         load_consumer_plugin(config)
     assert (
         "failed to load consumer plugin service_type=custom_agent; "
         "configured/installed plugins: elastic_agent, elastic_heartbeat, "
-        "fluentbit, fluentd, simulator"
+        "fluentbit, fluentd, simulator, vector"
     ) in caplog.text
 
 
@@ -88,6 +92,7 @@ def test_one_configured_plugin_builds_single_plugin_registry(monkeypatch) -> Non
         "fluentbit",
         "fluentd",
         "simulator",
+        "vector",
     ]
     assert registry["custom_agent"].entry_point == "tests_fake_consumer_plugin:main"
 
@@ -121,6 +126,10 @@ def test_all_builtin_plugin_config_builds_full_registry(monkeypatch) -> None:
                 "service_type": "simulator",
                 "entry_point": "opamp_consumer.simulator.client:main",
             },
+            {
+                "service_type": "vector",
+                "entry_point": "opamp_consumer.vector.client:main",
+            },
         ],
     )
 
@@ -132,6 +141,7 @@ def test_all_builtin_plugin_config_builds_full_registry(monkeypatch) -> None:
         "fluentbit",
         "fluentd",
         "simulator",
+        "vector",
     ]
     assert registry["fluentbit"].entry_point == "opamp_consumer.fluentbit.client:main"
     assert registry["fluentd"].entry_point == "opamp_consumer.fluentd.client:main"
@@ -144,6 +154,70 @@ def test_all_builtin_plugin_config_builds_full_registry(monkeypatch) -> None:
         == "opamp_consumer.elastic_heartbeat.client:main"
     )
     assert registry["simulator"].entry_point == "opamp_consumer.simulator.client:main"
+    assert registry["vector"].entry_point == "opamp_consumer.vector.client:main"
+
+
+def test_builtin_plugins_load_from_config_file(tmp_path: Path) -> None:
+    config_path = tmp_path / "builtin_plugins.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "plugins": [
+                    {
+                        "service_type": "Example_Agent",
+                        "entry_point": "example_agent.client:main",
+                    },
+                    {
+                        "service_type": "disabled_agent",
+                        "entry_point": "disabled_agent.client:main",
+                        "enabled": False,
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    plugins = _load_builtin_consumer_plugins(config_path)
+
+    assert plugins == (
+        {
+            "service_type": "example_agent",
+            "entry_point": "example_agent.client:main",
+            "enabled": True,
+        },
+        {
+            "service_type": "disabled_agent",
+            "entry_point": "disabled_agent.client:main",
+            "enabled": False,
+        },
+    )
+
+
+def test_disabled_builtin_plugin_is_not_added_to_registry(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "opamp_consumer.plugin_loader._entry_points_for_group",
+        lambda: [],
+    )
+    monkeypatch.setattr(
+        "opamp_consumer.plugin_loader.BUILTIN_CONSUMER_PLUGINS",
+        (
+            {
+                "service_type": "enabled_agent",
+                "entry_point": "enabled_agent.client:main",
+                "enabled": True,
+            },
+            {
+                "service_type": "disabled_agent",
+                "entry_point": "disabled_agent.client:main",
+                "enabled": False,
+            },
+        ),
+    )
+
+    registry = build_consumer_plugin_registry(ConsumerConfig(service_type="enabled_agent"))
+
+    assert sorted(registry) == ["enabled_agent"]
 
 
 def test_load_consumer_plugin_uses_configured_entry_point(monkeypatch, caplog) -> None:

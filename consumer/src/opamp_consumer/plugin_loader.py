@@ -15,10 +15,13 @@
 from __future__ import annotations
 
 import importlib
+import json
 import logging
+import os
 from collections.abc import Callable
 from dataclasses import dataclass
-from importlib import metadata
+from importlib import metadata, resources
+from pathlib import Path
 from typing import Any, cast
 
 from opamp_consumer.config import (
@@ -30,33 +33,8 @@ from opamp_consumer.config import (
 
 CONSUMER_PLUGIN_ENTRY_POINT_GROUP = "opamp_consumer.plugins"
 DEFAULT_PLUGIN_FUNCTION = "main"
-BUILTIN_CONSUMER_PLUGINS: tuple[dict[str, str | bool], ...] = (
-    {
-        "service_type": "fluentbit",
-        "entry_point": "opamp_consumer.fluentbit.client:main",
-        "enabled": True,
-    },
-    {
-        "service_type": "fluentd",
-        "entry_point": "opamp_consumer.fluentd.client:main",
-        "enabled": True,
-    },
-    {
-        "service_type": "elastic_agent",
-        "entry_point": "opamp_consumer.elastic_agent.client:main",
-        "enabled": True,
-    },
-    {
-        "service_type": "elastic_heartbeat",
-        "entry_point": "opamp_consumer.elastic_heartbeat.client:main",
-        "enabled": True,
-    },
-    {
-        "service_type": "simulator",
-        "entry_point": "opamp_consumer.simulator.client:main",
-        "enabled": True,
-    },
-)
+BUILTIN_CONSUMER_PLUGIN_CONFIG_RESOURCE = "builtin_consumer_plugins.json"
+BUILTIN_CONSUMER_PLUGIN_CONFIG_ENV = "OPAMP_CONSUMER_BUILTIN_PLUGINS_PATH"
 
 
 @dataclass(frozen=True)
@@ -89,6 +67,56 @@ def _callable_from_reference(reference: str) -> Callable[[], None]:
     return cast(Callable[[], None], target)
 
 
+def _builtin_plugin_config_text(config_path: Path | None = None) -> str:
+    """Read the built-in plugin registry config from disk or package resources."""
+    if config_path is not None:
+        return config_path.read_text(encoding="utf-8")
+    override = os.getenv(BUILTIN_CONSUMER_PLUGIN_CONFIG_ENV)
+    if override:
+        return Path(override).read_text(encoding="utf-8")
+    return (
+        resources.files("opamp_consumer")
+        .joinpath(BUILTIN_CONSUMER_PLUGIN_CONFIG_RESOURCE)
+        .read_text(encoding="utf-8")
+    )
+
+
+def _load_builtin_consumer_plugins(
+    config_path: Path | None = None,
+) -> tuple[dict[str, str | bool], ...]:
+    """Load built-in consumer plugin definitions from JSON configuration."""
+    payload = json.loads(_builtin_plugin_config_text(config_path))
+    raw_plugins = payload.get("plugins") if isinstance(payload, dict) else payload
+    if not isinstance(raw_plugins, list):
+        raise ValueError("built-in consumer plugin config must contain a plugins list")
+
+    plugins: list[dict[str, str | bool]] = []
+    for index, raw_plugin in enumerate(raw_plugins):
+        if not isinstance(raw_plugin, dict):
+            raise ValueError(f"built-in consumer plugin at index {index} must be an object")
+        service_type = _normalize_service_type(raw_plugin.get(CFG_SERVICE_TYPE))
+        entry_point = str(raw_plugin.get(CFG_CONSUMER_PLUGIN_ENTRY_POINT) or "").strip()
+        enabled = bool(raw_plugin.get(CFG_CONSUMER_PLUGIN_ENABLED, True))
+        if not service_type or not entry_point:
+            raise ValueError(
+                "built-in consumer plugin at index "
+                f"{index} must define service_type and entry_point"
+            )
+        plugins.append(
+            {
+                CFG_SERVICE_TYPE: service_type,
+                CFG_CONSUMER_PLUGIN_ENTRY_POINT: entry_point,
+                CFG_CONSUMER_PLUGIN_ENABLED: enabled,
+            }
+        )
+    return tuple(plugins)
+
+
+BUILTIN_CONSUMER_PLUGINS: tuple[dict[str, str | bool], ...] = (
+    _load_builtin_consumer_plugins()
+)
+
+
 def _entry_points_for_group() -> list[metadata.EntryPoint]:
     """Return installed package entry points for consumer plugins."""
     entry_points = metadata.entry_points()
@@ -116,6 +144,8 @@ def _builtin_plugins() -> dict[str, ConsumerPlugin]:
     """Return built-in consumer plugins available from the source package."""
     plugins: dict[str, ConsumerPlugin] = {}
     for plugin_config in BUILTIN_CONSUMER_PLUGINS:
+        if not bool(plugin_config.get(CFG_CONSUMER_PLUGIN_ENABLED, True)):
+            continue
         plugin = _configured_plugin(dict(plugin_config))
         if plugin is not None:
             plugins[plugin.service_type] = plugin
