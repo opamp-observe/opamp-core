@@ -148,6 +148,17 @@ def _load_plugin_config_hook(
                 module_name,
             )
             continue
+        except AttributeError as error:
+            if "partially initialized module" not in str(error):
+                raise
+            logger.debug(
+                "plugin config module skipped during partial import "
+                "service_type=%s module=%s error=%s",
+                service_type,
+                module_name,
+                error,
+            )
+            continue
         hook = getattr(module, PLUGIN_CONFIG_HOOK_NAME, None)
         if hook is None:
             logger.debug(
@@ -177,7 +188,7 @@ def collect_consumer_plugin_config_updates(
     normalized_service_type = _normalize_service_type(service_type)
     raw_section = consumer_raw.get(normalized_service_type)
     if not isinstance(raw_section, Mapping):
-        return {}
+        raw_section = {}
 
     hook = _load_plugin_config_hook(
         service_type=normalized_service_type,

@@ -54,6 +54,7 @@ opamp-consumer = "opamp_consumer.client:main"
 opamp-consumer-elastic-heartbeat = "opamp_consumer.elastic_heartbeat.client:main"
 opamp-consumer-fluentd = "opamp_consumer.fluentd.client:main"
 opamp-consumer-simulator = "opamp_consumer.simulator.client:main"
+opamp-consumer-vector = "opamp_consumer.vector.client:main"
 
 [project.entry-points."opamp_consumer.plugins"]
 fluentbit = "opamp_consumer.fluentbit.client:main"
@@ -61,6 +62,7 @@ fluentd = "opamp_consumer.fluentd.client:main"
 elastic_agent = "opamp_consumer.elastic_agent.client:main"
 elastic_heartbeat = "opamp_consumer.elastic_heartbeat.client:main"
 simulator = "opamp_consumer.simulator.client:main"
+vector = "opamp_consumer.vector.client:main"
 
 [project.urls]
 Repository = "https://github.com/mp3monster/fluent-opamp"
@@ -106,6 +108,7 @@ known-first-party = ["opamp_consumer"]
 [tool.hatch.build.targets.wheel]
 packages = ["src/opamp_consumer"]
 include = [
+  "src/opamp_consumer/builtin_consumer_plugins.json",
   "src/opamp_consumer/consumer_logging.json",
   "src/opamp_consumer/version.json",
 ]
