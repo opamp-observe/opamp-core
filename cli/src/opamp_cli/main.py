@@ -72,6 +72,7 @@ try:
         ACTION_ID_CONFIG_SERVICE,
         ACTION_ID_FLUENTBIT_CLIENT,
         ACTION_ID_FLUENTD_CLIENT,
+        ACTION_ID_VECTOR_CLIENT,
         ACTION_ID_SERVER,
         ACTION_ID_SIMULATOR,
         ACTION_KIND_BACKGROUND_START,
@@ -120,6 +121,7 @@ try:
         DEMO_CONSUMER_CLIENT_CONFIG_KEYS,
         DEMO_PROFILE_KEY_ELASTIC_AGENT,
         DEMO_PROFILE_KEY_ELASTIC_HEARTBEAT,
+        DEMO_PROFILE_KEY_VECTOR,
         DEMO_PROFILE_KEY_FLUENTBIT,
         DEMO_PROFILE_KEY_FLUENTD,
         ENABLED_FLAG_VALUE,
@@ -140,6 +142,7 @@ try:
         LABEL_CONFIG_SERVICE,
         LABEL_FLUENTBIT_CLIENT,
         LABEL_FLUENTD_CLIENT,
+        LABEL_VECTOR_CLIENT,
         LABEL_SERVER,
         LABEL_SIMULATOR,
         LOCALHOST_ADDRESS,
@@ -193,6 +196,7 @@ except ImportError:
         ACTION_ID_CONFIG_SERVICE,
         ACTION_ID_FLUENTBIT_CLIENT,
         ACTION_ID_FLUENTD_CLIENT,
+        ACTION_ID_VECTOR_CLIENT,
         ACTION_ID_SERVER,
         ACTION_ID_SIMULATOR,
         ACTION_KIND_BACKGROUND_START,
@@ -241,6 +245,7 @@ except ImportError:
         DEMO_CONSUMER_CLIENT_CONFIG_KEYS,
         DEMO_PROFILE_KEY_ELASTIC_AGENT,
         DEMO_PROFILE_KEY_ELASTIC_HEARTBEAT,
+        DEMO_PROFILE_KEY_VECTOR,
         DEMO_PROFILE_KEY_FLUENTBIT,
         DEMO_PROFILE_KEY_FLUENTD,
         ENABLED_FLAG_VALUE,
@@ -261,6 +266,7 @@ except ImportError:
         LABEL_CONFIG_SERVICE,
         LABEL_FLUENTBIT_CLIENT,
         LABEL_FLUENTD_CLIENT,
+        LABEL_VECTOR_CLIENT,
         LABEL_SERVER,
         LABEL_SIMULATOR,
         LOCALHOST_ADDRESS,
@@ -289,8 +295,6 @@ SIMULATOR_STATE_KEY_NAME = "name"
 SIMULATOR_STATE_KEY_PID = "pid"
 GUIDED_DESCRIPTION_COMMAND_PREFIX = "d"
 GUIDED_DESCRIPTION_LABEL = "scenario description"
-LABEL_ELASTIC_AGENT_CLIENT = consumer_plugins.LABEL_ELASTIC_AGENT_CLIENT
-LABEL_ELASTIC_HEARTBEAT_CLIENT = consumer_plugins.LABEL_ELASTIC_HEARTBEAT_CLIENT
 SUPERVISOR_SEMAPHORE_FILENAME = "OpAMPSupervisor.signal"
 PROCESS_INFO_KEY_PID = "pid"
 PROCESS_INFO_KEY_NAME = "name"
@@ -516,8 +520,12 @@ def _script_mode_enabled(command_text: str) -> bool:
     return first.lower() == SCRIPT_KEYWORD
 
 
-def _handle_command(raw_command: str) -> int:  # noqa: PLR0911
-    """Process one command line according to Phase 1 rules."""
+def _handle_command(
+    raw_command: str,
+    *,
+    input_reader: Callable[[str], str] | None = None,
+) -> int:  # noqa: PLR0911
+    """Process one command line."""
     logger = _get_logger()
     command_text = raw_command.strip()
     if not command_text:
@@ -533,7 +541,13 @@ def _handle_command(raw_command: str) -> int:  # noqa: PLR0911
         f"enable {COMMAND_ENABLE_PROCESS_TAIL}",
     }:
         logger.info("enabling process tail feature")
-        _set_process_tail_enabled(True)
+        process_tail.set_process_tail_enabled(
+            True,
+            load_settings=_load_cli_settings,
+            save_settings=_save_cli_settings,
+            settings_path=_cli_settings_path,
+            logger=logger,
+        )
         return 0
     if lowered in {
         COMMAND_DISABLE_PROCESS_TAIL,
@@ -542,7 +556,13 @@ def _handle_command(raw_command: str) -> int:  # noqa: PLR0911
         f"disable {COMMAND_ENABLE_PROCESS_TAIL}",
     }:
         logger.info("disabling process tail feature")
-        _set_process_tail_enabled(False)
+        process_tail.set_process_tail_enabled(
+            False,
+            load_settings=_load_cli_settings,
+            save_settings=_save_cli_settings,
+            settings_path=_cli_settings_path,
+            logger=logger,
+        )
         return 0
     if lowered == COMMAND_STATUS:
         logger.info("printing CLI status")
@@ -561,7 +581,7 @@ def _handle_command(raw_command: str) -> int:  # noqa: PLR0911
             windows_no_console_kwargs=_windows_no_console_kwargs,
             prompt_activation=lambda venv_dir: setup_venv.prompt_setup_venv_activation(
                 venv_dir,
-                prompt_text=_prompt_text,
+                prompt_text=lambda prompt: _prompt_text(prompt, input_reader=input_reader),
                 parse_yes_no=lambda value, default: _parse_yes_no(value, default=default),
                 open_shell=lambda path: setup_venv.open_setup_venv_shell(
                     path,
@@ -580,7 +600,7 @@ def _handle_command(raw_command: str) -> int:  # noqa: PLR0911
             tool_family_label="Fluent Bit",
             specs=_fluentbit_dev_tool_specs(),
             dev_features_enabled=_dev_features_enabled(),
-            prompt_text=_prompt_text,
+            prompt_text=lambda prompt: _prompt_text(prompt, input_reader=input_reader),
             parse_yes_no=lambda value, default: _parse_yes_no(value, default=default),
             command_text_from_args=_command_text_from_args,
             repo_root=_repo_root(),
@@ -594,7 +614,7 @@ def _handle_command(raw_command: str) -> int:  # noqa: PLR0911
             tool_family_label="MCP",
             specs=_mcp_dev_tool_specs(),
             dev_features_enabled=_dev_features_enabled(),
-            prompt_text=_prompt_text,
+            prompt_text=lambda prompt: _prompt_text(prompt, input_reader=input_reader),
             parse_yes_no=lambda value, default: _parse_yes_no(value, default=default),
             command_text_from_args=_command_text_from_args,
             repo_root=_repo_root(),
@@ -606,7 +626,7 @@ def _handle_command(raw_command: str) -> int:  # noqa: PLR0911
         return dev_commands.execute_dev_pid_lookup_workflow(
             command_name=COMMAND_DEV_PID_LOOKUP,
             dev_features_enabled=_dev_pid_lookup_available(),
-            prompt_text=_prompt_text,
+            prompt_text=lambda prompt: _prompt_text(prompt, input_reader=input_reader),
             running_process_entries=_running_process_entries,
             process_entries_matching_pattern=lambda processes, pattern: _process_entries_matching_pattern(
                 processes,
@@ -1480,25 +1500,6 @@ def _save_cli_settings(payload: dict[str, Any]) -> None:
     settings_path.write_text(json.dumps(normalized, indent=2) + "\n", encoding="utf-8")
 
 
-def _process_tail_enabled() -> bool:
-    """Return whether process tail shells should be opened for managed starts."""
-    payload = _load_cli_settings()
-    value = payload.get(CLI_SETTING_ENABLE_PROCESS_TAIL, False)
-    if isinstance(value, bool):
-        return value
-    return str(value or "").strip().lower() in TRUE_VALUES
-
-
-def _set_process_tail_enabled(enabled: bool) -> None:
-    """Persist process tail preference and print the resulting state."""
-    payload = _load_cli_settings()
-    payload[CLI_SETTING_ENABLE_PROCESS_TAIL] = bool(enabled)
-    _save_cli_settings(payload)
-    _get_logger().info("process tailing toggled enabled=%s", bool(enabled))
-    print(f"Process tailing {'enabled' if enabled else 'disabled'}.")
-    print(f"Settings file: {_cli_settings_path()}")
-
-
 def _prune_cli_process_state() -> dict[str, Any]:
     """Remove stale process records and persist the cleaned state."""
     payload = _load_cli_process_state()
@@ -1916,7 +1917,8 @@ def _print_status() -> int:
     print(f"State file: {state_path}")
     print(f"Log directory: {log_dir}")
     print(f"CLI log file: {cli_log_path}")
-    print(f"Process tailing: {'enabled' if _process_tail_enabled() else 'disabled'}")
+    process_tailing = process_tail.process_tail_enabled(load_settings=_load_cli_settings)
+    print(f"Process tailing: {'enabled' if process_tailing else 'disabled'}")
 
     if state_path.exists() is not True:
         print("Managed processes: none recorded")
@@ -1953,7 +1955,8 @@ def _print_option_hierarchy() -> int:
         f"  {APP_ENABLE_DEV_FEATURES_ENV}: "
         f"{'enabled' if _dev_features_enabled() else 'disabled'}"
     )
-    print(f"  {CLI_SETTING_ENABLE_PROCESS_TAIL}: {'enabled' if _process_tail_enabled() else 'disabled'}")
+    process_tailing = process_tail.process_tail_enabled(load_settings=_load_cli_settings)
+    print(f"  {CLI_SETTING_ENABLE_PROCESS_TAIL}: {'enabled' if process_tailing else 'disabled'}")
     print("")
     print("Top-level commands:")
     for command in _top_level_commands():
@@ -1989,7 +1992,7 @@ def _detected_behavior_flags() -> list[str]:
         detected.append(f"{CLI_DEMO_FLAG_ENV}=true")
     if _dev_features_enabled():
         detected.append(f"{APP_ENABLE_DEV_FEATURES_ENV}={ENABLED_FLAG_VALUE}")
-    if _process_tail_enabled():
+    if process_tail.process_tail_enabled(load_settings=_load_cli_settings):
         detected.append(f"{CLI_SETTING_ENABLE_PROCESS_TAIL}=true")
     return detected
 
@@ -2143,6 +2146,7 @@ def _load_demo_consumer_profiles() -> list[dict[str, Any]]:
         simulator = entry.get("simulator", {})
         elastic_agent = entry.get(DEMO_PROFILE_KEY_ELASTIC_AGENT, {})
         elastic_heartbeat = entry.get(DEMO_PROFILE_KEY_ELASTIC_HEARTBEAT, {})
+        vector = entry.get(DEMO_PROFILE_KEY_VECTOR, {})
         containers = entry.get("containers", [])
         if (
             not isinstance(fluentbit, dict)
@@ -2150,6 +2154,7 @@ def _load_demo_consumer_profiles() -> list[dict[str, Any]]:
             or not isinstance(simulator, dict)
             or not isinstance(elastic_agent, dict)
             or not isinstance(elastic_heartbeat, dict)
+            or not isinstance(vector, dict)
         ):
             continue
         if not isinstance(containers, list):
@@ -2164,6 +2169,7 @@ def _load_demo_consumer_profiles() -> list[dict[str, Any]]:
                 "simulator": dict(simulator),
                 DEMO_PROFILE_KEY_ELASTIC_AGENT: dict(elastic_agent),
                 DEMO_PROFILE_KEY_ELASTIC_HEARTBEAT: dict(elastic_heartbeat),
+                DEMO_PROFILE_KEY_VECTOR: dict(vector),
                 "containers": [
                     dict(container)
                     for container in containers
@@ -2616,6 +2622,14 @@ def _start_actions() -> list[tuple[str, dict[str, Any]]]:  # noqa: PLR0915
         background_start_action=_background_start_action,
         build_exec_env=_build_exec_env,
     )
+    action_map[ACTION_ID_VECTOR_CLIENT] = consumer_plugins.default_vector_start_action(
+        repo_root=repo_root,
+        existing_path=_existing_path,
+        python_module_command=_python_module_command,
+        python_module_argv=_python_module_argv,
+        background_start_action=_background_start_action,
+        build_exec_env=_build_exec_env,
+    )
 
     actions = _materialize_ordered_actions(
         order=GUIDED_START_ACTION_ORDER,
@@ -2687,6 +2701,11 @@ def _stop_actions() -> list[tuple[str, dict[str, Any]]]:
         action_id=ACTION_ID_FLUENTD_CLIENT,
         label=LABEL_FLUENTD_CLIENT,
         record_names=[LABEL_FLUENTD_CLIENT],
+    )
+    action_map[ACTION_ID_VECTOR_CLIENT] = _stop_recorded_action(
+        action_id=ACTION_ID_VECTOR_CLIENT,
+        label=LABEL_VECTOR_CLIENT,
+        record_names=[LABEL_VECTOR_CLIENT],
     )
 
     semaphore_path = repo_root / "OpAMPSupervisor.signal"
@@ -3208,6 +3227,7 @@ def _start_demo_consumers(action: dict[str, Any]) -> int:
     simulator = dict(profile.get("simulator", {}))
     elastic_agent = dict(profile.get(DEMO_PROFILE_KEY_ELASTIC_AGENT, {}))
     elastic_heartbeat = dict(profile.get(DEMO_PROFILE_KEY_ELASTIC_HEARTBEAT, {}))
+    vector = dict(profile.get(DEMO_PROFILE_KEY_VECTOR, {}))
     containers = [
         dict(item)
         for item in profile.get("containers", [])
@@ -3225,6 +3245,8 @@ def _start_demo_consumers(action: dict[str, Any]) -> int:
     elastic_heartbeat_agent = _resolve_optional_path_from_repo(
         str(elastic_heartbeat.get(CONFIG_KEY_AGENT_CONFIG_PATH) or "")
     )
+    vector_config = _resolve_optional_path_from_repo(str(vector.get(CONFIG_KEY_CONFIG_PATH) or ""))
+    vector_agent = _resolve_optional_path_from_repo(str(vector.get(CONFIG_KEY_AGENT_CONFIG_PATH) or ""))
     simulator_state_file = _simulator_state_path_from_profile(profile)
 
     configured_components = 0
@@ -3232,19 +3254,19 @@ def _start_demo_consumers(action: dict[str, Any]) -> int:
         configured_components += 1
     if fluentbit_config is not None or fluentbit_agent is not None:
         configured_components += 1
-        if fluentbit_config is None or fluentbit_agent is None:
+        if fluentbit_config is None:
             print(
-                "Demo profile Fluent Bit configuration is incomplete: both "
-                "`config_path` and `agent_config_path` are required when Fluent Bit is configured.",
+                "Demo profile Fluent Bit configuration is incomplete: "
+                "`config_path` is required when Fluent Bit is configured.",
                 file=sys.stderr,
             )
             return 1
     if fluentd_config is not None or fluentd_agent is not None:
         configured_components += 1
-        if fluentd_config is None or fluentd_agent is None:
+        if fluentd_config is None:
             print(
-                "Demo profile Fluentd configuration is incomplete: both "
-                "`config_path` and `agent_config_path` are required when Fluentd is configured.",
+                "Demo profile Fluentd configuration is incomplete: "
+                "`config_path` is required when Fluentd is configured.",
                 file=sys.stderr,
             )
             return 1
@@ -3259,10 +3281,19 @@ def _start_demo_consumers(action: dict[str, Any]) -> int:
             return 1
     if elastic_heartbeat_config is not None or elastic_heartbeat_agent is not None:
         configured_components += 1
-        if elastic_heartbeat_config is None or elastic_heartbeat_agent is None:
+        if elastic_heartbeat_config is None:
             print(
-                "Demo profile Elastic Heartbeat configuration is incomplete: both "
-                "`config_path` and `agent_config_path` are required when Elastic Heartbeat is configured.",
+                "Demo profile Elastic Heartbeat configuration is incomplete: "
+                "`config_path` is required when Elastic Heartbeat is configured.",
+                file=sys.stderr,
+            )
+            return 1
+    if vector_config is not None or vector_agent is not None:
+        configured_components += 1
+        if vector_config is None:
+            print(
+                "Demo profile Vector configuration is incomplete: "
+                "`config_path` is required when Vector is configured.",
                 file=sys.stderr,
             )
             return 1
@@ -3286,6 +3317,8 @@ def _start_demo_consumers(action: dict[str, Any]) -> int:
             elastic_agent_agent,
             elastic_heartbeat_config,
             elastic_heartbeat_agent,
+            vector_config,
+            vector_agent,
             simulator_instances,
         ]
         if path is not None
@@ -3369,7 +3402,7 @@ def _start_demo_consumers(action: dict[str, Any]) -> int:
         simulator_action["record_metadata"] = dict(common_metadata)
         sequence.append(simulator_action)
 
-    if fluentbit_config is not None and fluentbit_agent is not None:
+    if fluentbit_config is not None:
         sequence.append(
             consumer_plugins.demo_fluentbit_start_action(
                 repo_root=repo_root,
@@ -3385,7 +3418,7 @@ def _start_demo_consumers(action: dict[str, Any]) -> int:
             )
         )
 
-    if fluentd_config is not None and fluentd_agent is not None:
+    if fluentd_config is not None:
         sequence.append(
             consumer_plugins.demo_fluentd_start_action(
                 repo_root=repo_root,
@@ -3417,7 +3450,7 @@ def _start_demo_consumers(action: dict[str, Any]) -> int:
             )
         )
 
-    if elastic_heartbeat_config is not None and elastic_heartbeat_agent is not None:
+    if elastic_heartbeat_config is not None:
         sequence.append(
             consumer_plugins.demo_elastic_heartbeat_start_action(
                 repo_root=repo_root,
@@ -3425,6 +3458,21 @@ def _start_demo_consumers(action: dict[str, Any]) -> int:
                 prefix=prefix,
                 config_path=elastic_heartbeat_config,
                 agent_config_path=elastic_heartbeat_agent,
+                common_metadata=common_metadata,
+                python_module_command=_python_module_command,
+                python_module_argv=_python_module_argv,
+                background_start_action=_background_start_action,
+                build_exec_env=_build_exec_env,
+            )
+        )
+    if vector_config is not None:
+        sequence.append(
+            consumer_plugins.demo_vector_start_action(
+                repo_root=repo_root,
+                profile_name=profile_name,
+                prefix=prefix,
+                config_path=vector_config,
+                agent_config_path=vector_agent,
                 common_metadata=common_metadata,
                 python_module_command=_python_module_command,
                 python_module_argv=_python_module_argv,
@@ -3594,7 +3642,7 @@ def _launch_background_process(action: dict[str, Any]) -> int:
     process_tail.open_process_tail_if_enabled(
         label=label,
         log_file=log_file,
-        enabled=_process_tail_enabled(),
+        enabled=process_tail.process_tail_enabled(load_settings=_load_cli_settings),
         logger=logger,
         repo_root=_repo_root(),
         is_windows=_is_windows(),
@@ -3734,7 +3782,7 @@ def _record_simulator_batch(action: dict[str, Any]) -> int:
     process_tail.open_process_tail_if_enabled(
         label=str(action.get("label") or LABEL_SIMULATOR),
         log_file=log_file,
-        enabled=_process_tail_enabled(),
+        enabled=process_tail.process_tail_enabled(load_settings=_load_cli_settings),
         logger=logger,
         repo_root=_repo_root(),
         is_windows=_is_windows(),
@@ -3870,71 +3918,6 @@ def _interactive_loop() -> int:  # noqa: PLR0912,PLR0915
             logger.info("interactive help requested")
             print(HELP_TEXT)
             continue
-        if raw.strip().lower() == COMMAND_STATUS:
-            logger.info("interactive status requested")
-            _print_status()
-            continue
-        if raw.strip().lower() == COMMAND_DEV_FLB_CONFIG:
-            logger.info("interactive dev fluent bit config requested")
-            code = dev_commands.execute_dev_tool_workflow(
-                command_name=COMMAND_DEV_FLB_CONFIG,
-                tool_family_label="Fluent Bit",
-                specs=_fluentbit_dev_tool_specs(),
-                dev_features_enabled=_dev_features_enabled(),
-                prompt_text=lambda prompt: _prompt_text(prompt, input_reader=input_reader),
-                parse_yes_no=lambda value, default: _parse_yes_no(value, default=default),
-                command_text_from_args=_command_text_from_args,
-                repo_root=_repo_root(),
-                build_exec_env=_build_exec_env,
-                logger=logger,
-            )
-            if code != 0:
-                print(COMMAND_EXITED_TEMPLATE.format(code=code))
-            continue
-        if raw.strip().lower() == COMMAND_DEV_MCP_CONFIG:
-            logger.info("interactive dev mcp config requested")
-            code = dev_commands.execute_dev_tool_workflow(
-                command_name=COMMAND_DEV_MCP_CONFIG,
-                tool_family_label="MCP",
-                specs=_mcp_dev_tool_specs(),
-                dev_features_enabled=_dev_features_enabled(),
-                prompt_text=lambda prompt: _prompt_text(prompt, input_reader=input_reader),
-                parse_yes_no=lambda value, default: _parse_yes_no(value, default=default),
-                command_text_from_args=_command_text_from_args,
-                repo_root=_repo_root(),
-                build_exec_env=_build_exec_env,
-                logger=logger,
-            )
-            if code != 0:
-                print(COMMAND_EXITED_TEMPLATE.format(code=code))
-            continue
-        if raw.strip().lower() == COMMAND_DEV_PID_LOOKUP:
-            logger.info("interactive dev pid lookup requested")
-            code = dev_commands.execute_dev_pid_lookup_workflow(
-                command_name=COMMAND_DEV_PID_LOOKUP,
-                dev_features_enabled=_dev_pid_lookup_available(),
-                prompt_text=lambda prompt: _prompt_text(prompt, input_reader=input_reader),
-                running_process_entries=_running_process_entries,
-                process_entries_matching_pattern=lambda processes, pattern: _process_entries_matching_pattern(
-                    processes,
-                    pattern=pattern,
-                ),
-                print_pid_lookup_results=_print_pid_lookup_results,
-            )
-            if code != 0:
-                print(COMMAND_EXITED_TEMPLATE.format(code=code))
-            continue
-        if raw.strip().lower() == COMMAND_DEV_VERSION_BUMP or raw.strip().lower().startswith(f"{COMMAND_DEV_VERSION_BUMP} "):
-            logger.info("interactive dev version bump requested")
-            version_args = _split_internal_command_args(raw)
-            code = execute_dev_version_bump_workflow(
-                version_args[1:],
-                repo_root_provider=_repo_root,
-                dev_features_enabled=_dev_features_enabled,
-            )
-            if code != 0:
-                print(COMMAND_EXITED_TEMPLATE.format(code=code))
-            continue
         guided = _split_guided_command(raw)
         if guided is not None:
             intent, selection = guided
@@ -3958,7 +3941,7 @@ def _interactive_loop() -> int:  # noqa: PLR0912,PLR0915
             continue
 
         try:
-            code = _handle_command(raw)
+            code = _handle_command(raw, input_reader=input_reader)
         except Exception as exc:  # pragma: no cover - defensive CLI guard
             logger.exception("interactive command failed raw=%s", raw, exc_info=exc)
             print(f"Error: {exc}", file=sys.stderr)
