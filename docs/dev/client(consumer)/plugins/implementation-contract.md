@@ -164,21 +164,41 @@ add tests for both launch and shutdown behavior.
 
 ## Plugin Entrypoint Shape
 
-The plugin entry point should be a zero-argument callable:
+The plugin entry point should be a zero-argument callable. In most plugins,
+`main()` should follow the shared bootstrap pattern instead of inventing a new
+argument/config loader:
 
 ```python
 CONFIG = consumer_config.CONFIG
 
 
 def main() -> None:
+    parser = build_common_cli_parser()
+    args = parser.parse_args()
     config = load_config_from_cli_args(args)
     consumer_config.set_config(config)
-    ...
+    logger = configure_logging_for_config(config)
+    consumer_config_path = log_runtime_config_path(
+        logger=logger,
+        runtime_name="consumer-my-agent",
+        config_path=getattr(args, "config_path", None),
+    )
+    log_consumer_startup_banner(
+        logger=logger,
+        config=config,
+        runtime_name="consumer-my-agent",
+        consumer_config_path=consumer_config_path,
+    )
 ```
 
 The unified router may inject the already loaded config into a module-level
 `CONFIG` variable before it calls `main()`. Keeping that variable available
 makes config-driven routing and tests easier.
+
+If the plugin can use the default Fluent Bit-style flow, prefer
+`run_default_client_main(...)`. If it needs custom startup work, keep that work
+after the shared parser/config/logging/banner steps so behavior stays
+consistent across plugins.
 
 ## Startup Banner
 

@@ -10,7 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Runtime discovery for OpAMP consumer client plugins."""
+"""Runtime discovery for OpAMP consumer client plugins.
+
+Plugin routing is intentionally config-driven:
+
+1. Built-in plugin mappings are loaded from `builtin_consumer_plugins.json`.
+2. Installed packages can contribute entry points in `opamp_consumer.plugins`.
+3. `consumer.plugins` in the active OpAMP JSON can add, override, or disable
+   mappings for local experiments and controlled deployments.
+
+The selected `consumer.service_type` is resolved against that registry, and the
+resulting zero-argument callable is invoked by `opamp_consumer.client`.
+"""
 
 from __future__ import annotations
 
