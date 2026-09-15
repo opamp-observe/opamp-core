@@ -83,7 +83,7 @@ Both shortcuts run the compatibility entrypoint:
 
 - Guided multi-stage flow:
   - Type `start` in interactive mode, then choose what to start
-    (for example `server`, `catalog`, `config editor`, `broker`, `simulator`, `fluentbit client`, `fluentd client`).
+    (for example `server`, `catalog`, `config editor`, `broker`, `simulator`, `fluentbit client`, `fluentd client`, `vector client`).
   - Type `stop` in interactive mode, then choose what to stop.
   - `stop all` stops all CLI-managed recorded processes.
   - Type `restart` in interactive mode, then choose what to restart.
@@ -156,14 +156,20 @@ Demo consumer mode:
 - Each profile maps a logical profile name to:
   - scenario description text
   - simulator instances file
-  - Fluent Bit OpAMP config + agent config
-  - Fluentd OpAMP config + agent config
-  - Elastic Agent OpAMP config + agent config
-  - Elastic Heartbeat OpAMP config + agent config
+  - Fluent Bit OpAMP config, with optional agent config override
+  - Fluentd OpAMP config, with optional agent config override
+  - Elastic Agent OpAMP config, with optional agent config override
+  - Elastic Heartbeat OpAMP config, with optional agent config override
+  - Vector OpAMP config, with optional agent config override
   - optional container start commands
+- New demo profiles should put agent config paths in `consumer.agent_config_path`
+  inside the OpAMP JSON config and omit profile-level overrides unless a legacy
+  config requires one.
 - CLI records profile-scoped PIDs in `cli/runtime/managed_processes.json`, so `stop` can terminate one demo profile independently.
 - The `Demo setup (Elastic Agent self-monitoring to Logstash)` profile starts the configured Logstash container first, then starts the plugin-driven `opamp_consumer.client` Elastic Agent consumer with `tests/logstash/opamp-consumer-elastic-agent-logstash-plugin.json`.
 - The `Demo setup (Elastic Heartbeat supervisor to Logstash)` profile starts a Logstash container first, then starts the plugin-driven `opamp_consumer.client` Elastic Heartbeat consumer with `tests/logstash/opamp-consumer-elastic-heartbeat-logstash-plugin.json`.
+- The `Demo setup (Vector self-monitor)` profile starts the plugin-driven `opamp_consumer.client` Vector consumer with `consumer/opamp-vector.json` and `docs/vector-self-monitor/vector-self-monitor.yaml`.
+- The `Demo setup (Full multi-agent remote config)` profile starts the full `docs/full-demo` scenario: Logstash, Fluent Bit and Fluentd in supervisor mode, plus Vector, Elastic Agent, and Elastic Heartbeat in observer mode. Its profile entries point only at consumer OpAMP JSON files; agent paths come from those configs. Its provider/catalog config and replacement configs live under `docs/full-demo`.
 
 Example:
 

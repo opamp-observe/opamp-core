@@ -75,11 +75,12 @@ already absolute.
 | `fluentd` | object | No | Fluentd consumer launch configuration. |
 | `elastic_agent` | object | No | Elastic Agent consumer launch configuration. |
 | `elastic_heartbeat` | object | No | Elastic Heartbeat consumer launch configuration. |
+| `vector` | object | No | Vector consumer launch configuration. |
 | `containers` | array | No | Dependency containers started before consumers in the same profile. |
 
 A profile must configure at least one launchable component: a container, a
-simulator instances file, a complete Fluent Bit pair, a complete Fluentd pair,
-an Elastic Agent config, or a complete Elastic Heartbeat pair.
+simulator instances file, or a consumer `config_path` for Fluent Bit, Fluentd,
+Elastic Agent, Elastic Heartbeat, or Vector.
 
 ## Consumer Component Blocks
 
@@ -89,30 +90,43 @@ an Elastic Agent config, or a complete Elastic Heartbeat pair.
 |---|---|---:|---|
 | `instances_path` | string | Yes, when simulator is configured | Path to the simulator instances JSON. |
 
-`fluentbit` and `fluentd` support the same pair of attributes:
+`fluentbit` and `fluentd` support the same attributes:
 
 | Attribute | Type | Required | Description |
 |---|---|---:|---|
 | `config_path` | string | Yes, when the component is configured | Consumer OpAMP JSON config. |
-| `agent_config_path` | string | Yes, when the component is configured | Agent config passed as `--agent-config-path`. |
+| `agent_config_path` | string | No | Optional agent config override passed as `--agent-config-path`. Prefer `consumer.agent_config_path` in the OpAMP JSON config for new demos. |
+
+`vector` supports the same attributes. The checked-in Vector demo uses
+`consumer/opamp-vector.json` and
+`docs/vector-self-monitor/vector-self-monitor.yaml`.
+
+The full multi-agent demo profile only points each component at its consumer
+OpAMP JSON config. Those configs carry their own `consumer.agent_config_path`
+values, so the CLI exercises the existing consumer configuration path rather
+than duplicating agent config paths in the profile. Active plus replacement
+configurations live under
+`docs/full-demo`. Its Logstash container entry mounts both the pipeline and
+output directory so Elastic Agent and Heartbeat can send events to the container
+while the provider catalog can show every demo configuration file.
 
 Elastic Agent supports:
 
 | Attribute | Type | Required | Description |
 |---|---|---:|---|
 | `config_path` | string | Yes, when Elastic Agent is configured | Consumer OpAMP JSON config. This should select the `elastic_agent` plugin. |
-| `agent_config_path` | string | No | Elastic Agent YAML passed as `--agent-config-path` when present. |
+| `agent_config_path` | string | No | Optional Elastic Agent YAML override passed as `--agent-config-path` when present. Prefer `consumer.agent_config_path` in the OpAMP JSON config for new demos. |
 
 The Elastic Agent demo path starts `python -m opamp_consumer.client`, not the
 legacy direct module entrypoint, so plugin routing is exercised.
 
-Elastic Heartbeat supports the same pair of attributes as Fluent Bit and
+Elastic Heartbeat supports the same attributes as Fluent Bit and
 Fluentd:
 
 | Attribute | Type | Required | Description |
 |---|---|---:|---|
 | `config_path` | string | Yes, when Elastic Heartbeat is configured | Consumer OpAMP JSON config. This should select the `elastic_heartbeat` plugin. |
-| `agent_config_path` | string | Yes, when Elastic Heartbeat is configured | Heartbeat YAML passed as `--agent-config-path`. |
+| `agent_config_path` | string | No | Optional Heartbeat YAML override passed as `--agent-config-path` when present. Prefer `consumer.agent_config_path` in the OpAMP JSON config for new demos. |
 
 The Heartbeat demo profile starts a Logstash container first. Heartbeat sends
 events to that Logstash backend, and the Logstash pipeline writes the local test

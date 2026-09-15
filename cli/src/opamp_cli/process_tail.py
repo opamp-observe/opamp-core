@@ -24,14 +24,48 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .constants import PROCESS_TAIL_INITIAL_LINES
+    from .constants import (
+        CLI_SETTING_ENABLE_PROCESS_TAIL,
+        PROCESS_TAIL_INITIAL_LINES,
+        TRUE_VALUES,
+    )
 except ImportError:
-    from constants import PROCESS_TAIL_INITIAL_LINES  # type: ignore[no-redef]
+    from constants import (  # type: ignore[no-redef]
+        CLI_SETTING_ENABLE_PROCESS_TAIL,
+        PROCESS_TAIL_INITIAL_LINES,
+        TRUE_VALUES,
+    )
 
 
 def powershell_single_quote(value: str | Path) -> str:
     """Return a PowerShell-safe single-quoted string literal."""
     return "'" + str(value).replace("'", "''") + "'"
+
+
+def process_tail_enabled(*, load_settings: Callable[[], dict[str, Any]]) -> bool:
+    """Return whether process tail shells should be opened for managed starts."""
+    payload = load_settings()
+    value = payload.get(CLI_SETTING_ENABLE_PROCESS_TAIL, False)
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in TRUE_VALUES
+
+
+def set_process_tail_enabled(
+    enabled: bool,
+    *,
+    load_settings: Callable[[], dict[str, Any]],
+    save_settings: Callable[[dict[str, Any]], None],
+    settings_path: Callable[[], Path],
+    logger: Any,
+) -> None:
+    """Persist process tail preference and print the resulting state."""
+    payload = load_settings()
+    payload[CLI_SETTING_ENABLE_PROCESS_TAIL] = bool(enabled)
+    save_settings(payload)
+    logger.info("process tailing toggled enabled=%s", bool(enabled))
+    print(f"Process tailing {'enabled' if enabled else 'disabled'}.")
+    print(f"Settings file: {settings_path()}")
 
 
 def launch_process_tail_shell(

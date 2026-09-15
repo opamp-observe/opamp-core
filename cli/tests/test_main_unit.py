@@ -154,9 +154,17 @@ def test_process_tail_setting_round_trip(tmp_path: Path, monkeypatch) -> None:
     runtime_dir = tmp_path / "runtime"
     monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
 
-    cli_main._set_process_tail_enabled(True)  # type: ignore[attr-defined]
+    cli_main.process_tail.set_process_tail_enabled(
+        True,
+        load_settings=cli_main._load_cli_settings,  # type: ignore[attr-defined]
+        save_settings=cli_main._save_cli_settings,  # type: ignore[attr-defined]
+        settings_path=cli_main._cli_settings_path,  # type: ignore[attr-defined]
+        logger=cli_main._get_logger(),  # type: ignore[attr-defined]
+    )
 
-    assert cli_main._process_tail_enabled() is True  # type: ignore[attr-defined]
+    assert cli_main.process_tail.process_tail_enabled(
+        load_settings=cli_main._load_cli_settings,  # type: ignore[attr-defined]
+    ) is True
     payload = json.loads((runtime_dir / "settings.json").read_text(encoding="utf-8"))
     assert payload["enable_process_tail"] is True
 
@@ -165,11 +173,19 @@ def test_disable_enable_process_tail_alias_disables_setting(tmp_path: Path, monk
     runtime_dir = tmp_path / "runtime"
     monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
 
-    cli_main._set_process_tail_enabled(True)  # type: ignore[attr-defined]
+    cli_main.process_tail.set_process_tail_enabled(
+        True,
+        load_settings=cli_main._load_cli_settings,  # type: ignore[attr-defined]
+        save_settings=cli_main._save_cli_settings,  # type: ignore[attr-defined]
+        settings_path=cli_main._cli_settings_path,  # type: ignore[attr-defined]
+        logger=cli_main._get_logger(),  # type: ignore[attr-defined]
+    )
     exit_code = cli_main._handle_command("disable enable-process-tail")  # type: ignore[attr-defined]
 
     assert exit_code == 0
-    assert cli_main._process_tail_enabled() is False  # type: ignore[attr-defined]
+    assert cli_main.process_tail.process_tail_enabled(
+        load_settings=cli_main._load_cli_settings,  # type: ignore[attr-defined]
+    ) is False
 
 
 def test_windows_no_console_kwargs_returns_create_no_window(monkeypatch) -> None:
@@ -891,6 +907,7 @@ def test_start_and_stop_action_orders_are_stable(monkeypatch) -> None:
         "Simulator",
         "Fluent Bit client",
         "Fluentd client",
+        "Vector client",
     ]
     assert stop_labels == [
         "Server",
@@ -900,6 +917,7 @@ def test_start_and_stop_action_orders_are_stable(monkeypatch) -> None:
         "Config Editor",
         "Fluent Bit client",
         "Fluentd client",
+        "Vector client",
         "All clients",
         "All managed processes",
     ]
@@ -1136,6 +1154,34 @@ def test_demo_profile_loader_carries_elastic_agent_and_container_config(
 
     assert profiles[0]["containers"][0]["id"] == "logstash-local"
     assert profiles[0]["elastic_agent"]["config_path"].endswith("logstash-plugin.json")
+
+
+def test_checked_in_full_demo_profile_covers_all_agent_types() -> None:
+    profiles = cli_main._load_demo_consumer_profiles()  # type: ignore[attr-defined]
+    profile = next(
+        item for item in profiles if item["name"] == "Demo setup (Full multi-agent remote config)"
+    )
+
+    assert profile["containers"][0]["id"] == "logstash-full-demo"
+    assert set(profile) >= {
+        "fluentbit",
+        "fluentd",
+        "vector",
+        "elastic_agent",
+        "elastic_heartbeat",
+    }
+    assert profile["elastic_heartbeat"]["config_path"].endswith("opamp-heartbeat.json")
+    assert json.loads(
+        (cli_main._repo_root() / profile["fluentbit"]["config_path"]).read_text(encoding="utf-8")
+    )["consumer"]["agent_config_path"] == "docs/full-demo/active/fluent-bit.yaml"
+    assert json.loads(
+        (cli_main._repo_root() / profile["vector"]["config_path"]).read_text(encoding="utf-8")
+    )["consumer"]["agent_config_path"] == "docs/full-demo/active/vector.yaml"
+    for component in ("fluentd", "elastic_agent", "elastic_heartbeat"):
+        config = json.loads(
+            (cli_main._repo_root() / profile[component]["config_path"]).read_text(encoding="utf-8")
+        )
+        assert config["consumer"]["agent_config_path"].startswith("docs/full-demo/active/")
 
 
 def test_demo_consumer_action_carries_scenario_description() -> None:
@@ -1400,6 +1446,57 @@ def test_start_demo_consumers_allows_partial_observer_profile(monkeypatch, tmp_p
     )
 
     assert code == 0
+
+
+def test_start_demo_consumers_uses_configured_agent_path_without_profile_override(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    profile_name = "config-driven-vector"
+    repo_root = tmp_path
+    config_path = repo_root / "consumer" / "opamp-vector.json"
+    agent_path = repo_root / "docs" / "vector-self-monitor" / "vector-self-monitor.yaml"
+    config_path.parent.mkdir(parents=True)
+    agent_path.parent.mkdir(parents=True)
+    config_path.write_text(
+        json.dumps(
+            {
+                "consumer": {
+                    "server_url": "http://localhost:8080",
+                    "agent_config_path": str(agent_path),
+                    "agent_additional_params": [],
+                    "service_type": "vector",
+                }
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    agent_path.write_text("api:\n  enabled: true\n", encoding="utf-8")
+    monkeypatch.setattr(cli_main, "_repo_root", lambda: repo_root)
+    monkeypatch.setattr(
+        cli_main,
+        "_demo_profile_by_name",
+        lambda _name: {
+            "name": profile_name,
+            "vector": {
+                "config_path": "consumer/opamp-vector.json",
+            },
+        },
+    )
+    launched: list[dict[str, Any]] = []
+    monkeypatch.setattr(cli_main, "_launch_background_process", lambda action: launched.append(action) or 0)
+
+    code = cli_main._start_demo_consumers(  # type: ignore[attr-defined]
+        {"profile_name": profile_name}
+    )
+
+    assert code == 0
+    assert len(launched) == 1
+    assert launched[0]["label"] == f"Vector client ({profile_name})"
+    assert "--config-path" in launched[0]["argv"]
+    assert "--agent-config-path" not in launched[0]["argv"]
+    assert launched[0]["record_name"] == f"Demo:{profile_name}:Vector client"
 
 
 def test_container_start_action_uses_configured_runtime_command(
@@ -1750,7 +1847,7 @@ def test_start_demo_consumers_rejects_incomplete_fluentd_configuration(
         lambda _name: {
             "name": "broken-profile",
             "fluentd": {
-                "config_path": "consumer/opamp-fluentd.json",
+                "agent_config_path": "consumer/fluentd.conf",
             },
         },
     )
@@ -1983,7 +2080,11 @@ def test_record_simulator_batch_short_circuits_when_already_running(
 def test_detected_behavior_flags_returns_empty_when_none_set(monkeypatch) -> None:
     monkeypatch.delenv("OPAMP_DEMO", raising=False)
     monkeypatch.delenv("APP_ENABLE_DEV_FEATURES", raising=False)
-    monkeypatch.setattr(cli_main, "_process_tail_enabled", lambda: False)
+    monkeypatch.setattr(
+        cli_main.process_tail,
+        "process_tail_enabled",
+        lambda *, load_settings: False,
+    )
 
     detected = cli_main._detected_behavior_flags()  # type: ignore[attr-defined]
 
@@ -1993,7 +2094,11 @@ def test_detected_behavior_flags_returns_empty_when_none_set(monkeypatch) -> Non
 def test_detected_behavior_flags_returns_only_enabled_flags(monkeypatch) -> None:
     monkeypatch.setenv("OPAMP_DEMO", "true")
     monkeypatch.setenv("APP_ENABLE_DEV_FEATURES", "true")
-    monkeypatch.setattr(cli_main, "_process_tail_enabled", lambda: True)
+    monkeypatch.setattr(
+        cli_main.process_tail,
+        "process_tail_enabled",
+        lambda *, load_settings: True,
+    )
 
     detected = cli_main._detected_behavior_flags()  # type: ignore[attr-defined]
 
