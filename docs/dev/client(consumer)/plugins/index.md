@@ -74,3 +74,26 @@ Their operator-facing configuration pages live under
 `consumer/docs/plugins/`. If you add a new plugin, add a page there too, and
 link it from `consumer/README.md`.
 
+## New Plugin Checklist
+
+For a new consumer plugin, make these pieces line up:
+
+1. Choose a stable `service_type`, such as `my_agent`.
+2. Implement a zero-argument plugin entry point, normally `client.py:main`.
+3. Add any plugin-specific config processing under `consumer.<service_type>`.
+4. Register the plugin through one supported registry source:
+   - built-in mapping in `consumer/src/opamp_consumer/builtin_consumer_plugins.json`
+   - package entry point in `opamp_consumer.plugins`
+   - runtime `consumer.plugins` config overlay
+5. Add operator docs under `consumer/docs/plugins/<service-type>.md`.
+6. Link that page from `consumer/README.md`.
+7. Add focused unit tests for config parsing, lifecycle, metadata, and health.
+8. Add router/entry-point coverage when the plugin is externally registered.
+9. If the CLI should expose it in guided start/demo flows, add the CLI wiring
+   described in [Architecture And Loading](architecture-and-loading.md#cli-and-demo-integration).
+
+The important mental model is that the consumer plugin registry answers
+"which Python callable handles this `service_type`?" The CLI answers "which
+process should I start, with which config file?" Keep those responsibilities
+separate.
+
