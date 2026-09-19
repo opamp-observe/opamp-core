@@ -1,4 +1,4 @@
-# OpAMP Server & Supervisor for Fluent Bit & Fluentd
+# OpAMP Server & Supervisor for Open Source Observer / Pipeline tools
 
 This repository hosts an implementation of the OpenTelemetry [Open Agent Management Protocol (OpAMP)](https://opentelemetry.io/docs/specs/opamp/). The OpAMP protocol allows us to perform tasks such as:
 
@@ -10,6 +10,13 @@ The protocol is oriented towards agents supporting the observability domain such
 This repository provide an agent implementation that specifically adopts the supervisor model, but also understands the characteristics of Fluent Bit and Fluentd to service the different operations.
 
 Here we have provided both the agent/client(supervisor) and server functionality. Although the protocol is defined in such a manner, that it should be possible to mix and match.
+
+On the client side we support the following types of client:
+- Fluent Bit
+- Fluentd
+- Elastic Agent
+- Elastic Beats (Heart Beat initially)
+- Vector
 
 Aside from providing out of the box support for Fluent Bit and Fluentd it provides a means to extend and customize features including:
 
