@@ -4,6 +4,7 @@ This note documents two behavior switches used by the OpAMP CLI and nearby consu
 
 - `OPAMP_DEMO`
 - `APP_ENABLE_DEV_FEATURES`
+- `SMART_LOG_VIEWER`
 
 This file is intentionally kept as a standalone CLI note rather than being linked from the main project docs.
 
@@ -118,6 +119,32 @@ One important non-CLI interaction is the security checks flow:
 - `scripts/security_checks.py` explicitly removes `APP_ENABLE_DEV_FEATURES` from the environment before running checks
 
 That keeps validation runs aligned with non-dev behavior.
+
+## `SMART_LOG_VIEWER`
+
+`SMART_LOG_VIEWER=true` switches enabled process tailing from separate terminal
+tail windows to Smart Log Viewer. The CLI writes
+`cli/runtime/smart-log-viewer/config.json` with discovered client log files and
+starts `smart-log-viewer --config cli/runtime/smart-log-viewer`.
+
+Install Smart Log Viewer with:
+
+```bash
+npm install -g smart-log-viewer
+```
+
+Smart Log Viewer also requires `tail` on `PATH` because it starts
+`tail -F -n 100 <file>` for each watched log. Linux and macOS usually include
+`tail` by default. On Windows, install Microsoft Coreutils:
+
+```powershell
+winget install --id Microsoft.Coreutils --exact
+```
+
+Open a new terminal after installing Coreutils so the updated `PATH` is picked
+up before running `opamp-cli`.
+
+The CLI only uses this when `enable-process-tail` is active.
 
 ## CLI Replacements
 

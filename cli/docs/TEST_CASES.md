@@ -28,6 +28,20 @@ Test modules should reference this file so the implementation and the documented
   - Verifies `status` reports invalid JSON instead of treating an unreadable config as loaded.
 - `test_list_command_reports_config_options_when_available`
   - Verifies `list` includes the `config` command subtree when config-service support is available.
+- `test_cli_config_view_prints_active_config_and_path`
+  - Verifies `cli-config view` prints the active CLI config content and absolute path.
+- `test_cli_config_summary_reports_key_counts`
+  - Verifies `cli-config summary` reports demo profile and component counts.
+- `test_cli_config_change_config_replaces_active_config`
+  - Verifies `cli-config change-config` can load and persist a smaller replacement profile config.
+- `test_cli_config_change_config_rejects_malformed_json_without_changing_settings`
+  - Verifies malformed JSON is rejected and the active CLI config remains unchanged.
+- `test_cli_config_change_config_rejects_missing_path_without_changing_settings`
+  - Verifies a missing replacement path is rejected and the active CLI config remains unchanged.
+- `test_interactive_cli_config_unknown_subcommand_uses_human_message`
+  - Verifies interactive `cli-config` parse errors show command guidance instead of a raw exit code.
+- `test_interactive_cli_config_change_failure_uses_human_message`
+  - Verifies interactive `cli-config change-config` failures show a friendly follow-up instead of a raw exit code.
 - `test_help_includes_setup_venv_command`
   - Verifies `help` advertises the repository virtual environment setup command.
 - `test_top_level_commands_include_setup_venv`
@@ -58,6 +72,10 @@ Test modules should reference this file so the implementation and the documented
   - Verifies the ordered `start` and `stop` action lists remain stable.
 - `test_broker_stop_action_uses_cli_managed_process_records`
   - Verifies broker shutdown uses CLI-managed process records instead of the retired broker PID-file wrapper flow.
+- `test_broker_start_action_includes_repo_root_for_shared_imports`
+  - Verifies broker startup includes both `agent_broker` and the repository root on `PYTHONPATH` so repo-level `shared` imports resolve.
+- `test_background_start_early_exit_reports_log_detail`
+  - Verifies early background-process exits include the exit code, log path, and a useful final process log line in the console error.
 - `test_script_mode_generates_broker_launcher_script`
   - Verifies `opamp-cli script ...` can generate a broker launcher script with the expected module command and config path.
 - `test_demo_profile_loader_carries_elastic_agent_and_container_config`
@@ -80,6 +98,8 @@ Test modules should reference this file so the implementation and the documented
   - Verifies `status` reports the effective OpAMP config path, managed-process state path, log path, and CLI log path.
 - `test_list_command_reports_option_hierarchy`
   - Verifies `list` reports top-level commands, guided actions, and the `config` subcommands when available.
+- `test_cli_config_summary_e2e_reports_default_config`
+  - Verifies `cli-config summary` reports the default active CLI profile config through the real entrypoint.
 - `test_direct_execution_runs_python_command`
   - Verifies direct command execution works through the CLI entrypoint.
 - `test_script_generation_writes_os_native_script`

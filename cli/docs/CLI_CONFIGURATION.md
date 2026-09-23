@@ -18,6 +18,23 @@ Do not edit files under `cli/runtime/` to add new workflows. They are runtime
 state, not source configuration. Add source-controlled demo and container
 definitions to `cli/config/demo_consumer_profiles.json`.
 
+The active CLI demo profile config can be inspected and changed from the CLI:
+
+```bash
+opamp-cli cli-config view
+opamp-cli cli-config summary
+opamp-cli cli-config change-config
+```
+
+`view` prints the active JSON file in full followed by its absolute file path.
+`summary` prints a short bullet summary, including the number of demo configs
+and the active absolute file path. `change-config` prompts for a relative or
+absolute replacement JSON file path. The replacement is loaded and minimally
+validated before it is saved as active; malformed JSON, missing files, or files
+without a top-level `profiles` list are rejected and the previous active config
+remains unchanged. Successful changes are stored in `cli/runtime/settings.json`
+as `demo_config_path`.
+
 ## Demo Consumer Profiles
 
 Demo profiles are enabled by setting `OPAMP_DEMO=true`. When enabled, the CLI
@@ -77,6 +94,8 @@ already absolute.
 | `elastic_heartbeat` | object | No | Elastic Heartbeat consumer launch configuration. |
 | `vector` | object | No | Vector consumer launch configuration. |
 | `containers` | array | No | Dependency containers started before consumers in the same profile. |
+| `log_files` / `agent_log_files` | array | No | Extra log files to include when `SMART_LOG_VIEWER=true` and process tailing is enabled. Entries may be strings or objects with `path`, `tagName`/`label`, and `color`. |
+| `log_dirs` / `agent_log_dirs` | array | No | Extra directories scanned for `.log`, `.json`, `.jsonl`, and `.ndjson` files for `clear-logs` and Smart Log Viewer setup. |
 
 A profile must configure at least one launchable component: a container, a
 simulator instances file, or a consumer `config_path` for Fluent Bit, Fluentd,
@@ -131,6 +150,24 @@ Fluentd:
 The Heartbeat demo profile starts a Logstash container first. Heartbeat sends
 events to that Logstash backend, and the Logstash pipeline writes the local test
 file used as delivery evidence.
+
+Component blocks and profiles may also include `agent_log_files` or
+`agent_log_dirs` to make agent-owned logs visible to Smart Log Viewer:
+
+```json
+{
+  "elastic_heartbeat": {
+    "config_path": "tests/logstash/opamp-consumer-elastic-heartbeat-logstash-plugin.json",
+    "agent_log_files": [
+      {
+        "path": "tests/logstash/out/heartbeat-logs/heartbeat.ndjson",
+        "tagName": "heartbeat",
+        "color": "#58a6ff"
+      }
+    ]
+  }
+}
+```
 
 ## Container Entries
 
@@ -232,8 +269,8 @@ is ignored.
 The CLI chooses the container runtime in this order:
 
 1. `OPAMP_CONTAINER_RUNTIME`, when set
-2. `podman`
-3. `docker`
+2. `docker`
+3. `podman`
 
 The value may be a command name or a path, as long as it resolves through
 `PATH`.
@@ -269,6 +306,39 @@ Examples:
 The CLI waits for the host TCP endpoint to accept connections. If no valid
 port mapping is present, there is no TCP readiness probe and the CLI only uses
 the normal early process liveness check.
+
+## Smart Log Viewer
+
+When process tailing is enabled, setting `SMART_LOG_VIEWER=true` makes the CLI
+write:
+
+```text
+cli/runtime/smart-log-viewer/config.json
+```
+
+and launch:
+
+```bash
+smart-log-viewer --config cli/runtime/smart-log-viewer
+```
+
+The generated config contains CLI-managed process logs, discovered agent log
+files, and explicit `log_files` / `agent_log_files` entries from the demo
+profile config. `OPAMP_SMART_LOG_VIEWER=true` is also accepted. If either
+variable is set to a non-boolean value, that value is treated as the executable
+path or command name.
+
+Smart Log Viewer depends on an executable named `tail` being available on
+`PATH`; it uses `tail -F -n 100 <file>` internally to stream log files. Linux
+and macOS normally provide this already. On Windows, install Microsoft
+Coreutils before launching Smart Log Viewer:
+
+```powershell
+winget install --id Microsoft.Coreutils --exact
+```
+
+After installation, open a new terminal so the updated `PATH` is available to
+`opamp-cli` and `smart-log-viewer`.
 
 ## Stop Behavior
 

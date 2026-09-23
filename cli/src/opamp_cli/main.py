@@ -94,8 +94,13 @@ try:
         CLI_LOG_DIRNAME,
         CLI_PROCESS_STATE_FILENAME,
         CLI_RUNTIME_DIRNAME,
+        CLI_SETTING_DEMO_CONFIG_PATH,
         CLI_SETTING_ENABLE_PROCESS_TAIL,
         CLI_SETTINGS_FILENAME,
+        COMMAND_CLI_CONFIG,
+        COMMAND_CLI_CONFIG_CHANGE,
+        COMMAND_CLI_CONFIG_SUMMARY,
+        COMMAND_CLI_CONFIG_VIEW,
         COMMAND_CLEAR_LOGS,
         COMMAND_CONFIG,
         COMMAND_DEMO,
@@ -218,8 +223,13 @@ except ImportError:
         CLI_LOG_DIRNAME,
         CLI_PROCESS_STATE_FILENAME,
         CLI_RUNTIME_DIRNAME,
+        CLI_SETTING_DEMO_CONFIG_PATH,
         CLI_SETTING_ENABLE_PROCESS_TAIL,
         CLI_SETTINGS_FILENAME,
+        COMMAND_CLI_CONFIG,
+        COMMAND_CLI_CONFIG_CHANGE,
+        COMMAND_CLI_CONFIG_SUMMARY,
+        COMMAND_CLI_CONFIG_VIEW,
         COMMAND_CLEAR_LOGS,
         COMMAND_CONFIG,
         COMMAND_DEMO,
@@ -355,9 +365,22 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
-def _demo_consumer_config_path() -> Path:
-    """Return configured demo consumer profile mapping path."""
+def _default_demo_consumer_config_path() -> Path:
+    """Return the checked-in demo consumer profile mapping path."""
     return (_repo_root() / CLI_DEMO_CONFIG_PATH).resolve()
+
+
+def _demo_consumer_config_path() -> Path:
+    """Return the active demo consumer profile mapping path."""
+    configured_path = str(
+        _load_cli_settings().get(CLI_SETTING_DEMO_CONFIG_PATH) or ""
+    ).strip()
+    if not configured_path:
+        return _default_demo_consumer_config_path()
+    path = Path(configured_path).expanduser()
+    if path.is_absolute():
+        return path.resolve()
+    return (_repo_root() / path).resolve()
 
 
 def _cli_runtime_dir() -> Path:
@@ -604,6 +627,13 @@ def _handle_command(
     if lowered == COMMAND_LIST:
         logger.info("printing CLI option hierarchy")
         return _print_option_hierarchy()
+    if lowered == COMMAND_CLI_CONFIG or lowered.startswith(f"{COMMAND_CLI_CONFIG} "):
+        logger.info("starting CLI config workflow command=%s", command_text)
+        cli_config_args = _split_internal_command_args(command_text)
+        return _execute_cli_config_command(
+            cli_config_args[1:],
+            input_reader=input_reader,
+        )
     if lowered == COMMAND_DEV_FLB_CONFIG:
         logger.info("starting dev fluent bit config workflow")
         return dev_commands.execute_dev_tool_workflow(
@@ -710,6 +740,7 @@ def _top_level_commands() -> list[str]:
         INTENT_RESTART,
         COMMAND_LIST,
         COMMAND_STATUS,
+        COMMAND_CLI_CONFIG,
         COMMAND_CLEAR_LOGS,
         COMMAND_SETUP_VENV,
         COMMAND_ENABLE_PROCESS_TAIL,
@@ -745,6 +776,15 @@ def _config_subcommands() -> tuple[str, ...]:
     return (COMMAND_CONFIG_VALIDATE, COMMAND_CONFIG_METADATA)
 
 
+def _cli_config_subcommands() -> tuple[str, ...]:
+    """Return supported interactive `cli-config` subcommands."""
+    return (
+        COMMAND_CLI_CONFIG_VIEW,
+        COMMAND_CLI_CONFIG_SUMMARY,
+        COMMAND_CLI_CONFIG_CHANGE,
+    )
+
+
 def _config_subcommand_prefix(buffer_text: str) -> str | None:
     """Return the in-progress `config` subcommand token, when applicable."""
     stripped = str(buffer_text or "").lstrip()
@@ -774,6 +814,32 @@ def _config_subcommand_completion_context(buffer_text: str) -> tuple[str, str] |
     return (f"{leading}{stripped[: len(COMMAND_CONFIG) + 1]}", remainder)
 
 
+def _cli_config_subcommand_prefix(buffer_text: str) -> str | None:
+    """Return the in-progress `cli-config` subcommand token, when applicable."""
+    stripped = str(buffer_text or "").lstrip()
+    lowered = stripped.lower()
+    if lowered.startswith(f"{COMMAND_CLI_CONFIG} ") is not True:
+        return None
+    remainder = stripped[len(COMMAND_CLI_CONFIG) + 1 :]
+    if " " in remainder:
+        return None
+    return remainder
+
+
+def _cli_config_subcommand_completion_context(buffer_text: str) -> tuple[str, str] | None:
+    """Return prefix-preserving context for completing `cli-config` subcommands."""
+    buffer_value = str(buffer_text or "")
+    stripped = buffer_value.lstrip()
+    leading = buffer_value[: len(buffer_value) - len(stripped)] if stripped else ""
+    lowered = stripped.lower()
+    if lowered.startswith(f"{COMMAND_CLI_CONFIG} ") is not True:
+        return None
+    remainder = stripped[len(COMMAND_CLI_CONFIG) + 1 :]
+    if " " in remainder:
+        return None
+    return (f"{leading}{stripped[: len(COMMAND_CLI_CONFIG) + 1]}", remainder)
+
+
 def _completion_entries(words: Iterable[str]) -> list[str]:
     """Return full-line completion entries for non-contextual completion backends."""
     return sorted({str(word).strip() for word in words if str(word).strip()})
@@ -792,6 +858,17 @@ def _completion_candidates(
         matches = [
             subcommand
             for subcommand in _config_subcommands()
+            if subcommand.startswith(lowered_prefix)
+        ]
+        return (completion_base, prefix, matches)
+
+    cli_config_context = _cli_config_subcommand_completion_context(buffer_text)
+    if cli_config_context is not None:
+        completion_base, prefix = cli_config_context
+        lowered_prefix = prefix.lower()
+        matches = [
+            subcommand
+            for subcommand in _cli_config_subcommands()
             if subcommand.startswith(lowered_prefix)
         ]
         return (completion_base, prefix, matches)
@@ -1149,6 +1226,13 @@ def _setup_readline_completion(words: Iterable[str]) -> None:
                 for subcommand in _config_subcommands()
                 if subcommand.startswith(lowered_text)
             ]
+        elif _cli_config_subcommand_prefix(line_buffer) is not None:
+            lowered_text = str(text or "").lower()
+            matches = [
+                subcommand
+                for subcommand in _cli_config_subcommands()
+                if subcommand.startswith(lowered_text)
+            ]
         else:
             lowered_text = str(text or "").lower()
             matches = [entry for entry in entries if entry.lower().startswith(lowered_text)]
@@ -1175,6 +1259,7 @@ def _prompt_toolkit_input_reader(words: Iterable[str]) -> Callable[[str], str] |
 
     top_level_words = sorted({str(word).strip() for word in words if str(word).strip()})
     config_subcommands = list(_config_subcommands())
+    cli_config_subcommands = list(_cli_config_subcommands())
     path_completer = PathCompleter(expanduser=True)
 
     def _line_prefix(document: Any) -> str:
@@ -1259,6 +1344,10 @@ def _prompt_toolkit_input_reader(words: Iterable[str]) -> Callable[[str], str] |
                 yield Completion(f"{COMMAND_CONFIG} ", start_position=0)
                 return
 
+            if lowered == COMMAND_CLI_CONFIG:
+                yield Completion(f"{COMMAND_CLI_CONFIG} ", start_position=0)
+                return
+
             config_subcommand_prefix = _config_subcommand_prefix(text)
             if config_subcommand_prefix is not None:
                 yield from _yield_word_matches(
@@ -1267,9 +1356,18 @@ def _prompt_toolkit_input_reader(words: Iterable[str]) -> Callable[[str], str] |
                 )
                 return
 
+            cli_config_subcommand_prefix = _cli_config_subcommand_prefix(text)
+            if cli_config_subcommand_prefix is not None:
+                yield from _yield_word_matches(
+                    options=cli_config_subcommands,
+                    prefix=cli_config_subcommand_prefix,
+                )
+                return
+
             if (
                 lowered.startswith(f"{COMMAND_CONFIG} {COMMAND_CONFIG_VALIDATE} ")
                 or lowered.startswith(f"{COMMAND_CONFIG} {COMMAND_CONFIG_METADATA} ")
+                or lowered.startswith(f"{COMMAND_CLI_CONFIG} {COMMAND_CLI_CONFIG_CHANGE} ")
             ):
                 yield from path_completer.get_completions(document, complete_event)
                 return
@@ -1615,6 +1713,29 @@ def _last_non_empty_log_line(log_file: Path) -> str:
         stripped = line.strip()
         if stripped:
             return stripped
+    return ""
+
+
+def _last_process_output_log_line(log_file: Path) -> str:
+    """Return the last non-empty non-CLI-metadata line from a process log."""
+    if log_file.is_file() is not True:
+        return ""
+    try:
+        lines = log_file.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return ""
+    metadata_pattern = re.compile(
+        r"^\[[^\]]+\] "
+        r"(launch=|cwd=|command=|launch_failed=|exited_early=|"
+        r"startup_check_failed=|pid=)"
+    )
+    for line in reversed(lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if metadata_pattern.match(stripped):
+            continue
+        return stripped
     return ""
 
 
@@ -2154,10 +2275,12 @@ def _print_status() -> int:
     log_dir = _cli_log_dir()
     cli_log_path = _cli_component_log_path()
     opamp_config_path, opamp_config_source = _effective_opamp_config_path()
+    cli_config_path = _demo_consumer_config_path()
     payload = _load_cli_process_state()
     processes = payload.get("processes", [])
 
     print(f"Settings file: {settings_path}")
+    print(f"CLI config file: {cli_config_path}")
     print(f"OpAMP config file: {opamp_config_path} ({opamp_config_source})")
     print(f"OpAMP config loaded: {_opamp_config_load_status(opamp_config_path)}")
     print(f"State file: {state_path}")
@@ -2213,6 +2336,12 @@ def _print_option_hierarchy() -> int:
         print("  config:")
         print("    - validate <path>")
         print("    - metadata <path>")
+    print("")
+    print("CLI config commands:")
+    print("  cli-config:")
+    print("    - view")
+    print("    - summary")
+    print("    - change-config")
     container_actions = _configured_container_start_actions()
     if container_actions:
         print("")
@@ -2359,6 +2488,187 @@ def _load_json_file(path: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _load_cli_config_payload(path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    """Load and validate one CLI demo profile config file."""
+    if path.is_file() is not True:
+        return None, f"file not found: {path}"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return None, f"invalid JSON: {exc}"
+    except (OSError, TypeError) as exc:
+        return None, f"could not read file: {exc}"
+    if not isinstance(payload, dict):
+        return None, "config root must be a JSON object"
+    profiles = payload.get("profiles")
+    if not isinstance(profiles, list):
+        return None, "config must contain a 'profiles' list"
+    return payload, None
+
+
+def _resolve_cli_config_input_path(raw_path: str) -> Path:
+    """Resolve a user-provided CLI config path from the current working directory."""
+    candidate = Path(str(raw_path or "").strip()).expanduser()
+    if candidate.is_absolute():
+        return candidate.resolve()
+    return (Path.cwd() / candidate).resolve()
+
+
+def _execute_cli_config_command(
+    argv: list[str],
+    *,
+    input_reader: Callable[[str], str] | None = None,
+) -> int:
+    """Execute one `cli-config` command."""
+    if not argv:
+        print(
+            "Error: cli-config requires one of: view, summary, change-config",
+            file=sys.stderr,
+        )
+        return 2
+    subcommand = str(argv[0] or "").strip().lower()
+    if subcommand == COMMAND_CLI_CONFIG_VIEW:
+        return _print_cli_config_view()
+    if subcommand == COMMAND_CLI_CONFIG_SUMMARY:
+        return _print_cli_config_summary_for_path(_demo_consumer_config_path())
+    if subcommand == COMMAND_CLI_CONFIG_CHANGE:
+        raw_path = str(argv[1] if len(argv) > 1 else "").strip()
+        if not raw_path:
+            raw_path = _prompt_text(
+                "New CLI config path: ",
+                input_reader=input_reader,
+            ).strip()
+        if not raw_path:
+            print("Error: no replacement CLI config path was provided.", file=sys.stderr)
+            return 1
+        return _change_cli_config(raw_path)
+    print(f"Error: unknown cli-config command: {subcommand}", file=sys.stderr)
+    return 2
+
+
+def _interactive_failure_message(raw_command: str, code: int) -> str:
+    """Return a friendly interactive failure message for one command."""
+    match_text = _command_match_text(raw_command)
+    lowered = match_text.lower()
+    if lowered == COMMAND_CLI_CONFIG or lowered.startswith(f"{COMMAND_CLI_CONFIG} "):
+        if int(code) == 2:
+            return (
+                "CLI config command was not understood. Use `cli-config view`, "
+                "`cli-config summary`, or `cli-config change-config`."
+            )
+        return "CLI config command did not complete. Review the message above and try again."
+    return COMMAND_EXITED_TEMPLATE.format(code=code)
+
+
+def _print_cli_config_view() -> int:
+    """Print the active CLI config file in full followed by its absolute path."""
+    config_path = _demo_consumer_config_path()
+    _payload, error = _load_cli_config_payload(config_path)
+    if _payload is None:
+        print(f"Error: failed to load active CLI config: {error}", file=sys.stderr)
+        print(f"CLI config file: {config_path}", file=sys.stderr)
+        return 1
+    try:
+        text = config_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"Error: failed to read active CLI config: {exc}", file=sys.stderr)
+        print(f"CLI config file: {config_path}", file=sys.stderr)
+        return 1
+    print(text, end="" if text.endswith("\n") else "\n")
+    print(f"CLI config file: {config_path}")
+    return 0
+
+
+def _print_cli_config_summary_for_path(config_path: Path) -> int:
+    """Print a short summary for one CLI config path."""
+    payload, error = _load_cli_config_payload(config_path)
+    if payload is None:
+        print(f"Error: failed to load CLI config: {error}", file=sys.stderr)
+        print(f"CLI config file: {config_path}", file=sys.stderr)
+        return 1
+    _print_cli_config_summary(config_path=config_path, payload=payload)
+    return 0
+
+
+def _change_cli_config(raw_path: str) -> int:
+    """Persist a replacement active CLI config path after loading it successfully."""
+    current_path = _demo_consumer_config_path()
+    replacement_path = _resolve_cli_config_input_path(raw_path)
+    payload, error = _load_cli_config_payload(replacement_path)
+    if payload is None:
+        print("ERROR: CLI config was NOT changed.", file=sys.stderr)
+        print(
+            f"Failed to load replacement CLI config: {replacement_path}",
+            file=sys.stderr,
+        )
+        print(f"Cause: {error}", file=sys.stderr)
+        print(f"Current CLI config remains: {current_path}", file=sys.stderr)
+        return 1
+    settings = _load_cli_settings()
+    settings[CLI_SETTING_DEMO_CONFIG_PATH] = str(replacement_path)
+    _save_cli_settings(settings)
+    print(f"CLI config changed: {replacement_path}")
+    _print_cli_config_summary(config_path=replacement_path, payload=payload)
+    return 0
+
+
+def _print_cli_config_summary(
+    *,
+    config_path: Path,
+    payload: dict[str, Any],
+) -> None:
+    """Print a brief bullet summary of key CLI profile config entries."""
+    profiles = _normalize_demo_consumer_profiles(payload)
+    raw_profiles = payload.get("profiles", [])
+    raw_profile_count = len(raw_profiles) if isinstance(raw_profiles, list) else 0
+    component_counts = _cli_config_component_counts(profiles)
+    names = [str(profile.get("name") or "").strip() for profile in profiles]
+    print("CLI config summary:")
+    if raw_profile_count == len(profiles):
+        print(f"- Demo configs: {len(profiles)}")
+    else:
+        print(f"- Demo configs: {len(profiles)} launchable, {raw_profile_count} configured")
+    if names:
+        print(f"- Profiles: {', '.join(names)}")
+    for label, count in component_counts:
+        if count > 0:
+            print(f"- {label}: {count}")
+    print(f"- CLI config file: {config_path}")
+
+
+def _cli_config_component_counts(
+    profiles: list[dict[str, Any]],
+) -> list[tuple[str, int]]:
+    """Return user-facing component counts for CLI profile summaries."""
+    component_specs = [
+        ("Simulators", "simulator", "instances_path"),
+        ("Fluent Bit configs", DEMO_PROFILE_KEY_FLUENTBIT, CONFIG_KEY_CONFIG_PATH),
+        ("Fluentd configs", DEMO_PROFILE_KEY_FLUENTD, CONFIG_KEY_CONFIG_PATH),
+        ("Elastic Agent configs", DEMO_PROFILE_KEY_ELASTIC_AGENT, CONFIG_KEY_CONFIG_PATH),
+        (
+            "Elastic Heartbeat configs",
+            DEMO_PROFILE_KEY_ELASTIC_HEARTBEAT,
+            CONFIG_KEY_CONFIG_PATH,
+        ),
+        ("Vector configs", DEMO_PROFILE_KEY_VECTOR, CONFIG_KEY_CONFIG_PATH),
+    ]
+    counts: list[tuple[str, int]] = []
+    for label, section_name, key in component_specs:
+        count = 0
+        for profile in profiles:
+            section = profile.get(section_name, {})
+            if isinstance(section, dict) and str(section.get(key) or "").strip():
+                count += 1
+        counts.append((label, count))
+    container_count = 0
+    for profile in profiles:
+        containers = profile.get("containers", [])
+        if isinstance(containers, list):
+            container_count += len(containers)
+    counts.append(("Container starts", container_count))
+    return counts
+
+
 def _resolve_path_from_repo(raw_path: str) -> Path:
     """Resolve one path relative to repository root."""
     candidate = Path(str(raw_path or "").strip()).expanduser()
@@ -2379,6 +2689,11 @@ def _load_demo_consumer_profiles() -> list[dict[str, Any]]:
     """Load validated demo consumer profile entries from JSON mapping."""
     config_path = _demo_consumer_config_path()
     payload = _load_json_file(config_path)
+    return _normalize_demo_consumer_profiles(payload)
+
+
+def _normalize_demo_consumer_profiles(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return launchable demo consumer profile entries from a config payload."""
     profiles_raw = payload.get("profiles", [])
     if not isinstance(profiles_raw, list):
         return []
@@ -2817,7 +3132,7 @@ def _start_actions() -> list[tuple[str, dict[str, Any]]]:  # noqa: PLR0915
     }
     broker_cmd = _python_module_command(
         module_name="opamp_broker.broker_app",
-        python_paths=[repo_root / "agent_broker"],
+        python_paths=[repo_root / "agent_broker", repo_root],
         env=broker_env,
         cwd=repo_root / "agent_broker",
     )
@@ -2828,7 +3143,7 @@ def _start_actions() -> list[tuple[str, dict[str, Any]]]:  # noqa: PLR0915
         argv=_python_module_argv(module_name="opamp_broker.broker_app"),
         cwd=repo_root / "agent_broker",
         env=_build_exec_env(
-            python_paths=[repo_root / "agent_broker"],
+            python_paths=[repo_root / "agent_broker", repo_root],
             env=broker_env,
         ),
     )
@@ -3828,16 +4143,19 @@ def _launch_background_process(action: dict[str, Any]) -> int:
     exit_code = process.poll()
     if exit_code is not None:
         _append_log_line(log_file, f"[{_utc_timestamp()}] exited_early={int(exit_code)}")
+        failure_detail = _last_process_output_log_line(log_file)
         logger.warning(
-            "background process exited before startup completed label=%s pid=%s exit_code=%s log_file=%s",
+            "background process exited before startup completed label=%s pid=%s exit_code=%s log_file=%s detail=%s",
             label,
             process.pid,
             int(exit_code),
             log_file,
+            failure_detail,
         )
+        detail_text = f" detail={failure_detail}" if failure_detail else ""
         print(
             f"{label} exited before it was considered started "
-            f"(exit_code={int(exit_code)}) log={log_file}",
+            f"(exit_code={int(exit_code)}){detail_text} log={log_file}",
             file=sys.stderr,
         )
         return int(exit_code) if int(exit_code) != 0 else 1
@@ -4177,7 +4495,7 @@ def _interactive_loop() -> int:  # noqa: PLR0912,PLR0915
                 print(f"Error: {exc}", file=sys.stderr)
                 code = 1
             if code != 0:
-                print(COMMAND_EXITED_TEMPLATE.format(code=code))
+                print(_interactive_failure_message(raw, code))
             continue
 
         try:
@@ -4188,7 +4506,7 @@ def _interactive_loop() -> int:  # noqa: PLR0912,PLR0915
             code = 1
 
         if code != 0:
-            print(COMMAND_EXITED_TEMPLATE.format(code=code))
+            print(_interactive_failure_message(raw, code))
 
 
 def main(argv: list[str] | None = None) -> int:

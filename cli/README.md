@@ -90,6 +90,9 @@ Both shortcuts run the compatibility entrypoint:
   - You can also run guided actions directly on one line, for example `start server`, `stop config editor`, or `restart server`.
   - Type `status` in interactive mode to list the effective OpAMP config file,
     config load status, managed processes, PID liveness, and log paths.
+  - Type `cli-config view` to print the active CLI demo profile config file in full, followed by its absolute path.
+  - Type `cli-config summary` to print a brief bullet summary of the active CLI demo profile config and its absolute path.
+  - Type `cli-config change-config` to prompt for a replacement CLI demo profile config file. The CLI loads the replacement before saving it as active; if loading fails, the current config remains unchanged and the console reports the cause.
   - Type `clear-logs` to remove CLI-managed log files plus log files discovered
     from the effective OpAMP config and demo profile defaults.
   - Type `setup-venv` to create or update the repository-level `.venv`, install
@@ -124,6 +127,9 @@ python -m pytest -s
 cli/main.py --help
 opamp-cli status
 opamp-cli list
+opamp-cli cli-config view
+opamp-cli cli-config summary
+opamp-cli cli-config change-config
 opamp-cli config validate ./example/fluent-bit.yaml
 opamp-cli config metadata ./example/configs
 opamp-cli setup-venv --dry-run
@@ -158,6 +164,9 @@ Demo consumer mode:
 
 - Set `OPAMP_DEMO=true` to expose profile-based demo consumer actions in guided `start` and `stop`.
 - Demo profiles are loaded from `cli/config/demo_consumer_profiles.json`.
+- `cli-config change-config` can select a different JSON file with the same
+  profile schema. The selected absolute path is stored in
+  `cli/runtime/settings.json` as runtime state, not source configuration.
 - Each demo profile can include a `scenario_description` field.
 - In interactive or direct CLI mode, `demo` acts as shorthand for `start demo consumers`.
 - In guided `start` / `stop` selection, type `d<number>` to view the selected profile's scenario description before launching or stopping it.

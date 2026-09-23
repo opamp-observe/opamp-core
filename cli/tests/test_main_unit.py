@@ -415,6 +415,54 @@ def test_background_start_suppresses_windows_console(tmp_path: Path, monkeypatch
     assert captured["kwargs"]["creationflags"] & 0x08000000
 
 
+def test_background_start_early_exit_reports_log_detail(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    class FakeProcess:
+        pid = 789
+
+        def poll(self) -> int:
+            return 1
+
+    def fake_popen(_argv: list[str], **kwargs: Any) -> FakeProcess:
+        log_handle = kwargs["stdout"]
+        log_handle.write("Traceback (most recent call last):\n")
+        log_handle.write("ModuleNotFoundError: No module named 'shared'\n")
+        log_handle.flush()
+        return FakeProcess()
+
+    monkeypatch.setattr(cli_main, "_is_windows", lambda: False)
+    monkeypatch.setattr(cli_main.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(cli_main.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_get_logger",
+        lambda: SimpleNamespace(
+            info=lambda *_args, **_kwargs: None,
+            warning=lambda *_args, **_kwargs: None,
+            exception=lambda *_args, **_kwargs: None,
+        ),
+    )
+    monkeypatch.setattr(cli_main, "_cli_log_dir", lambda: tmp_path / "logs")
+
+    exit_code = cli_main._launch_background_process(  # type: ignore[attr-defined]
+        {
+            "label": "Broker",
+            "argv": ["python", "-m", "opamp_broker.broker_app"],
+            "cwd": str(tmp_path),
+            "env": {},
+        }
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Broker exited before it was considered started (exit_code=1)" in captured.err
+    assert "detail=ModuleNotFoundError: No module named 'shared'" in captured.err
+    assert "log=" in captured.err
+
+
 def test_main_writes_component_lifecycle_log(tmp_path: Path, monkeypatch) -> None:
     runtime_dir = tmp_path / "runtime"
     monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
@@ -615,10 +663,165 @@ def test_list_command_reports_config_options_when_available(capsys) -> None:
 
     assert exit_code == 0
     assert "clear-logs" in output
+    assert "CLI config commands:" in output
+    assert "  cli-config:" in output
+    assert "    - view" in output
+    assert "    - summary" in output
+    assert "    - change-config" in output
     assert "Config commands:" in output
     assert "  config:" in output
     assert "    - validate <path>" in output
     assert "    - metadata <path>" in output
+
+
+def test_cli_config_view_prints_active_config_and_path(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    demo_config = tmp_path / "small-demo-config.json"
+    demo_config.write_text(
+        json.dumps({"profiles": [{"name": "tiny-demo"}]}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(cli_main, "_demo_consumer_config_path", lambda: demo_config)
+
+    exit_code = cli_main.main(["cli-config", "view"])
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert '"name": "tiny-demo"' in output
+    assert f"CLI config file: {demo_config.resolve()}" in output
+
+
+def test_cli_config_summary_reports_key_counts(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    demo_config = tmp_path / "small-demo-config.json"
+    demo_config.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "name": "tiny-demo",
+                        "simulator": {"instances_path": "instances.json"},
+                        "fluentbit": {"config_path": "opamp-fluent-bit.json"},
+                        "containers": [{"id": "logstash"}],
+                    },
+                    {
+                        "name": "vector-only",
+                        "vector": {"config_path": "opamp-vector.json"},
+                    },
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(cli_main, "_demo_consumer_config_path", lambda: demo_config)
+
+    exit_code = cli_main.main(["cli-config", "summary"])
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "- Demo configs: 2" in output
+    assert "- Profiles: tiny-demo, vector-only" in output
+    assert "- Simulators: 1" in output
+    assert "- Fluent Bit configs: 1" in output
+    assert "- Vector configs: 1" in output
+    assert "- Container starts: 1" in output
+    assert f"- CLI config file: {demo_config.resolve()}" in output
+
+
+def test_cli_config_change_config_replaces_active_config(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    repo_root = tmp_path / "repo"
+    replacement_config = tmp_path / "replacement-demo-config.json"
+    replacement_config.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "name": "replacement-demo",
+                        "fluentd": {"config_path": "opamp-fluentd.json"},
+                    }
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(cli_main, "_repo_root", lambda: repo_root)
+
+    exit_code = cli_main._handle_command(  # type: ignore[attr-defined]
+        "cli-config change-config",
+        input_reader=lambda _prompt: str(replacement_config),
+    )
+    output = capsys.readouterr().out
+    settings = json.loads((runtime_dir / "settings.json").read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert settings["demo_config_path"] == str(replacement_config.resolve())
+    assert "CLI config changed:" in output
+    assert "- Demo configs: 1" in output
+    assert "- Profiles: replacement-demo" in output
+    assert "- Fluentd configs: 1" in output
+
+
+def test_cli_config_change_config_rejects_malformed_json_without_changing_settings(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    current_config = tmp_path / "current-demo-config.json"
+    bad_config = tmp_path / "bad-demo-config.json"
+    current_config.write_text('{"profiles": [{"name": "current"}]}\n', encoding="utf-8")
+    bad_config.write_text("{not-json", encoding="utf-8")
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(cli_main, "_demo_consumer_config_path", lambda: current_config)
+
+    exit_code = cli_main.main(["cli-config", "change-config", str(bad_config)])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "ERROR: CLI config was NOT changed." in captured.err
+    assert "Cause: invalid JSON:" in captured.err
+    assert f"Current CLI config remains: {current_config.resolve()}" in captured.err
+    assert (runtime_dir / "settings.json").exists() is False
+
+
+def test_cli_config_change_config_rejects_missing_path_without_changing_settings(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    current_config = tmp_path / "current-demo-config.json"
+    missing_config = tmp_path / "missing-demo-config.json"
+    current_config.write_text('{"profiles": [{"name": "current"}]}\n', encoding="utf-8")
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(cli_main, "_demo_consumer_config_path", lambda: current_config)
+
+    exit_code = cli_main.main(["cli-config", "change-config", str(missing_config)])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "ERROR: CLI config was NOT changed." in captured.err
+    assert "Cause: file not found:" in captured.err
+    assert f"Current CLI config remains: {current_config.resolve()}" in captured.err
+    assert (runtime_dir / "settings.json").exists() is False
 
 
 def test_interactive_startup_notes_include_list_command_without_running_list(
@@ -652,6 +855,77 @@ def test_interactive_startup_notes_include_list_command_without_running_list(
     assert "Current command hierarchy" not in output
 
 
+def test_interactive_cli_config_unknown_subcommand_uses_human_message(
+    monkeypatch,
+    capsys,
+) -> None:
+    prompts = iter(["cli-config nope"])
+
+    def fake_input(_prompt: str) -> str:
+        try:
+            return next(prompts)
+        except StopIteration as exc:
+            raise EOFError from exc
+
+    monkeypatch.setattr(cli_main, "_top_level_commands", lambda: ["cli-config", "exit"])
+    monkeypatch.setattr(cli_main, "_prompt_toolkit_input_reader", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_builtin_tty_input_reader", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_setup_readline_completion", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_is_windows", lambda: False)
+    monkeypatch.setattr(cli_main, "_fluentbit_dev_tool_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_mcp_dev_tool_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_dev_pid_lookup_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_dev_version_bump_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_detected_behavior_flags", lambda: [])
+    monkeypatch.setattr("builtins.input", fake_input)
+
+    exit_code = cli_main._interactive_loop()  # type: ignore[attr-defined]
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "CLI config command was not understood." in captured.out
+    assert "`cli-config summary`" in captured.out
+    assert "Command exited with code 2" not in captured.out
+    assert "unknown cli-config command: nope" in captured.err
+
+
+def test_interactive_cli_config_change_failure_uses_human_message(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    missing_config = tmp_path / "missing-demo-config.json"
+    prompts = iter([f"cli-config change-config {missing_config}"])
+
+    def fake_input(_prompt: str) -> str:
+        try:
+            return next(prompts)
+        except StopIteration as exc:
+            raise EOFError from exc
+
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: tmp_path / "runtime")
+    monkeypatch.setattr(cli_main, "_top_level_commands", lambda: ["cli-config", "exit"])
+    monkeypatch.setattr(cli_main, "_prompt_toolkit_input_reader", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_builtin_tty_input_reader", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_setup_readline_completion", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_is_windows", lambda: False)
+    monkeypatch.setattr(cli_main, "_fluentbit_dev_tool_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_mcp_dev_tool_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_dev_pid_lookup_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_dev_version_bump_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_detected_behavior_flags", lambda: [])
+    monkeypatch.setattr("builtins.input", fake_input)
+
+    exit_code = cli_main._interactive_loop()  # type: ignore[attr-defined]
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "CLI config command did not complete." in captured.out
+    assert "Command exited with code 1" not in captured.out
+    assert "ERROR: CLI config was NOT changed." in captured.err
+    assert "Cause: file not found:" in captured.err
+
+
 def test_help_includes_process_tail_commands(capsys) -> None:
     exit_code = cli_main.main(["help"])
     output = capsys.readouterr().out
@@ -682,6 +956,7 @@ def test_top_level_commands_include_setup_venv(monkeypatch) -> None:
     commands = cli_main._top_level_commands()  # type: ignore[attr-defined]
 
     assert "setup-venv" in commands
+    assert "cli-config" in commands
 
 
 def test_parse_setup_venv_args_supports_options(tmp_path: Path, monkeypatch) -> None:
@@ -1109,6 +1384,18 @@ def test_broker_stop_action_uses_cli_managed_process_records() -> None:
     assert stop_action is not None
     assert stop_action["kind"] == "stop_recorded"
     assert stop_action["record_names"] == ["Broker"]
+
+
+def test_broker_start_action_includes_repo_root_for_shared_imports() -> None:
+    start_action = cli_main._resolve_guided_action("start", "broker")  # type: ignore[attr-defined]
+    repo_root = cli_main._repo_root()  # type: ignore[attr-defined]
+
+    assert start_action is not None
+    python_path = str(start_action["env"][cli_main.PYTHONPATH_ENV])
+    python_paths = python_path.split(cli_main.os.pathsep)
+    assert str((repo_root / "agent_broker").resolve()) in python_paths
+    assert str(repo_root.resolve()) in python_paths
+    assert str(repo_root.resolve()) in str(start_action["command_text"])
 
 
 def test_script_mode_generates_broker_launcher_script(tmp_path: Path, monkeypatch) -> None:
@@ -2801,6 +3088,17 @@ def test_completion_candidates_keep_config_base_separate_from_subcommand() -> No
     assert matches == ["validate"]
 
 
+def test_completion_candidates_offer_cli_config_subcommands() -> None:
+    base, prefix, matches = cli_main._completion_candidates(  # type: ignore[attr-defined]
+        "cli-config s",
+        entries=["cli-config", "status"],
+    )
+
+    assert base == "cli-config "
+    assert prefix == "s"
+    assert matches == ["summary"]
+
+
 def test_prompt_toolkit_reader_offers_config_subcommands_and_paths(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
@@ -2853,6 +3151,18 @@ def test_prompt_toolkit_reader_offers_config_subcommands_and_paths(monkeypatch) 
     )
     assert [item.text for item in completions] == ["validate", "metadata"]
 
+    cli_config_completions = list(
+        completer.get_completions(  # type: ignore[union-attr]
+            SimpleNamespace(text_before_cursor="cli-config "),
+            None,
+        )
+    )
+    assert [item.text for item in cli_config_completions] == [
+        "view",
+        "summary",
+        "change-config",
+    ]
+
     path_completions = list(
         completer.get_completions(  # type: ignore[union-attr]
             SimpleNamespace(text_before_cursor="config validate "),
@@ -2861,6 +3171,15 @@ def test_prompt_toolkit_reader_offers_config_subcommands_and_paths(monkeypatch) 
     )
     assert [item.text for item in path_completions] == ["./config.yaml"]
     assert captured["path_document"] == "config validate "
+
+    cli_config_path_completions = list(
+        completer.get_completions(  # type: ignore[union-attr]
+            SimpleNamespace(text_before_cursor="cli-config change-config "),
+            None,
+        )
+    )
+    assert [item.text for item in cli_config_path_completions] == ["./config.yaml"]
+    assert captured["path_document"] == "cli-config change-config "
 
 
 def test_execute_dev_pid_lookup_workflow_reports_matches(monkeypatch, capsys) -> None:

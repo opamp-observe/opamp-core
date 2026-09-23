@@ -33,6 +33,7 @@ CLI_PROCESS_STATE_FILENAME = "managed_processes.json"
 CLI_SETTINGS_FILENAME = "settings.json"
 CLI_COMPONENT_LOG_FILENAME = "opamp_cli.log"
 CLI_SETTING_ENABLE_PROCESS_TAIL = "enable_process_tail"
+CLI_SETTING_DEMO_CONFIG_PATH = "demo_config_path"
 CLI_DEMO_FLAG_ENV = "OPAMP_DEMO"
 APP_ENABLE_DEV_FEATURES_ENV = "APP_ENABLE_DEV_FEATURES"
 OPAMP_CONFIG_PATH_ENV = "OPAMP_CONFIG_PATH"
@@ -64,6 +65,10 @@ COMMAND_HELP = "help"
 COMMAND_LIST = "list"
 COMMAND_STATUS = "status"
 COMMAND_CONFIG = "config"
+COMMAND_CLI_CONFIG = "cli-config"
+COMMAND_CLI_CONFIG_VIEW = "view"
+COMMAND_CLI_CONFIG_SUMMARY = "summary"
+COMMAND_CLI_CONFIG_CHANGE = "change-config"
 COMMAND_EXIT = "exit"
 COMMAND_QUIT = "quit"
 COMMAND_DEMO = "demo"
@@ -171,6 +176,9 @@ HELP_TEXT = """Usage:
   opamp-cli help
   opamp-cli list
   opamp-cli status
+  opamp-cli cli-config view
+  opamp-cli cli-config summary
+  opamp-cli cli-config change-config
   opamp-cli config validate <path>
   opamp-cli config metadata <path>
   opamp-cli demo
@@ -188,6 +196,9 @@ Behavior:
   - Interactive `start`, `stop`, and `restart` commands open guided multi-stage choices.
   - `list` shows the current CLI option hierarchy and guided targets.
   - `status` shows recorded managed processes, PID liveness, and log paths.
+  - `cli-config view` prints the active CLI demo profile config file and its absolute path.
+  - `cli-config summary` prints a brief summary of the active CLI demo profile config file.
+  - `cli-config change-config` prompts for a replacement CLI demo profile config and keeps the current config unchanged if loading fails.
   - `clear-logs` removes CLI-managed logs and configured demo log files.
   - `setup-venv` creates or updates a repository-level Python virtual environment, installs local tooling, and can open an activated shell.
   - `config validate` validates one file or directory tree using config-service logic when available.
@@ -217,6 +228,12 @@ Examples:
 
   # Show managed process status
   opamp-cli status
+
+  # Show CLI profile config summary
+  opamp-cli cli-config summary
+
+  # Change the active CLI profile config
+  opamp-cli cli-config change-config
 
   # Validate one config file
   opamp-cli config validate ./fluent-bit.yaml
