@@ -188,6 +188,176 @@ def test_disable_enable_process_tail_alias_disables_setting(tmp_path: Path, monk
     ) is False
 
 
+def test_demo_config_explicit_agent_log_files_are_discovered(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    repo_root = tmp_path / "repo"
+    runtime_dir = tmp_path / "runtime"
+    log_path = repo_root / "agent-logs" / "heartbeat.ndjson"
+    demo_config = repo_root / "cli" / "config" / "demo_consumer_profiles.json"
+    log_path.parent.mkdir(parents=True)
+    demo_config.parent.mkdir(parents=True)
+    demo_config.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "name": "demo",
+                        "elastic_heartbeat": {
+                            "agent_log_files": [
+                                {
+                                    "path": "agent-logs/heartbeat.ndjson",
+                                    "tagName": "heartbeat",
+                                }
+                            ]
+                        },
+                    }
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cli_main, "_repo_root", lambda: repo_root)
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+
+    _dirs, files = cli_main._log_locations_from_demo_config()  # type: ignore[attr-defined]
+
+    assert log_path.resolve() in files
+
+
+def test_smart_log_viewer_writes_config_and_launches_when_tail_enabled(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    repo_root = tmp_path / "repo"
+    process_log = runtime_dir / "logs" / "client.log"
+    agent_log = repo_root / "agent-logs" / "heartbeat.ndjson"
+    process_log.parent.mkdir(parents=True)
+    agent_log.parent.mkdir(parents=True)
+    process_log.write_text("process\n", encoding="utf-8")
+    agent_log.write_text("{}\n", encoding="utf-8")
+    launched: list[Path] = []
+    monkeypatch.setattr(cli_main, "_repo_root", lambda: repo_root)
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(
+        cli_main,
+        "_discover_log_locations",
+        lambda: ({agent_log.parent}, {process_log}),
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "_smart_log_viewer_overrides_from_demo_config",
+        lambda: {agent_log.resolve(): {"tagName": "heartbeat", "color": "#123456"}},
+    )
+    for name in cli_main.process_tail.SMART_LOG_VIEWER_ENV_NAMES:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("SMART_LOG_VIEWER", "true")
+    cli_main.process_tail.set_process_tail_enabled(
+        True,
+        load_settings=cli_main._load_cli_settings,  # type: ignore[attr-defined]
+        save_settings=cli_main._save_cli_settings,  # type: ignore[attr-defined]
+        settings_path=cli_main._cli_settings_path,  # type: ignore[attr-defined]
+        logger=cli_main._get_logger(),  # type: ignore[attr-defined]
+    )
+    monkeypatch.setattr(
+        cli_main.process_tail,
+        "launch_smart_log_viewer",
+        lambda *, config_dir, repo_root, logger: launched.append(config_dir) or True,
+    )
+
+    cli_main._open_log_viewer_for_process_if_enabled(  # type: ignore[attr-defined]
+        label="Elastic Heartbeat client",
+        log_file=process_log,
+        logger=SimpleNamespace(info=lambda *_args, **_kwargs: None),
+    )
+
+    config_path = runtime_dir / "smart-log-viewer" / "config.json"
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+    paths = {source["path"] for source in payload["sources"]}
+    tags = {source["tagName"] for source in payload["sources"]}
+    agent_source = next(
+        source
+        for source in payload["sources"]
+        if source["path"] == str(agent_log.resolve())
+    )
+    assert str(process_log.resolve()) in paths
+    assert str(agent_log.resolve()) in paths
+    assert "Elastic Heartbeat client" in tags
+    assert agent_source["tagName"] == "heartbeat"
+    assert agent_source["color"] == "#123456"
+    assert launched == [config_path.parent.resolve()]
+
+
+def test_launch_smart_log_viewer_prints_url_and_config(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    repo_root = tmp_path / "repo"
+    config_dir = tmp_path / "smart-log-viewer"
+    executable = tmp_path / "smart-log-viewer.cmd"
+    launched: dict[str, Any] = {}
+    executable.write_text("@echo off\n", encoding="utf-8")
+    monkeypatch.setenv("PORT", "4100")
+    monkeypatch.setattr(
+        cli_main.process_tail.shutil,
+        "which",
+        lambda value: str(executable) if value == "smart-log-viewer" else None,
+    )
+
+    def fake_popen(argv: list[str], **kwargs: Any) -> SimpleNamespace:
+        launched["argv"] = argv
+        launched["kwargs"] = kwargs
+        return SimpleNamespace()
+
+    monkeypatch.setattr(cli_main.process_tail.subprocess, "Popen", fake_popen)
+
+    result = cli_main.process_tail.launch_smart_log_viewer(
+        config_dir=config_dir,
+        repo_root=repo_root,
+        logger=SimpleNamespace(
+            info=lambda *_args, **_kwargs: None,
+            warning=lambda *_args, **_kwargs: None,
+            exception=lambda *_args, **_kwargs: None,
+        ),
+    )
+
+    output = capsys.readouterr().out
+    assert result is True
+    assert launched["argv"] == [
+        str(executable),
+        "--config",
+        str(config_dir.resolve()),
+    ]
+    assert "Opened Smart Log Viewer at http://localhost:4100" in output
+    assert "try ports 4101-4104" in output
+    assert f"with config: {config_dir.resolve()}" in output
+
+
+def test_smart_log_viewer_process_env_merges_persisted_path(monkeypatch) -> None:
+    monkeypatch.setattr(
+        cli_main.process_tail.os,
+        "environ",
+        {"PATH": r"C:\Windows\System32;C:\Tools"},
+    )
+    monkeypatch.setattr(
+        cli_main.process_tail,
+        "_windows_persisted_path_entries",
+        lambda: [r"C:\Program Files\coreutils\bin", r"C:\Tools"],
+    )
+
+    env = cli_main.process_tail.smart_log_viewer_process_env()
+
+    assert env["PATH"].split(cli_main.process_tail.os.pathsep) == [
+        r"C:\Windows\System32",
+        r"C:\Tools",
+        r"C:\Program Files\coreutils\bin",
+    ]
+
+
 def test_windows_no_console_kwargs_returns_create_no_window(monkeypatch) -> None:
     monkeypatch.setattr(cli_main, "_is_windows", lambda: True)
     monkeypatch.setattr(cli_main.subprocess, "CREATE_NO_WINDOW", 0x08000000, raising=False)
@@ -1553,6 +1723,20 @@ def test_container_start_action_uses_configured_runtime_command(
     assert action["ensure_dirs"] == [str(repo_root / "tests" / "logstash" / "out")]
     assert action["metadata"]["container_name"] == "opamp-logstash"
     assert action["readiness_tcp"] == "127.0.0.1:5044"
+
+
+def test_container_runtime_executable_prefers_docker_by_default(monkeypatch) -> None:
+    candidates: list[str] = []
+
+    def fake_which(candidate: str) -> str | None:
+        candidates.append(candidate)
+        return f"/usr/bin/{candidate}"
+
+    monkeypatch.delenv("OPAMP_CONTAINER_RUNTIME", raising=False)
+    monkeypatch.setattr(container_management.shutil, "which", fake_which)
+
+    assert container_management.container_runtime_executable() == "/usr/bin/docker"
+    assert candidates == ["docker"]
 
 
 def test_container_start_action_omits_replace_for_docker(

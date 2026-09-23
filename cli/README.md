@@ -136,6 +136,14 @@ APP_ENABLE_DEV_FEATURES=true opamp-cli dev-version-bump 0.5.0
 opamp-cli dev-containers
 ```
 
+When `SMART_LOG_VIEWER=true` is used with `enable-process-tail`,
+`smart-log-viewer` also needs a `tail` executable on `PATH`. On Windows,
+install Microsoft Coreutils with:
+
+```powershell
+winget install --id Microsoft.Coreutils --exact
+```
+
 Guided examples:
 
 ```text
@@ -187,7 +195,7 @@ Development container starts:
 - The profile and container-entry schema is documented in [docs/CLI_CONFIGURATION.md](/mnt/d/dev/opamp/cli/docs/CLI_CONFIGURATION.md).
 - The Logstash entry mirrors `tests/logstash/run-logstash.bat`: it runs Logstash on host port `5044`, mounts the pipeline config, and writes output under `tests/logstash/out`.
 - You can launch it directly with `opamp-cli dev-containers logstash`.
-- Set `OPAMP_CONTAINER_RUNTIME` to choose a specific runtime executable; otherwise the CLI prefers `podman`, then `docker`.
+- Set `OPAMP_CONTAINER_RUNTIME` to choose a specific runtime executable; otherwise the CLI prefers `docker`, then `podman`.
 
 Repository virtual environment setup:
 

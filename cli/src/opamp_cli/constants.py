@@ -193,6 +193,7 @@ Behavior:
   - `config validate` validates one file or directory tree using config-service logic when available.
   - `config metadata` adds missing config-service header metadata without overwriting existing values.
   - `enable-process-tail` opens a new shell tailing each managed process log after start.
+  - Set SMART_LOG_VIEWER=true with process tailing enabled to open Smart Log Viewer instead.
   - `disable-process-tail` stops opening log-tail shells for future managed starts.
   - If first token is `script`, generate an OS-native script file.
   - Otherwise execute the command immediately.
@@ -273,5 +274,6 @@ Notes:
   - Set OPAMP_DEMO=true to enable demo consumer options from cli/config/demo_consumer_profiles.json.
   - Guided starts record launched PIDs in cli/runtime/managed_processes.json.
   - Process-tail shells are opened on a best-effort basis and may be unavailable in headless terminals.
+  - Set SMART_LOG_VIEWER=true to generate cli/runtime/smart-log-viewer/config.json and launch smart-log-viewer instead of separate tail shells.
   - `clear-logs` discovers log locations from CLI defaults, managed-process state, the effective OpAMP config file, and demo profile config.
 """

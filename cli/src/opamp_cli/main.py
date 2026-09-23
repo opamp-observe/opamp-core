@@ -300,6 +300,17 @@ PROCESS_INFO_KEY_PID = "pid"
 PROCESS_INFO_KEY_NAME = "name"
 PROCESS_INFO_KEY_COMMAND_LINE = "command_line"
 LOG_FILE_SUFFIXES = {".json", ".jsonl", ".log", ".ndjson"}
+SMART_LOG_VIEWER_CONFIG_DIRNAME = "smart-log-viewer"
+SMART_LOG_VIEWER_COLORS = (
+    "#58a6ff",
+    "#a371f7",
+    "#3fb950",
+    "#f2cc60",
+    "#ff7b72",
+    "#39c5cf",
+    "#d2a8ff",
+    "#ffa657",
+)
 WINDOWS_PROCESS_SNAPSHOT_COMMAND = [
     "powershell.exe",
     "-NoProfile",
@@ -1722,18 +1733,52 @@ def _strip_config_scalar(value: str) -> str:
     return text
 
 
-def _elastic_agent_log_dirs_from_config(config_path: Path) -> set[Path]:
-    """Return Elastic Agent or Beat log directories declared by one YAML config file."""
+def _resolve_config_env_refs(value: str) -> str:
+    """Resolve simple Elastic/Vector-style environment placeholders in paths."""
+    text = str(value or "")
+
+    def replace_braced(match: re.Match[str]) -> str:
+        body = match.group(1).strip()
+        if body.startswith("env."):
+            parts = [part.strip() for part in body.split("|")]
+            for part in parts:
+                if part.startswith("env."):
+                    resolved = os.environ.get(part[4:])
+                    if resolved:
+                        return resolved
+                    continue
+                if len(part) >= 2 and part[0] == part[-1] and part[0] in {"'", '"'}:
+                    return part[1:-1]
+                if part:
+                    return part
+            return ""
+        if ":" in body:
+            name, fallback = body.split(":", 1)
+            return os.environ.get(name.strip(), fallback.strip())
+        return os.environ.get(body, match.group(0))
+
+    return re.sub(r"\$\{([^}]+)\}", replace_braced, text)
+
+
+def _resolve_config_path_value(raw_path: str, base_dir: Path) -> Path:
+    """Resolve a config path after environment-placeholder expansion."""
+    return _resolve_path_relative_to(_resolve_config_env_refs(raw_path), base_dir)
+
+
+def _agent_log_locations_from_config(config_path: Path) -> tuple[set[Path], set[Path]]:
+    """Return log dirs/files declared by one Elastic, Beat, or Vector YAML config."""
     if config_path.is_file() is not True:
-        return set()
+        return set(), set()
     try:
         lines = config_path.read_text(encoding="utf-8").splitlines()
     except OSError:
-        return set()
+        return set(), set()
 
     log_dirs: set[Path] = set()
+    log_files: set[Path] = set()
     in_logging_files = False
     logging_indent = -1
+    current_logging_path = ""
     for line in lines:
         if not line.strip() or line.lstrip().startswith("#"):
             continue
@@ -1742,14 +1787,104 @@ def _elastic_agent_log_dirs_from_config(config_path: Path) -> set[Path]:
         if stripped.startswith(("agent.logging.files:", "logging.files:")):
             in_logging_files = True
             logging_indent = indent
+            current_logging_path = ""
             continue
         if in_logging_files and indent <= logging_indent:
             in_logging_files = False
         if in_logging_files and stripped.startswith("path:"):
             raw_value = _strip_config_scalar(stripped.split(":", 1)[1])
             if raw_value:
-                log_dirs.add(_resolve_path_relative_to(raw_value, config_path.parent))
+                current_logging_path = raw_value
+                log_dirs.add(_resolve_config_path_value(raw_value, config_path.parent))
+        if in_logging_files and stripped.startswith("name:") and current_logging_path:
+            raw_name = _strip_config_scalar(stripped.split(":", 1)[1])
+            if raw_name:
+                log_dir = _resolve_config_path_value(current_logging_path, config_path.parent)
+                for suffix in ("", ".log", ".ndjson", ".jsonl"):
+                    log_files.add((log_dir / f"{raw_name}{suffix}").resolve())
+        if stripped.startswith("path:") and not in_logging_files:
+            raw_value = _strip_config_scalar(stripped.split(":", 1)[1])
+            if raw_value and Path(raw_value).suffix.lower() in LOG_FILE_SUFFIXES:
+                log_files.add(_resolve_config_path_value(raw_value, config_path.parent))
+    return log_dirs, log_files
+
+
+def _elastic_agent_log_dirs_from_config(config_path: Path) -> set[Path]:
+    """Return Elastic Agent or Beat log directories declared by one YAML config file."""
+    log_dirs, _log_files = _agent_log_locations_from_config(config_path)
     return log_dirs
+
+
+def _log_file_entry_path(entry: Any) -> str:
+    """Return a configured log-file path from a string/object entry."""
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict):
+        return str(entry.get("path") or entry.get("file") or "").strip()
+    return ""
+
+
+def _configured_log_locations_from_entry(
+    entry: dict[str, Any],
+) -> tuple[set[Path], set[Path]]:
+    """Return explicit log dirs/files from one CLI config entry."""
+    log_dirs: set[Path] = set()
+    log_files: set[Path] = set()
+    for key in ("log_dirs", "agent_log_dirs"):
+        for raw_path in entry.get(key, []):
+            if str(raw_path or "").strip():
+                log_dirs.add(_resolve_path_from_repo(str(raw_path)))
+    for key in ("log_files", "agent_log_files"):
+        for item in entry.get(key, []):
+            raw_path = _log_file_entry_path(item)
+            if raw_path:
+                log_files.add(_resolve_path_from_repo(raw_path))
+    return log_dirs, log_files
+
+
+def _configured_log_source_overrides_from_entry(
+    entry: dict[str, Any],
+) -> dict[Path, dict[str, str]]:
+    """Return Smart Log Viewer source fields from configured log-file entries."""
+    overrides: dict[Path, dict[str, str]] = {}
+    for key in ("log_files", "agent_log_files"):
+        for item in entry.get(key, []):
+            if not isinstance(item, dict):
+                continue
+            raw_path = _log_file_entry_path(item)
+            if not raw_path:
+                continue
+            source: dict[str, str] = {}
+            tag_name = str(
+                item.get("tagName") or item.get("tag") or item.get("label") or ""
+            ).strip()
+            color = str(item.get("color") or "").strip()
+            if tag_name:
+                source["tagName"] = tag_name
+            if color:
+                source["color"] = color
+            if source:
+                overrides[_resolve_path_from_repo(raw_path)] = source
+    return overrides
+
+
+def _smart_log_viewer_overrides_from_demo_config() -> dict[Path, dict[str, str]]:
+    """Return configured Smart Log Viewer source fields from the demo config."""
+    overrides: dict[Path, dict[str, str]] = {}
+    payload = _load_json_file(_demo_consumer_config_path())
+    overrides.update(_configured_log_source_overrides_from_entry(payload))
+    for entry in container_management.configured_container_entries(
+        demo_config_path=_demo_consumer_config_path(),
+        demo_profiles=_load_demo_consumer_profiles(),
+    ):
+        overrides.update(_configured_log_source_overrides_from_entry(entry))
+    for profile in _load_demo_consumer_profiles():
+        overrides.update(_configured_log_source_overrides_from_entry(profile))
+        for section_name in DEMO_CONSUMER_CLIENT_CONFIG_KEYS:
+            section = profile.get(section_name, {})
+            if isinstance(section, dict):
+                overrides.update(_configured_log_source_overrides_from_entry(section))
+    return overrides
 
 
 def _configured_agent_config_paths_from_opamp_config(config_path: Path) -> set[Path]:
@@ -1768,10 +1903,17 @@ def _log_locations_from_demo_config() -> tuple[set[Path], set[Path]]:
     """Return log directories and files discovered from demo profile config."""
     log_dirs: set[Path] = set()
     log_files: set[Path] = set()
+    payload = _load_json_file(_demo_consumer_config_path())
+    explicit_dirs, explicit_files = _configured_log_locations_from_entry(payload)
+    log_dirs.update(explicit_dirs)
+    log_files.update(explicit_files)
     for entry in container_management.configured_container_entries(
         demo_config_path=_demo_consumer_config_path(),
         demo_profiles=_load_demo_consumer_profiles(),
     ):
+        explicit_dirs, explicit_files = _configured_log_locations_from_entry(entry)
+        log_dirs.update(explicit_dirs)
+        log_files.update(explicit_files)
         volumes = [
             dict(volume)
             for volume in entry.get("volumes", [])
@@ -1792,22 +1934,32 @@ def _log_locations_from_demo_config() -> tuple[set[Path], set[Path]]:
                     log_dirs.add(mapped_path)
 
     for profile in _load_demo_consumer_profiles():
+        explicit_dirs, explicit_files = _configured_log_locations_from_entry(profile)
+        log_dirs.update(explicit_dirs)
+        log_files.update(explicit_files)
         for section_name in DEMO_CONSUMER_CLIENT_CONFIG_KEYS:
             section = profile.get(section_name, {})
             if not isinstance(section, dict):
                 continue
+            explicit_dirs, explicit_files = _configured_log_locations_from_entry(section)
+            log_dirs.update(explicit_dirs)
+            log_files.update(explicit_files)
             raw_config = str(section.get(CONFIG_KEY_CONFIG_PATH) or "").strip()
             if raw_config:
                 agent_paths = _configured_agent_config_paths_from_opamp_config(
                     _resolve_path_from_repo(raw_config)
                 )
                 for agent_path in agent_paths:
-                    log_dirs.update(_elastic_agent_log_dirs_from_config(agent_path))
+                    agent_dirs, agent_files = _agent_log_locations_from_config(agent_path)
+                    log_dirs.update(agent_dirs)
+                    log_files.update(agent_files)
             raw_agent = str(section.get(CONFIG_KEY_AGENT_CONFIG_PATH) or "").strip()
             if raw_agent:
-                log_dirs.update(
-                    _elastic_agent_log_dirs_from_config(_resolve_path_from_repo(raw_agent))
+                agent_dirs, agent_files = _agent_log_locations_from_config(
+                    _resolve_path_from_repo(raw_agent)
                 )
+                log_dirs.update(agent_dirs)
+                log_files.update(agent_files)
     return log_dirs, log_files
 
 
@@ -1826,7 +1978,9 @@ def _discover_log_locations() -> tuple[set[Path], set[Path]]:
 
     opamp_config_path, _source = _effective_opamp_config_path()
     for agent_path in _configured_agent_config_paths_from_opamp_config(opamp_config_path):
-        log_dirs.update(_elastic_agent_log_dirs_from_config(agent_path))
+        agent_dirs, agent_files = _agent_log_locations_from_config(agent_path)
+        log_dirs.update(agent_dirs)
+        log_files.update(agent_files)
 
     demo_dirs, demo_files = _log_locations_from_demo_config()
     log_dirs.update(demo_dirs)
@@ -1841,6 +1995,98 @@ def _iter_log_files(directory: Path) -> Iterable[Path]:
     for path in directory.rglob("*"):
         if path.is_file() and path.suffix.lower() in LOG_FILE_SUFFIXES:
             yield path.resolve()
+
+
+def _smart_log_viewer_config_dir() -> Path:
+    """Return the Smart Log Viewer config directory managed by the CLI."""
+    return (_cli_runtime_dir() / SMART_LOG_VIEWER_CONFIG_DIRNAME).resolve()
+
+
+def _smart_log_viewer_tag(path: Path) -> str:
+    """Return a concise source tag for a log path."""
+    try:
+        relative = path.resolve().relative_to(_repo_root().resolve())
+        parts = list(relative.parts)
+        if len(parts) >= 2:
+            return "/".join(parts[-2:])
+        return str(relative)
+    except ValueError:
+        return path.stem
+
+
+def _smart_log_viewer_sources(
+    *,
+    active_label: str,
+    active_log_file: Path,
+) -> list[dict[str, str]]:
+    """Build Smart Log Viewer source entries from all discovered client logs."""
+    _active_label = str(active_label or "").strip()
+    log_dirs, exact_log_files = _discover_log_locations()
+    source_overrides = _smart_log_viewer_overrides_from_demo_config()
+    candidates: set[Path] = {active_log_file.resolve(), *exact_log_files}
+    for directory in log_dirs:
+        candidates.update(_iter_log_files(directory))
+
+    sources: list[dict[str, str]] = []
+    for index, path in enumerate(sorted(candidates, key=lambda item: str(item).lower())):
+        tag = _smart_log_viewer_tag(path)
+        if path.resolve() == active_log_file.resolve() and _active_label:
+            tag = _active_label
+        source = {
+            "path": str(path.resolve()),
+            "tagName": tag,
+            "color": SMART_LOG_VIEWER_COLORS[index % len(SMART_LOG_VIEWER_COLORS)],
+        }
+        source.update(source_overrides.get(path.resolve(), {}))
+        sources.append(source)
+    return sources
+
+
+def _open_log_viewer_for_process_if_enabled(
+    *,
+    label: str,
+    log_file: Path,
+    logger: Any,
+) -> None:
+    """Open either Smart Log Viewer or the traditional tail shell."""
+    tail_enabled = process_tail.process_tail_enabled(load_settings=_load_cli_settings)
+    if process_tail.smart_log_viewer_enabled():
+        if tail_enabled is not True:
+            logger.info(
+                "smart-log-viewer skipped because process tailing is disabled label=%s",
+                label,
+            )
+            return
+        config_dir = _smart_log_viewer_config_dir()
+        sources = _smart_log_viewer_sources(
+            active_label=label,
+            active_log_file=log_file,
+        )
+        config_path = process_tail.write_smart_log_viewer_config(
+            config_dir=config_dir,
+            sources=sources,
+        )
+        logger.info(
+            "smart-log-viewer config written config_path=%s sources=%s",
+            config_path,
+            len(sources),
+        )
+        process_tail.launch_smart_log_viewer(
+            config_dir=config_dir,
+            repo_root=_repo_root(),
+            logger=logger,
+        )
+        return
+
+    process_tail.open_process_tail_if_enabled(
+        label=label,
+        log_file=log_file,
+        enabled=tail_enabled,
+        logger=logger,
+        repo_root=_repo_root(),
+        is_windows=_is_windows(),
+        shell_quote=_shell_quote,
+    )
 
 
 def _clear_logs() -> int:
@@ -1994,6 +2240,8 @@ def _detected_behavior_flags() -> list[str]:
         detected.append(f"{APP_ENABLE_DEV_FEATURES_ENV}={ENABLED_FLAG_VALUE}")
     if process_tail.process_tail_enabled(load_settings=_load_cli_settings):
         detected.append(f"{CLI_SETTING_ENABLE_PROCESS_TAIL}=true")
+    if process_tail.smart_log_viewer_enabled():
+        detected.append("SMART_LOG_VIEWER=true")
     return detected
 
 
@@ -3340,7 +3588,7 @@ def _start_demo_consumers(action: dict[str, Any]) -> int:
         runtime = container_management.container_runtime_executable()
         if not runtime:
             print(
-                "Demo profile container starts require podman or docker, but neither runtime was found.",
+                "Demo profile container starts require docker or podman, but neither runtime was found.",
                 file=sys.stderr,
             )
             return 1
@@ -3639,14 +3887,10 @@ def _launch_background_process(action: dict[str, Any]) -> int:
     launch_url = str(action.get("launch_url") or "").strip()
     if launch_url:
         print(f"Open: {launch_url}")
-    process_tail.open_process_tail_if_enabled(
+    _open_log_viewer_for_process_if_enabled(
         label=label,
         log_file=log_file,
-        enabled=process_tail.process_tail_enabled(load_settings=_load_cli_settings),
         logger=logger,
-        repo_root=_repo_root(),
-        is_windows=_is_windows(),
-        shell_quote=_shell_quote,
     )
     return 0
 
@@ -3779,14 +4023,10 @@ def _record_simulator_batch(action: dict[str, Any]) -> int:
         log_file,
     )
     print(f"Started Simulator batch with {recorded} recorded process(es)")
-    process_tail.open_process_tail_if_enabled(
+    _open_log_viewer_for_process_if_enabled(
         label=str(action.get("label") or LABEL_SIMULATOR),
         log_file=log_file,
-        enabled=process_tail.process_tail_enabled(load_settings=_load_cli_settings),
         logger=logger,
-        repo_root=_repo_root(),
-        is_windows=_is_windows(),
-        shell_quote=_shell_quote,
     )
     return 0
 
