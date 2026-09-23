@@ -65,11 +65,13 @@ FLUENTD_CONFIG_FLAG = "-c"  # CLI flag for Fluentd config file path.
 VALUE_AGENT_TYPE_FLUENTD = "Fluentd"  # Agent type value reported in AgentDescription.
 KEY_FLUENTD_PORT = "port"  # Fluentd monitor-agent config key for HTTP port.
 KEY_FLUENTD_BIND = "bind"  # Fluentd monitor-agent config key for listen/bind host.
+KEY_FLUENTD_RPC_ENDPOINT = "rpc_endpoint"
 VALUE_MONITOR_AGENT_TYPE = "monitor_agent"  # Fluentd source @type used for monitor endpoint.
 VALUE_BIND_ANY_IPV4 = "0.0.0.0"  # Fluentd bind value meaning all interfaces.
 VALUE_LOOPBACK_IPV4 = "127.0.0.1"  # Loopback host used when bind is 0.0.0.0.
 FLUENTD_CONFIG_API_PATH = "/api/config.json"  # monitor_agent runtime config endpoint.
 FLUENTD_PLUGINS_API_PATH = "/api/plugins.json"  # monitor_agent endpoint exposing plugin health.
+FLUENTD_RPC_RELOAD_PATH = "/api/config.reload"
 STARTUP_VERSION_DISCOVERY_DELAY_SECONDS = (
     5  # Delay before first version probe to let Fluentd startup settle.
 )
@@ -77,9 +79,15 @@ KEY_AGENT_DESCRIPTION = "agent_description"  # Comment key for agent description
 KEY_CONFIG_VERSION_COMMENT = "config_version"  # Comment key for agent config version metadata.
 _FLUENTD_SOURCE_START = re.compile(r"^\s*<source>\s*$", re.IGNORECASE)
 _FLUENTD_SOURCE_END = re.compile(r"^\s*</source>\s*$", re.IGNORECASE)
+_FLUENTD_SYSTEM_START = re.compile(r"^\s*<system>\s*$", re.IGNORECASE)
+_FLUENTD_SYSTEM_END = re.compile(r"^\s*</system>\s*$", re.IGNORECASE)
 _FLUENTD_SOURCE_TYPE = re.compile(r"^\s*@type\s+(?P<value>\S+)\s*$", re.IGNORECASE)
 _FLUENTD_SOURCE_KV = re.compile(
     r"^\s*(?P<key>port|bind)\s+(?P<value>\S.*)$",
+    re.IGNORECASE,
+)
+_FLUENTD_SYSTEM_KV = re.compile(
+    rf"^\s*(?P<key>{KEY_FLUENTD_RPC_ENDPOINT})\s+(?P<value>\S.*)$",
     re.IGNORECASE,
 )
 _COMMENT_KV = re.compile(
@@ -158,6 +166,95 @@ def _find_monitor_agent_source_bind_and_port(
     if in_source and monitor_agent_source:
         return bind, port
     return None, None
+
+
+def _normalize_fluentd_value(value: str) -> str:
+    """Return a Fluentd scalar value without simple surrounding quotes."""
+    return str(value or "").strip().strip("'\"")
+
+
+def _find_rpc_endpoint(lines: list[str]) -> str | None:
+    """Return the Fluentd `<system> rpc_endpoint` value when configured."""
+    in_system = False
+    for raw_line in lines:
+        if _FLUENTD_SYSTEM_START.match(raw_line):
+            in_system = True
+            continue
+        if not in_system:
+            continue
+        if _FLUENTD_SYSTEM_END.match(raw_line):
+            return None
+        if _is_ignorable_fluentd_line(raw_line):
+            continue
+        system_kv_match = _FLUENTD_SYSTEM_KV.match(raw_line)
+        if system_kv_match is not None:
+            return _normalize_fluentd_value(system_kv_match.group("value"))
+    return None
+
+
+def _find_rpc_endpoint_yaml(lines: list[str]) -> str | None:
+    """Parse a Fluentd YAML `rpc_endpoint` value when configured."""
+    try:
+        import yaml  # type: ignore[import-not-found]
+    except ModuleNotFoundError:
+        return _find_rpc_endpoint_yaml_fallback(lines)
+
+    try:
+        parsed_payload = yaml.safe_load("".join(lines))
+    except Exception:  # pragma: no cover - parser exception variants
+        return _find_rpc_endpoint_yaml_fallback(lines)
+
+    for mapping in _iter_nested_mappings(parsed_payload):
+        rpc_endpoint = mapping.get(KEY_FLUENTD_RPC_ENDPOINT)
+        if rpc_endpoint is not None:
+            return str(rpc_endpoint).strip()
+    return None
+
+
+def _find_rpc_endpoint_yaml_fallback(lines: list[str]) -> str | None:
+    """Parse a YAML `rpc_endpoint` value without external dependencies."""
+    for raw_line in lines:
+        if _is_ignorable_fluentd_line(raw_line):
+            continue
+        key_value_match = re.match(
+            rf"^\s*{KEY_FLUENTD_RPC_ENDPOINT}\s*:\s*(?P<value>.+?)\s*$",
+            raw_line,
+            re.IGNORECASE,
+        )
+        if key_value_match is not None:
+            return _normalize_fluentd_value(key_value_match.group("value"))
+    return None
+
+
+def find_rpc_endpoint(config_path: str | pathlib.Path) -> str | None:
+    """Inspect a Fluentd config file and return the configured RPC endpoint."""
+    path = pathlib.Path(config_path)
+    with open(path, encoding=consumer_config.UTF8_ENCODING) as handle:
+        lines = handle.readlines()
+    suffix = path.suffix.lower()
+    if suffix in {".yaml", ".yml"}:
+        return _find_rpc_endpoint_yaml(lines)
+    return _find_rpc_endpoint(lines)
+
+
+def _parse_endpoint_host_port(endpoint: str | None) -> tuple[str | None, int | None, str]:
+    """Parse `host:port` or URL endpoint text into host, port, and scheme."""
+    normalized = _normalize_fluentd_value(str(endpoint or ""))
+    if not normalized:
+        return None, None, "http"
+    scheme = "http"
+    if "://" in normalized:
+        parsed = urlsplit(normalized)
+        scheme = parsed.scheme or scheme
+        return parsed.hostname, parsed.port, scheme
+    host, separator, port_text = normalized.rpartition(":")
+    if not separator:
+        return normalized, None, scheme
+    try:
+        return host.strip("[]"), int(port_text), scheme
+    except ValueError:
+        logging.getLogger(__name__).warning("invalid Fluentd rpc_endpoint port: %s", endpoint)
+        return host.strip("[]"), None, scheme
 
 
 def _is_ignorable_fluentd_line(raw_line: str) -> bool:
@@ -416,6 +513,11 @@ def _bind_host_for_server_url(bind: str | None) -> str | None:
     return normalized
 
 
+def _endpoint_host_for_local_call(host: str | None) -> str | None:
+    """Normalize local endpoint bind hosts for HTTP calls from the consumer."""
+    return _bind_host_for_server_url(host)
+
+
 def _override_server_url_hostname_with_bind(
     server_url: str | None, bind: str | None
 ) -> str | None:
@@ -511,6 +613,7 @@ def load_fluentd_config(config: consumer_config.ConsumerConfig) -> ConsumerConfi
         config.service_instance_id = service_instance_id
 
     bind, port = find_monitor_agent_source_bind_and_port(path)
+    rpc_endpoint = find_rpc_endpoint(path)
     if bind is not None:
         config.agent_http_listen = bind
         config.server_url = _override_server_url_hostname_with_bind(
@@ -539,6 +642,17 @@ def load_fluentd_config(config: consumer_config.ConsumerConfig) -> ConsumerConfi
             "located fluentd monitor_agent setting >%s< with value >%s<",
             KEY_FLUENTD_PORT,
             port,
+        )
+    if rpc_endpoint is not None:
+        rpc_host, rpc_port, rpc_scheme = _parse_endpoint_host_port(rpc_endpoint)
+        config["fluentd_rpc_endpoint"] = rpc_endpoint
+        config["fluentd_rpc_host"] = rpc_host
+        config["fluentd_rpc_port"] = rpc_port
+        config["fluentd_rpc_scheme"] = rpc_scheme
+        logger.info(
+            "located fluentd system setting >%s< with value >%s<",
+            KEY_FLUENTD_RPC_ENDPOINT,
+            rpc_endpoint,
         )
 
     return config
@@ -576,20 +690,44 @@ class FluentdOpAMPClient(AbstractOpAMPClient):
         return extract_fluentd_config_metadata(self.config.agent_config_path)
 
     def check_hot_deploy(self) -> str:
-        """Return Fluentd hot-reload launch flag when remote config needs it.
-
-        Reference:
-        https://docs.fluentbit.io/manual/2.2/administration/hot-reload
-        """
-        return self._check_hot_deploy_flag(("-Y", "--enable-hot-reload"))
+        """Return no launch flag because Fluentd does not support this hot-reload flag."""
+        return ""
 
     def hot_reload(self) -> bool:
-        """Warn that Fluentd hot reload is not yet supported by this client."""
-        logging.getLogger(__name__).warning(
-            "Fluentd hot reload is not yet supported by this client. "
-            "Reference: https://docs.fluentbit.io/manual/2.2/administration/hot-reload"
-        )
-        return False
+        """Invoke the Fluentd RPC config reload endpoint when configured."""
+        logger = logging.getLogger(__name__)
+        try:
+            port = getattr(self.config, "fluentd_rpc_port", None)
+            if port is None:
+                logger.warning(
+                    "Fluentd hot reload skipped because rpc_endpoint is not configured"
+                )
+                return False
+            host = _endpoint_host_for_local_call(
+                getattr(self.config, "fluentd_rpc_host", None)
+            ) or VALUE_LOOPBACK_IPV4
+            if ":" in host and not host.startswith("["):
+                host = f"[{host}]"
+            scheme = str(getattr(self.config, "fluentd_rpc_scheme", "http") or "http")
+            reload_url = f"{scheme}://{host}:{int(port)}{FLUENTD_RPC_RELOAD_PATH}"
+            response = httpx.get(reload_url, timeout=5.0)
+            response.raise_for_status()
+            try:
+                payload = response.json()
+            except ValueError:
+                payload = None
+            if isinstance(payload, dict) and payload.get("ok") is False:
+                logger.warning("Fluentd RPC reload returned ok=false endpoint=%s", reload_url)
+                return False
+            logger.info(
+                "triggered Fluentd RPC reload endpoint=%s status=%s",
+                reload_url,
+                response.status_code,
+            )
+            return True
+        except Exception as reload_error:  # pragma: no cover - network/runtime path
+            logger.warning("failed to invoke Fluentd RPC reload: %s", reload_error)
+            return False
 
     def _monitor_agent_host(self) -> str:
         """Return monitor_agent host used by Fluentd status/version requests.

@@ -34,6 +34,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+
+def _add_source_tree_repo_root_to_path() -> None:
+    """Make repo-level shared modules importable when run from source checkout."""
+    try:
+        repo_root = Path(__file__).resolve().parents[2]
+    except IndexError:  # pragma: no cover - defensive for unusual import loaders
+        return
+    if (repo_root / "shared").is_dir() is not True:
+        return
+    repo_root_text = str(repo_root)
+    if repo_root_text not in sys.path:
+        sys.path.insert(0, repo_root_text)
+
+
+_add_source_tree_repo_root_to_path()
+
 from dotenv import load_dotenv
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HypercornConfig

@@ -1,0 +1,41 @@
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0.
+#
+# config-service: config_type=Elastic Agent
+# agent_description: Full demo Elastic Agent replacement configuration
+# config_version: 2026.09.10-replacement
+# configuration_date: 2026-09-10
+# SCM_source_name: docs/full-demo/replacements
+# SCM_config_version: full-demo-replacement
+# service_instance_id: full-demo-elastic-agent
+
+outputs:
+  default:
+    type: logstash
+    hosts: ["${OPAMP_LOGSTASH_HOST:127.0.0.1}:5044"]
+
+management:
+  mode: local
+
+inputs: []
+
+agent.monitoring:
+  enabled: true
+  logs: true
+  metrics: true
+  metrics_period: 5s
+  use_output: default
+  http:
+    enabled: true
+    host: 127.0.0.1
+    port: 6791
+
+agent.logging.level: debug
+agent.logging.to_stderr: true
+agent.logging.to_files: true
+agent.logging.files:
+  path: "${OPAMP_FULL_DEMO_OUT:docs/full-demo/out}/elastic-agent-logs"
+  name: elastic-agent-replacement
+  rotateeverybytes: 10485760
+  keepfiles: 5
+agent.logging.json: true

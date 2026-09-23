@@ -116,7 +116,7 @@ ENV_ELASTIC_AGENT_HOME_PATH = "OPAMP_ELASTIC_AGENT_HOME_PATH"
 ENV_ELASTIC_AGENT_API_HOST = "OPAMP_ELASTIC_AGENT_API_HOST"
 ENV_ELASTIC_AGENT_API_PORT = "OPAMP_ELASTIC_AGENT_API_PORT"
 ENV_ELASTIC_AGENT_API_FAILON = "OPAMP_ELASTIC_AGENT_API_FAILON"
-DEFAULT_ELASTIC_AGENT_API_HOST = "localhost"
+DEFAULT_ELASTIC_AGENT_API_HOST = "127.0.0.1"
 DEFAULT_ELASTIC_AGENT_API_PORT = 6791
 DEFAULT_ELASTIC_AGENT_API_FAILON = "degraded"
 DEFAULT_ELASTIC_AGENT_STATUS_TIMEOUT_SECONDS = 5.0
@@ -303,7 +303,7 @@ def _host_token(host: str) -> str:
     Returns:
         Host token suitable for embedding in an HTTP URL.
     """
-    normalized_host = str(host or "localhost").strip() or "localhost"
+    normalized_host = str(host or "127.0.0.1").strip() or "127.0.0.1"
     if ":" in normalized_host and not normalized_host.startswith("["):
         return f"[{normalized_host}]"
     return normalized_host
@@ -1037,7 +1037,10 @@ class ElasticAgentOpAMPClient(AbstractOpAMPClient):
     ) -> opamp_pb2.AgentDescription:
         """Build Elastic Agent description with stable service type."""
         self.data.agent_type_name = VALUE_AGENT_TYPE_ELASTIC_AGENT
-        description = super().get_agent_description(instance_uid)
+        fallback_instance_uid = instance_uid
+        if fallback_instance_uid is None and not self.config.service_instance_id:
+            fallback_instance_uid = self.config.service_name
+        description = super().get_agent_description(fallback_instance_uid)
         for attribute in description.identifying_attributes:
             if attribute.key == KEY_SERVICE_TYPE:
                 attribute.value.string_value = VALUE_AGENT_TYPE_ELASTIC_AGENT

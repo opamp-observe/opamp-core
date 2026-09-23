@@ -1,0 +1,41 @@
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0.
+#
+# config-service: config_type=Elastic Heartbeat
+# agent_description: Full demo Heartbeat replacement configuration
+# config_version: 2026.09.10-replacement
+# configuration_date: 2026-09-10
+# SCM_source_name: docs/full-demo/replacements
+# SCM_config_version: full-demo-replacement
+# service_instance_id: full-demo-heartbeat
+
+name: full-demo-heartbeat
+
+heartbeat.monitors:
+  - type: http
+    id: full-demo-local-provider
+    name: OpAMP provider UI
+    urls: ["http://127.0.0.1:8080/ui"]
+    schedule: "@every 5s"
+
+  - type: http
+    id: full-demo-local-catalog
+    name: OpAMP config catalog
+    urls: ["http://127.0.0.1:8080/catalog"]
+    schedule: "@every 15s"
+
+http.enabled: true
+http.host: 127.0.0.1
+http.port: 5066
+
+queue.mem:
+  flush.timeout: 30s
+
+output.logstash:
+  hosts: ["${OPAMP_LOGSTASH_HOST:127.0.0.1}:5044"]
+
+logging.to_files: true
+logging.files:
+  path: docs/full-demo/out/heartbeat-logs
+  name: heartbeat-replacement
+  keepfiles: 3

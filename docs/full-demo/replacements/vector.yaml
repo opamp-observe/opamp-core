@@ -1,0 +1,44 @@
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0.
+#
+# config-service: config_type=Vector
+# agent_description: Full demo Vector replacement configuration
+# config_version: 2026.09.10-replacement
+# configuration_date: 2026-09-10
+# SCM_source_name: docs/full-demo/replacements
+# SCM_config_version: full-demo-replacement
+# service_instance_id: full-demo-vector
+data_dir: docs/full-demo/out/vector-data
+
+api:
+  enabled: true
+  address: 127.0.0.1:8686
+
+sources:
+  vector_internal_metrics:
+    type: internal_metrics
+    namespace: vector
+    scrape_interval_secs: 2
+
+transforms:
+  vector_internal_metrics_as_logs:
+    type: metric_to_log
+    inputs:
+      - vector_internal_metrics
+
+sinks:
+  vector_self_monitor_console:
+    type: console
+    inputs:
+      - vector_internal_metrics_as_logs
+    encoding:
+      codec: json
+    target: stdout
+
+  vector_self_monitor_file:
+    type: file
+    inputs:
+      - vector_internal_metrics_as_logs
+    encoding:
+      codec: json
+    path: docs/full-demo/out/vector-replacement.log

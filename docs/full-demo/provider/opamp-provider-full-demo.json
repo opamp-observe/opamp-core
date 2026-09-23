@@ -1,0 +1,84 @@
+{
+  "provider": {
+    "delayed_comms_seconds": 60,
+    "significant_comms_seconds": 120,
+    "webui_port": 8080,
+    "minutes_keep_disconnected": 5,
+    "retryAfterSeconds": 30,
+    "client_event_history_size": 50,
+    "log_level": "DEBUG",
+    "default_heartbeat_frequency": 5,
+    "latest_docs_url": "https://htmlpreview.github.io/?https://raw.githubusercontent.com/mp3monster/fluent-opamp/main/github-landingpage/index.html",
+    "human_in_loop_approval": false,
+    "allow-mcp": true,
+    "allow-remote-config": true,
+    "allow-effective-config": true,
+    "allow-connection-settings": false,
+    "allow-connection-settings-request": false,
+    "opamp-use-authorization": "none",
+    "ui-use-authorization": "none",
+    "metrics": {
+      "enabled": true,
+      "graph_history_minutes": 0
+    },
+    "state_persistence": {
+      "enabled": true,
+      "state_file_prefix": "server-state\\opamp_server_state_full_demo",
+      "retention_count": 3,
+      "flush_mode": "graceful_shutdown",
+      "autosave_interval_seconds_since_change": 60
+    }
+  },
+  "component-entry-points": {
+    "quart": [
+      {
+        "entry_point": "config_service.opamp_integration:register_config_service_feature",
+        "label": "Config Editor",
+        "url": "/config-service/ui",
+        "enabled": true
+      },
+      {
+        "entry_point": "catalog_service.opamp_integration:register_catalog_feature",
+        "label": "Config Catalog",
+        "url": "/catalog",
+        "enabled": true
+      }
+    ]
+  },
+  "opamp": {
+    "config_catalog": {
+      "enabled": true,
+      "menu_label": "Config Catalog",
+      "route_path": "/catalog",
+      "help_path": "/catalog/help",
+      "ui_base_css_path": "/config-service/ui/assets/config_ui.css",
+      "ui_refresh_seconds": 30,
+      "sources": [
+        {
+          "folder": "docs/full-demo/active",
+          "extensions": [
+            ".json",
+            ".yaml",
+            ".yml",
+            ".conf"
+          ]
+        },
+        {
+          "folder": "docs/full-demo/replacements",
+          "extensions": [
+            ".json",
+            ".yaml",
+            ".yml",
+            ".conf"
+          ]
+        },
+        {
+          "folder": "docs/full-demo/consumers",
+          "extensions": [
+            ".json"
+          ]
+        }
+      ]
+    }
+  }
+}

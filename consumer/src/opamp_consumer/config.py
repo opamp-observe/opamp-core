@@ -51,6 +51,8 @@ CFG_HEARTBEAT_FREQUENCY = "heartbeat_frequency"  # Consumer JSON key for heartbe
 CFG_AGENT_CAPABILITIES = "agent_capabilities"
 # Consumer JSON key for optional explicit OpAMP capability override.
 CFG_LOG_LEVEL = "log_level"  # Consumer JSON key for logging level override.
+CFG_SERVICE_INSTANCE_ID = "service_instance_id"
+# Consumer JSON key for service.instance.id override.
 CFG_SERVICE_NAME = "service_name"  # Consumer JSON key for service.name override.
 CFG_SERVICE_NAMESPACE = "service_namespace"  # Consumer JSON key for service.namespace override.
 CFG_TRANSPORT = "transport"  # Consumer JSON key for selected transport mode.
@@ -223,13 +225,13 @@ class ConsumerConfig:
     )
     elastic_agent_executable_path: str | None = None
     elastic_agent_home_path: str | None = None
-    elastic_agent_api_host: str = "localhost"
+    elastic_agent_api_host: str = "127.0.0.1"
     elastic_agent_api_port: int = 6791
     elastic_agent_api_failon: str = "degraded"
     elastic_agent_status_timeout_seconds: float = 5.0
     elastic_heartbeat_executable_path: str | None = None
     elastic_heartbeat_home_path: str | None = None
-    elastic_heartbeat_api_host: str = "localhost"
+    elastic_heartbeat_api_host: str = "127.0.0.1"
     elastic_heartbeat_api_port: int = 5066
     elastic_heartbeat_status_timeout_seconds: float = 5.0
     process_tracking: str = DEFAULT_PROCESS_TRACKING
@@ -650,6 +652,7 @@ def load_config() -> ConsumerConfig:
     observability = load_observability_config_from_payload(raw)
     server_url = consumer_raw.get(CFG_SERVER_URL)
     server_port = consumer_raw.get(CFG_SERVER_PORT)
+    service_instance_id = consumer_raw.get(CFG_SERVICE_INSTANCE_ID)
     service_name = consumer_raw.get(CFG_SERVICE_NAME)
     service_namespace = consumer_raw.get(CFG_SERVICE_NAMESPACE)
     transport = consumer_raw.get(CFG_TRANSPORT, DEFAULT_TRANSPORT)
@@ -739,6 +742,7 @@ def load_config() -> ConsumerConfig:
 
     logger.info("loaded consumer server_url: %s", server_url)
     logger.info("loaded consumer server_port: %s", server_port)
+    logger.info("loaded consumer service_instance_id: %s", service_instance_id)
     logger.info("loaded consumer service_name: %s", service_name)
     logger.info("loaded consumer service_namespace: %s", service_namespace)
     logger.info("loaded consumer transport: %s", transport)
@@ -810,6 +814,7 @@ def load_config() -> ConsumerConfig:
         heartbeat_frequency=heartbeat_frequency,
         agent_capabilities=configured_agent_capabilities,
         log_level=str(log_level or DEFAULT_LOG_LEVEL),
+        service_instance_id=service_instance_id,
         service_name=service_name,
         service_namespace=service_namespace,
         transport=transport,
@@ -1013,6 +1018,7 @@ def load_config_with_overrides(
         agent_additional_params=resolved_additional_params,
         heartbeat_frequency=resolved_heartbeat_frequency,
         agent_capabilities=consumer_raw.get(CFG_AGENT_CAPABILITIES),
+        service_instance_id=consumer_raw.get(CFG_SERVICE_INSTANCE_ID),
         service_name=consumer_raw.get(CFG_SERVICE_NAME),
         service_namespace=consumer_raw.get(CFG_SERVICE_NAMESPACE),
         transport=consumer_raw.get(CFG_TRANSPORT, DEFAULT_TRANSPORT),

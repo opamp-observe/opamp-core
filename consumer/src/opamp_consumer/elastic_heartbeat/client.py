@@ -91,7 +91,7 @@ ELASTIC_HEARTBEAT_TEST_CONFIG_COMMAND = "test"
 ELASTIC_HEARTBEAT_TEST_CONFIG_TARGET = "config"
 ELASTIC_HEARTBEAT_HTTP_ROOT_PATH = "/"
 ELASTIC_HEARTBEAT_HTTP_STATS_PATH = "/stats"
-ELASTIC_HEARTBEAT_DEFAULT_API_HOST = "localhost"
+ELASTIC_HEARTBEAT_DEFAULT_API_HOST = "127.0.0.1"
 ELASTIC_HEARTBEAT_DEFAULT_API_PORT = 5066
 DEFAULT_HEARTBEAT_STATUS_TIMEOUT_SECONDS = 5.0
 DEFAULT_STOP_WAIT_SECONDS = 5.0
@@ -597,7 +597,7 @@ class ElasticHeartbeatOpAMPClient(AbstractOpAMPClient):
     _runtime_config_flag = ELASTIC_HEARTBEAT_CONFIG_FLAG
     _heartbeat_paths = (ELASTIC_HEARTBEAT_HTTP_ROOT_PATH, ELASTIC_HEARTBEAT_HTTP_STATS_PATH)
     _value_agent_type = VALUE_AGENT_TYPE_ELASTIC_HEARTBEAT
-    _localhost_base = "http://localhost"
+    _localhost_base = "http://127.0.0.1"
     _json_key_agent = "beat"
     SUPPORTED_AGENT_CAPABILITY_NAMES = (
         *consumer_config.MANDATORY_AGENT_CAPABILITY_NAMES,
@@ -686,7 +686,10 @@ class ElasticHeartbeatOpAMPClient(AbstractOpAMPClient):
     ) -> opamp_pb2.AgentDescription:
         """Build Heartbeat description with stable service type."""
         self.data.agent_type_name = VALUE_AGENT_TYPE_ELASTIC_HEARTBEAT
-        description = super().get_agent_description(instance_uid)
+        fallback_instance_uid = instance_uid
+        if fallback_instance_uid is None and not self.config.service_instance_id:
+            fallback_instance_uid = self.config.service_name
+        description = super().get_agent_description(fallback_instance_uid)
         for attribute in description.identifying_attributes:
             if attribute.key == KEY_SERVICE_TYPE:
                 attribute.value.string_value = VALUE_AGENT_TYPE_ELASTIC_HEARTBEAT

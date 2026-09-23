@@ -33,6 +33,7 @@ Primary developer CLI:
 | `start_fluentd.cmd` | Windows direct Fluentd launcher. | Active low-level helper |
 | `terminate_fluent_bit.sh` | Direct emergency stop helper for `fluent-bit`. | Active low-level helper |
 | `terminate_fluent_bit.cmd` | Windows direct emergency stop helper for `fluent-bit`. | Active low-level helper |
+| `terminate_smart_log_viewer.cmd` | Windows helper that stops Smart Log Viewer and verifies its observed TCP ports closed. | Active low-level helper |
 | `update_component_versions.py` | Compatibility wrapper for the shared git-derived version metadata logic. | Kept for continuity |
 
 ## Workflows moved to `dev-tools`

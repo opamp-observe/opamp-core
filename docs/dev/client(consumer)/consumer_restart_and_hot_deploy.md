@@ -68,16 +68,16 @@ This remains a lifecycle concern handled by the runtime strategy:
 
 Hot-deploy is the launch-time readiness behavior. It ensures that when remote config is enabled, the launched agent is started with hot-reload support if that support has not already been configured manually.
 
-For both Fluent Bit and Fluentd the check currently looks for either of these existing launch flags:
+For Fluent Bit the check currently looks for either of these existing launch flags:
 
 - `-Y`
 - `--enable-hot-reload`
 
-If neither is present, the client returns:
+If neither is present, the Fluent Bit client returns:
 
 - `--enable-hot-reload`
 
-If one is already present, the client returns:
+If one is already present, the Fluent Bit client returns:
 
 - `""`
 
@@ -287,35 +287,43 @@ sequenceDiagram
 
 ### Launch-Time Behavior
 
-The Fluentd client implements the same launch-time flag check as Fluent Bit:
-
-- if remote config is enabled and no hot-reload flag exists, return `--enable-hot-reload`
-- if `-Y` or `--enable-hot-reload` already exists, return `""`
-- on error, log and return `""`
-
-Reference in code comments:
-
-- `https://docs.fluentbit.io/manual/2.2/administration/hot-reload`
+The Fluentd client does not inject a launch-time hot-reload flag. Fluentd does
+not support Fluent Bit's `--enable-hot-reload` option.
 
 ### Runtime Hot Reload
 
-For Fluentd, `hot_reload()` currently does not issue any API or process action.
+For Fluentd, `hot_reload()` uses Fluentd HTTP RPC when configured.
 
-Instead it:
+The Fluentd config must include:
 
-1. logs a warning that Fluentd hot reload is not yet supported by this client
-2. returns `False`
+```conf
+<system>
+  rpc_endpoint 127.0.0.1:24444
+</system>
+```
 
-This means remote config file application can still succeed, but the system does not yet perform an in-place Fluentd reload automatically.
+After remote config is successfully written, the consumer:
+
+1. reads the configured `rpc_endpoint`
+2. calls `GET /api/config.reload`
+3. returns `True` on a successful HTTP response unless Fluentd returns `{"ok": false}`
+4. returns `False` when RPC is not configured or the call fails
+
+This means remote config file application can still succeed without RPC, but
+the running Fluentd process will not reload that file until RPC succeeds or an
+external restart happens.
 
 ### Fluentd Reload Flow
 
 ```mermaid
 flowchart TD
     A[remote config files applied successfully] --> B[call Fluentd hot_reload]
-    B --> C[log warning: not yet supported]
-    C --> D[return False]
-    D --> E[CommonConfigHandler logs applied without hot reload support]
+    B --> C{rpc_endpoint configured?}
+    C -- no --> D[return False]
+    C -- yes --> E[GET /api/config.reload]
+    E --> F{HTTP success and ok not false?}
+    F -- yes --> G[return True]
+    F -- no --> D
 ```
 
 ## Remote Config Apply Integration
@@ -381,7 +389,7 @@ For Fluent Bit:
 
 For Fluentd:
 
-- not implemented logs a warning
+- missing RPC endpoint or API failure logs a warning
 - returns `False`
 
 ### `apply_remote_config()`
@@ -406,11 +414,11 @@ This is an intentional separation between:
 | Area | Fluent Bit | Fluentd |
 |---|---|---|
 | Supports `AcceptsRemoteConfig` launch check | Yes | Yes |
-| Injects `--enable-hot-reload` at launch when needed | Yes | Yes |
-| Accepts existing `-Y` / `--enable-hot-reload` without duplication | Yes | Yes |
-| Has runtime `hot_reload()` implementation | Yes | Partial stub |
-| Runtime hot reload action | `POST /api/v2/reload` | Warning only |
-| Remote config apply triggers `hot_reload()` | Yes | Yes, but returns `False` |
+| Injects `--enable-hot-reload` at launch when needed | Yes | No |
+| Accepts existing `-Y` / `--enable-hot-reload` without duplication | Yes | Not applicable |
+| Has runtime `hot_reload()` implementation | Yes | Yes |
+| Runtime hot reload action | `POST /api/v2/reload` | `GET /api/config.reload` via Fluentd HTTP RPC |
+| Remote config apply triggers `hot_reload()` | Yes | Yes |
 | Provider restart command support | Existing restart path | Existing restart path |
 
 ## Test Coverage Added
@@ -421,10 +429,9 @@ The implementation is covered by focused tests for:
 - Fluent Bit compatibility with legacy `AcceptRemoteConfig`
 - Fluent Bit `POST /api/v2/reload`
 - Fluent Bit safe handling when no local HTTP port is configured
-- Fluentd `check_hot_deploy()` flag return
-- Fluentd no-duplicate behavior when `-Y` already exists
-- Fluentd error handling in `check_hot_deploy()`
-- Fluentd warning-only `hot_reload()`
+- Fluentd `check_hot_deploy()` returning no Fluent Bit launch flag
+- Fluentd `hot_reload()` returning false without RPC configuration
+- Fluentd `hot_reload()` calling the configured HTTP RPC reload endpoint
 - remote config apply invoking `hot_reload()` after file writes
 - interface test doubles updated for the new methods
 
@@ -432,9 +439,14 @@ The implementation is covered by focused tests for:
 
 ### On Startup
 
-If the consumer is supervising a Fluent Bit or Fluentd process and remote config is enabled:
+If the consumer is supervising a Fluent Bit process and remote config is enabled:
 
 - the launch command is made hot-reload capable unless already configured that way
+
+If the consumer is supervising a Fluentd process:
+
+- no launch flag is added
+- the Fluentd config must enable `rpc_endpoint` for post-apply reload
 
 ### On Provider Restart Command
 
@@ -450,11 +462,11 @@ If the provider sends remote config:
 - files are validated and written
 - then `hot_reload()` is attempted
 - for Fluent Bit this tries an in-place reload
-- for Fluentd this currently logs a warning only
+- for Fluentd this calls HTTP RPC when `rpc_endpoint` is configured
 
 ## Known Limitations
 
-1. Fluentd runtime hot reload is not implemented yet.
+1. Fluentd runtime hot reload requires `rpc_endpoint`; `monitor_agent` alone is not enough.
 2. Hot reload is best-effort and does not currently update remote-config status based on reload API success or failure.
 3. The local reload endpoint resolution depends on the agent HTTP settings being configured correctly.
 4. Observer-mode deployments do not use launch-time command injection because they do not spawn the process locally, although post-apply `hot_reload()` still runs.
@@ -464,7 +476,7 @@ If the provider sends remote config:
 
 Potential next steps:
 
-- implement real Fluentd reload behavior if a safe supported mechanism is identified
+- exercise Fluentd RPC reload in a full integration test
 - decide whether hot-reload failure should influence `remote_config_status`
 - add more explicit telemetry around:
   - reload attempted

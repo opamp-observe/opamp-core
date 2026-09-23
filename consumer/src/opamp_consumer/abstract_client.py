@@ -89,7 +89,7 @@ if TYPE_CHECKING:
         CustomMessageHandlerInterface,
     )
 
-LOCALHOST_BASE = "http://localhost"  # Base URL for local agent endpoints.
+LOCALHOST_BASE = "http://127.0.0.1"  # Base URL for local agent endpoints.
 ERR_PREFIX = "error: "  # Prefix for error values stored in results.
 TRANSPORT_HTTP = _TRANSPORT_HTTP  # Re-exported transport selector for HTTP mode.
 TRANSPORT_WEBSOCKET = _TRANSPORT_WEBSOCKET  # Re-exported transport selector for WebSocket mode.

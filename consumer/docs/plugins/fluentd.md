@@ -36,7 +36,7 @@ opamp-consumer --config-path ./opamp.json
 | Key | Required | Notes |
 |---|---:|---|
 | `consumer.agent_config_path` | Yes | Fluentd config loaded by the consumer and passed to `fluentd -c`. |
-| `consumer.agent_additional_params` | No | Extra Fluentd CLI args. Remote-config hot reload can add `--enable-hot-reload` when needed. |
+| `consumer.agent_additional_params` | No | Extra Fluentd CLI args. Fluentd does not use the Fluent Bit `--enable-hot-reload` flag. |
 | `consumer.client_status_port` | Usually no | If omitted, the consumer parses the `monitor_agent` source port from `agent_config_path`. |
 | `consumer.processTracking` | No | `Supervisor` launches Fluentd. `Observer` attaches by regex. |
 | `consumer.processDetectionRegex` | Observer only | Regex used to discover an already running Fluentd process. |
@@ -64,6 +64,21 @@ YAML-style config is also supported when it contains a mapping with
 If `monitor_agent` is not configured, the consumer cannot poll Fluentd runtime
 status endpoints.
 
+## Optional RPC Reload Endpoint
+
+The consumer can trigger Fluentd config reload after remote config is written
+when the Fluentd config enables HTTP RPC:
+
+```conf
+<system>
+  rpc_endpoint 127.0.0.1:24444
+</system>
+```
+
+The consumer calls `GET /api/config.reload` on that endpoint. This is separate
+from `monitor_agent`; `monitor_agent` provides status endpoints, while HTTP RPC
+provides management endpoints such as config reload.
+
 ## Bind Handling
 
 When `monitor_agent` is bound to `0.0.0.0`, the consumer rewrites the local status
@@ -84,9 +99,10 @@ The Fluentd consumer reads optional comments from the config file:
 ## Remote Config And Reload
 
 The Fluentd consumer accepts remote config when `AcceptsRemoteConfig` is enabled.
-The current implementation applies files and then calls the Fluentd plugin's hot
-reload hook, but real Fluentd in-place reload is not implemented yet; the hook logs
-a warning and returns `false`.
+After files are applied, the consumer calls the Fluentd HTTP RPC
+`/api/config.reload` endpoint when `rpc_endpoint` is configured. Without
+`rpc_endpoint`, remote config files are still written, but the consumer reports
+that hot reload was not attempted.
 
 ## Minimal Example
 

@@ -105,8 +105,8 @@ The main local workflow surfaces are:
   `opamp-dev-tools`, such as Keycloak setup, Mermaid rendering, direct Fluentd
   start, and direct Fluent Bit termination.
 
-Container workflows use `podman` or `docker`. The CLI chooses
-`OPAMP_CONTAINER_RUNTIME` first, then `podman`, then `docker`.
+Container workflows use `docker` or `podman`. The CLI chooses
+`OPAMP_CONTAINER_RUNTIME` first, then `docker`, then `podman`.
 
 MCP source-mode configuration also relies on `uv` and `fastmcp` for local
 stdio-style server entries.
