@@ -24,6 +24,7 @@ Primary repository-wide build outputs now include independent artefacts for:
 
 - [Setup README](README.md) — full setup and run instructions.
 - [Features - spec alignment](features.md) — feature notes and design direction.
+- [Roadmap](roadmap/index.md) — future ideas under consideration, without timeline commitments.
 - [UI examples](screenshots.md) - Some of the elements of the UI to illustrate the user experience.
 - [Client (consumer)_diagrams (as images)](consumer_client_diagrams.md) — rendered consumer diagrams with explanation per diagram panel.
 - [Server_(provider) diagrams (as images)](provider_server_diagrams.md) — rendered provider/server diagrams plus links to auth, endpoints, and command docs.

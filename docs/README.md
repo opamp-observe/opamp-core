@@ -329,6 +329,7 @@ See:
 ## Core documentation map
 
 - [Features and spec alignment](features.md)
+- [Roadmap](roadmap/index.md)
 - [OpAMP JSON reference map](opamp_json_reference.md)
 - [Provider config reference](provider_config_reference.md)
 - [UI screenshots](screenshots.md)
