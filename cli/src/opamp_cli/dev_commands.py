@@ -348,7 +348,7 @@ def execute_dev_container_workflow(
     runtime = container_runtime_executable()
     if not runtime:
         print(
-            f"{command_name} is unavailable because neither podman nor docker could be found.",
+            f"{command_name} is unavailable because neither docker nor podman could be found.",
             file=sys.stderr,
         )
         return 1
