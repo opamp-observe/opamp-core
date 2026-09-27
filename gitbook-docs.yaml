@@ -1,0 +1,152 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Copyright 2026 mp3monster.org
+
+$schema: https://api.gitbook.com/gitbook-docs.yaml
+version: 1
+site:
+  title: OpAMP Core
+  structure:
+    - type: section
+      key: section-project-docs
+      title: Project Docs
+      path: project-docs
+      default: true
+      children:
+        - type: space
+          key: space-docs
+          title: Documentation
+          path: docs
+          default: true
+          content:
+            directory: ./docs
+        - type: space
+          key: space-quick-references
+          title: Quick References
+          path: quick-references
+          content:
+            directory: ./quick-references
+    - type: section
+      key: section-runtime-components
+      title: Runtime Components
+      path: runtime-components
+      children:
+        - type: space
+          key: space-consumer
+          title: Consumer
+          path: consumer
+          default: true
+          content:
+            directory: ./consumer
+        - type: space
+          key: space-provider
+          title: Provider
+          path: provider
+          content:
+            directory: ./provider
+        - type: space
+          key: space-consumer-sim
+          title: Consumer Simulator
+          path: consumer-sim
+          content:
+            directory: ./consumer-sim
+        - type: space
+          key: space-agent-broker
+          title: Agent Broker
+          path: agent-broker
+          content:
+            directory: ./agent_broker
+        - type: space
+          key: space-svr-credentials-manager
+          title: Server Credentials Manager
+          path: svr-credentials-manager
+          content:
+            directory: ./svr-credentials-mgr
+    - type: section
+      key: section-services-tools
+      title: Services and Tools
+      path: services-tools
+      children:
+        - type: space
+          key: space-config-service
+          title: Config Service
+          path: config-service
+          default: true
+          content:
+            directory: ./config-service
+        - type: space
+          key: space-catalog-service
+          title: Catalog Service
+          path: catalog-service
+          content:
+            directory: ./catalog-service
+        - type: space
+          key: space-cli
+          title: CLI
+          path: cli
+          content:
+            directory: ./cli
+        - type: space
+          key: space-mcp
+          title: MCP
+          path: mcp
+          content:
+            directory: ./mcp
+        - type: space
+          key: space-scripts
+          title: Scripts
+          path: scripts
+          content:
+            directory: ./scripts
+        - type: space
+          key: space-dev-tools
+          title: Dev Tools
+          path: dev-tools
+          content:
+            directory: ./dev-tools
+    - type: section
+      key: section-configuration-deployment
+      title: Configuration and Deployment
+      path: configuration-deployment
+      children:
+        - type: space
+          key: space-config
+          title: Configuration
+          path: config
+          default: true
+          content:
+            directory: ./config
+        - type: space
+          key: space-azure
+          title: Azure
+          path: azure
+          content:
+            directory: ./cloud/azure
+        - type: space
+          key: space-shared
+          title: Shared Utilities
+          path: shared
+          content:
+            directory: ./shared
+    - type: section
+      key: section-testing
+      title: Testing
+      path: testing
+      children:
+        - type: space
+          key: space-tests
+          title: Tests
+          path: tests
+          default: true
+          content:
+            directory: ./tests
