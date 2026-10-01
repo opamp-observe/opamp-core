@@ -37,6 +37,7 @@ DEFAULT_RELEASE_COMPONENT_KEYS = (
     "provider",
     "consumer",
     "catalog-service",
+    "client-config-generator-service",
     "cli",
     "consumer-sim",
 )
@@ -88,6 +89,16 @@ RELEASE_COMPONENT_TARGETS: dict[str, ReleaseComponentTarget] = {
         root_component_name="fluent-opamp-catalog-service-deployable-artifact",
         default_sbom_relpath="dist/sbom/opamp_catalog_service_deployable_artifacts.cyclonedx.json",
         display_name="Catalog service",
+    ),
+    "client-config-generator-service": ReleaseComponentTarget(
+        key="client-config-generator-service",
+        source_dir="client-config-generator-service",
+        dist_dirname="client-config-generator-service",
+        root_component_name="fluent-opamp-client-config-generator-service-deployable-artifact",
+        default_sbom_relpath=(
+            "dist/sbom/opamp_client_config_generator_service_deployable_artifacts.cyclonedx.json"
+        ),
+        display_name="Client config generator service",
     ),
     "cli": ReleaseComponentTarget(
         key="cli",
