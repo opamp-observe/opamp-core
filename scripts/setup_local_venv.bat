@@ -1,6 +1,8 @@
 @echo off
 setlocal EnableExtensions
 
+echo Setting Python Env
+
 set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%..") do set "REPO_ROOT=%%~fI"
 set "CLI_ENTRY=%REPO_ROOT%\cli\main.py"
@@ -11,9 +13,9 @@ if not exist "%CLI_ENTRY%" (
   exit /b 1
 )
 
-where python >nul 2>nul
+where py >nul 2>nul
 if %ERRORLEVEL% equ 0 (
-  set "PYTHON_BIN=python"
+  set "PYTHON_BIN=py"
 ) else (
   where py >nul 2>nul
   if %ERRORLEVEL% equ 0 (
