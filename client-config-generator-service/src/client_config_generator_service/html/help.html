@@ -1,0 +1,85 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Client Config Generator Help</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/client-config-generator-service/ui/assets/config_ui.css__CLIENT_CONFIG_GENERATOR_UI_ASSET_SUFFIX__" />
+    <link rel="stylesheet" href="/client-config-generator-service/ui/assets/styles.css__CLIENT_CONFIG_GENERATOR_UI_ASSET_SUFFIX__" />
+  </head>
+  <body>
+    <main class="page-shell client-config-generator-shell">
+      <header>
+        <div class="title">
+          <div class="title-brand">
+            <img class="title-logo" src="/config-service/ui/assets/opamp_logo.png" alt="OpAMP Server logo" />
+            <div>
+              <h1>Client Config Generator Help</h1>
+              <p>Guide to generating schema-validated OpAMP consumer configuration files.</p>
+            </div>
+          </div>
+          <div class="title-actions">
+            <a class="button-link" href="/client-config-generator-service/ui">Back to generator</a>
+            <a class="button-link" href="https://opamp.info" target="_blank" rel="noopener noreferrer">opamp.info</a>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel">
+        <h2>What it creates</h2>
+        <p>The generator creates JSON configuration files for the OpAMP consumer. Form controls, defaults, required fields, and validation are supplied by the packaged consumer JSON Schema.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Supervisor and Observer</h2>
+        <p><strong>Supervisor</strong> starts and manages the agent, so the agent configuration path and launch parameters are available. <strong>Observer</strong> attaches to an externally managed process and requires a process-detection regular expression.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Load, validate, and save</h2>
+        <ol>
+          <li>Select an existing JSON file and choose <strong>Load selected</strong>, or start with schema defaults.</li>
+          <li>Choose a deployment mode and complete the displayed fields.</li>
+          <li>Choose <strong>Validate</strong> to review schema errors.</li>
+          <li>Enter a relative <code>.json</code> name and choose <strong>Save</strong>.</li>
+        </ol>
+        <p>Files are limited to the configured storage directory. Parent-directory traversal and non-JSON targets are rejected. When the service is read-only, loading remains available and saving is disabled.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Deployment</h2>
+        <p>When embedded, the feature appears only when its Quart entry point is enabled in <code>component-entry-points.quart</code>. Standalone deployments use the same UI and API at port <code>8095</code> by default. Host or deployment-managed authentication applies when provider authentication is available.</p>
+      </section>
+
+      <section class="panel">
+        <h2>API</h2>
+        <p>The versioned API exposes schema, list, load, validation, and save operations below <code>/client-config-generator-service/api/v1</code>.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Related OpAMP information</h2>
+        <p>For wider protocol background, deployment notes, and project information, visit <a href="https://opamp.info" target="_blank" rel="noopener noreferrer">opamp.info</a>.</p>
+        <p>The OpenTelemetry project also publishes the <a href="https://opentelemetry.io/docs/specs/opamp/" target="_blank" rel="noopener noreferrer">OpAMP specification</a>.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div>Licensed under Apache 2.0 | Attribution: <a href="https://mp3monster.org" target="_blank" rel="noopener noreferrer">mp3monster.org</a></div>
+      <div><a href="https://opamp.info" target="_blank" rel="noopener noreferrer">opamp.info</a> | <a href="https://opentelemetry.io/docs/specs/opamp/" target="_blank" rel="noopener noreferrer">OpAMP Specification</a></div>
+    </footer>
+  </body>
+</html>

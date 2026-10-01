@@ -1,0 +1,22 @@
+{
+  "component-entry-points": {
+    "quart": [
+      {
+        "entry_point": "client_config_generator_service.opamp_integration:register_client_config_generator_feature",
+        "label": "Client Config Generator",
+        "url": "/client-config-generator-service/ui",
+        "enabled": true
+      }
+    ]
+  },
+  "opamp": {
+    "client_config_generator": {
+      "web_port": 8095,
+      "log_level": "DEBUG",
+      "read_only": false,
+      "storage": {
+        "configuration_directory": "generated-client-configs"
+      }
+    }
+  }
+}
