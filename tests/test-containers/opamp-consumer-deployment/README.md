@@ -1,6 +1,9 @@
 # OpAMP Consumer Deployment Test Container
 
-This container is intended for testing OpAMP consumer deployments from a wheel, with Fluent Bit, Fluentd, or Elastic Heartbeat as the supervised agent.
+This container is intended for testing OpAMP consumer deployments from a wheel.
+It installs Fluent Bit, Fluentd, or Elastic Heartbeat itself and can stage
+Elastic Agent, Vector, or simulator deployments when the runtime image already
+contains the required executable.
 It can also optionally download ELK stack component archives and a GitHub-hosted log generator.
 
 ## What It Does
@@ -10,7 +13,8 @@ At container startup it:
 1. Reads a simple `KEY=VALUE` config file.
 2. Unpacks the provided consumer wheel into `/work/runtime/wheel-unpacked`.
 3. Installs the wheel with dev extras (`[dev]`) and pulls dependencies.
-4. Installs Fluent Bit, Fluentd, or Elastic Heartbeat for the configured version.
+4. Installs Fluent Bit, Fluentd, or Elastic Heartbeat for the configured version,
+   or uses a preinstalled executable when `SKIP_AGENT_INSTALL=true`.
 5. Stages agent and consumer config files into `/work/runtime/config` so they are writable/modifiable in-container.
 6. Rewrites consumer config runtime paths (`consumer.agent_config_path`) plus service type and server URL/transport.
 7. Optionally downloads ELK component archives into `/work/runtime/downloads/elk`.
@@ -34,8 +38,8 @@ KEY=value
 
 | Key | Required | Description | Example |
 |---|---|---|---|
-| `DEPLOYMENT_TYPE` | Yes | Agent type to launch. Allowed: `fluentbit`, `fluentd`, `elastic_heartbeat`. | `fluentbit` |
-| `AGENT_VERSION` | Yes | Version of Fluent Bit, Fluentd, or Elastic Heartbeat to install. | `5.0.3` |
+| `DEPLOYMENT_TYPE` | Yes | Consumer type to launch. Allowed: `fluentbit`, `fluentd`, `elastic_agent`, `elastic_heartbeat`, `vector`, `simulator`. | `fluentbit` |
+| `AGENT_VERSION` | Yes | Agent version. Used by the built-in Fluent Bit, Fluentd, and Elastic Heartbeat installers. | `5.0.3` |
 | `WHEEL_PATH` | Yes | Path (inside container) to a consumer wheel, a directory containing wheels, or a glob expression. Directory/glob values use the newest matching wheel. | `/host-assets/dist/consumer` |
 | `AGENT_CONFIG_PATH` | No | Path (inside container) to host agent config file. If empty, a default dummy input + file output config is generated. | `/host-assets/consumer/fluent-bit.yaml` |
 | `CONSUMER_CONFIG_PATH` | No | Path (inside container) to host consumer config JSON. If empty, a minimal config is generated. | `/host-assets/tests/opamp.json` |
@@ -49,6 +53,9 @@ KEY=value
 | `HOSTNAME_OVERRIDE` | No | Optional hostname label injected into staged agent config as `service_instance_id` comment. | `consumer-a-01` |
 | `SERVICE_NAME_OVERRIDE` | No | Optional override for `consumer.service_name`. | `Fluentbit` |
 | `SERVICE_NAMESPACE_OVERRIDE` | No | Optional override for `consumer.service_namespace`. | `ContainerTests` |
+| `SERVICE_INSTANCE_ID_OVERRIDE` | No | Optional stable override for `consumer.service_instance_id`. | `consumer-a-01` |
+| `SIMULATOR_RESPONSES_PATH` | No | Scripted response JSON used by simulator deployments. Defaults to the bundled accept-all responses. | `/config/simulator-responses.json` |
+| `APP_ENABLE_DEV_FEATURES` | No | Enables development-only consumer modes such as simulator. | `true` |
 | `OUTPUT_HOST_DIR` | No | Path (inside container) where log/output files are written. Default: `/host-output`. | `/host-output` |
 | `FLUENTBIT_DOWNLOAD_URL` | No | Explicit Fluent Bit tarball URL override if auto asset discovery is not sufficient. | `https://.../fluent-bit-<ver>-linux-amd64.tar.gz` |
 | `HEARTBEAT_DOWNLOAD_URL` | No | Explicit Heartbeat tarball URL override. | `https://artifacts.elastic.co/downloads/beats/heartbeat/heartbeat-9.3.3-linux-x86_64.tar.gz` |

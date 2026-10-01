@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 from pathlib import Path
 
@@ -72,23 +73,38 @@ def test_default_consumer_config_includes_builtin_plugins() -> None:
             "enabled": True,
         },
         {
+            "service_type": "elastic_heartbeat",
+            "entry_point": "opamp_consumer.elastic_heartbeat.client:main",
+            "enabled": True,
+        },
+        {
             "service_type": "simulator",
             "entry_point": "opamp_consumer.simulator.client:main",
+            "enabled": True,
+        },
+        {
+            "service_type": "vector",
+            "entry_point": "opamp_consumer.vector.client:main",
             "enabled": True,
         },
     ]
 
 
 def test_verify_installed_consumer_plugins_rejects_missing_builtin() -> None:
-    """Installer verification should fail before launch when entry points are missing."""
+    """Fail verification before launch when plugin entry points are missing."""
     bootstrap = _load_bootstrap_module()
 
     bootstrap._installed_consumer_plugin_entry_points = lambda: {  # type: ignore[attr-defined]
         "fluentbit": "opamp_consumer.fluentbit.client:main",
     }
 
-    with pytest.raises(bootstrap.ConfigError, match="missing expected plugin entry points"):
-        bootstrap._verify_installed_consumer_plugins(deployment="fluentbit")  # type: ignore[attr-defined]
+    with pytest.raises(
+        bootstrap.ConfigError,
+        match="missing expected plugin entry points",
+    ):
+        bootstrap._verify_installed_consumer_plugins(  # type: ignore[attr-defined]
+            deployment="fluentbit"
+        )
 
 
 def test_resolve_wheel_path_selects_latest_wheel_from_directory(tmp_path: Path) -> None:
@@ -102,6 +118,41 @@ def test_resolve_wheel_path_selects_latest_wheel_from_directory(tmp_path: Path) 
     os.utime(newer, (2, 2))
 
     assert bootstrap._resolve_wheel_path(str(tmp_path)) == newer  # type: ignore[attr-defined]
+
+
+def test_stage_consumer_config_applies_identity_and_simulator_responses(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Runtime staging should apply stable identity and simulator response paths."""
+    bootstrap = _load_bootstrap_module()
+    source_path = tmp_path / "source.json"
+    source_path.write_text(
+        json.dumps({"consumer": {"server_url": "http://old-provider:8080"}}),
+        encoding="utf-8",
+    )
+    staged_dir = tmp_path / "staged"
+    staged_dir.mkdir()
+    monkeypatch.setattr(bootstrap, "STAGED_CONFIG_DIR", staged_dir)
+
+    staged_path = bootstrap._stage_consumer_config(  # type: ignore[attr-defined]
+        deployment="simulator",
+        cfg={
+            "CONSUMER_CONFIG_PATH": str(source_path),
+            "SERVER_URL": "http://provider:8080",
+            "SERVICE_INSTANCE_ID_OVERRIDE": "shutdown-e2e-simulator",
+            "SIMULATOR_RESPONSES_PATH": "/config/simulator-responses.json",
+        },
+        agent_config_path=tmp_path / "simulator-agent.yaml",
+        transport="http",
+        http_url="http://fallback:8080",
+        websocket_url="ws://fallback:4320",
+    )
+
+    consumer = json.loads(staged_path.read_text(encoding="utf-8"))["consumer"]
+    assert consumer["service_instance_id"] == "shutdown-e2e-simulator"
+    assert consumer["simulator_responses_path"] == "/config/simulator-responses.json"
+    assert consumer["server_url"] == "http://provider:8080"
 
 
 def test_main_smoke_only_stops_after_staging(

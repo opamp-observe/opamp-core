@@ -1,0 +1,4 @@
+# Default simulator metadata used when AGENT_CONFIG_PATH is not provided.
+
+simulator:
+  mode: http

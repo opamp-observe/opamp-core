@@ -1,0 +1,18 @@
+# Default standalone Elastic Agent config used when AGENT_CONFIG_PATH is not provided.
+
+outputs:
+  default:
+    type: elasticsearch
+    hosts: ["http://provider:8080"]
+
+management:
+  mode: local
+
+inputs: []
+
+agent.monitoring:
+  enabled: true
+  http:
+    enabled: true
+    host: 127.0.0.1
+    port: 6791

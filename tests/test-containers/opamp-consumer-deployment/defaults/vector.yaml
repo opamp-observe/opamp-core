@@ -1,0 +1,21 @@
+# Default Vector config used when AGENT_CONFIG_PATH is not provided.
+
+data_dir: /tmp/vector-data
+
+api:
+  enabled: true
+  address: 127.0.0.1:8686
+
+sources:
+  vector_internal_metrics:
+    type: internal_metrics
+    scrape_interval_secs: 1
+
+sinks:
+  vector_output:
+    type: file
+    inputs:
+      - vector_internal_metrics
+    encoding:
+      codec: json
+    path: __OUTPUT_DIR__/vector-events.log
