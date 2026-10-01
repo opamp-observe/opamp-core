@@ -18,7 +18,8 @@ What this shows:
 - `AbstractOpAMPClient` composes core send/reporting behavior.
 - `ClientTransportAuthorizationMixin`, `ClientRuntimeMixin`, and `ServerMessageHandlingMixin` contribute transport/auth, runtime, and server-message handling behavior.
 - Runtime lifecycle delegation now routes to `ClientSupervisorMixin` or `ClientObserverMixin` based on config.
-- Concrete clients (`OpAMPClient` for Fluent Bit, `FluentdOpAMPClient` for Fluentd, Elastic clients, and simulator clients) extend/override where needed.
+- Concrete clients (`OpAMPClient` for Fluent Bit, `FluentdOpAMPClient` for Fluentd, `ElasticAgentOpAMPClient`, `ElasticHeartbeatOpAMPClient`, `VectorOpAMPClient`, and `SimulatorOpAMPClient`) extend/override where needed.
+- Elastic Agent, Elastic Heartbeat, and Vector provide specialized lifecycle helpers where the generic supervisor/observer strategy is not enough.
 - Update controller implementations (`AlwaysSend`, `SentCount`, `TimeSend`) control reporting flag reset cadence.
 
 ## Diagram 2: Runtime Entrypoints
@@ -27,8 +28,9 @@ What this shows:
 
 What this shows:
 
-- Script and CLI entrypoints for Fluent Bit, Fluentd, Elastic Agent, Elastic Heartbeat, and simulator clients.
-- Bootstrap path through `client_bootstrap.run_default_client_main(...)`.
+- Script and CLI entrypoints for Fluent Bit, Fluentd, Elastic Agent, Elastic Heartbeat, Vector, and simulator clients.
+- The stable `opamp-consumer` entrypoint routes through `plugin_loader.load_consumer_plugin(...)` based on `consumer.service_type`.
+- Several concrete entrypoints still call `client_bootstrap.run_default_client_main(...)` directly.
 - Shared runtime behavior flowing into `AbstractOpAMPClient` + mixins.
 - Provider endpoint target still comes from `consumer.server_url`.
 
@@ -64,8 +66,9 @@ What this shows:
 
 ## Diagram 6: Runtime Process Tracking Strategy
 
-No rendered PNG panel is currently published for this diagram section.
-Use the Mermaid source in [docs/dev/client(consumer)/consumer_client_diagram.md](<dev/client(consumer)/consumer_client_diagram.md>) for the current strategy flow.
+![Consumer runtime process tracking strategy](consumer_client_diagram_6.png)
+
+Use the Mermaid source in [docs/dev/client(consumer)/consumer_client_diagram.md](<dev/client(consumer)/consumer_client_diagram.md>) as the canonical source for this flow.
 
 What this shows:
 

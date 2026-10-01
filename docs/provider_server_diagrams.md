@@ -17,9 +17,11 @@ This page explains the rendered provider/server diagrams and links each one back
 What this shows:
 
 - `server.py` bootstraps config and starts Quart.
-- `app.py` owns OpAMP transport handlers, REST/UI endpoints, and response building.
+- `app.py` owns OpAMP transport handlers and wires route modules, response building, persistence, metrics, UI assets, and MCP transport.
+- `app_routes_clients.py`, `app_routes_settings.py`, `app_routes_ui.py`, and `metrics/routes.py` own the HTTP route families that used to be described as a single `app.py` surface.
+- `ServerToAgentResponseBuilder` builds outbound protocol responses from store state, queued commands, and HTTP-only next actions.
 - `state.py` (`STORE`) is the in-memory source of truth for client records and queued commands.
-- `commands.py` and command implementation classes build command/custom payload shapes.
+- `command_queue.py`, `commands.py`, and command implementation classes validate queue requests and build command/custom payload shapes.
 - `mcptool` route and transport bridge modules expose MCP and integrate auth checks for MCP ASGI traffic.
 
 ## Diagram 2: Runtime Entrypoints and Transport
@@ -30,10 +32,12 @@ What this shows:
 
 - Script/CLI entrypoints into `opamp_provider.server`.
 - Startup path through config load, store defaults, and `app.run(...)`.
+- Optional persisted-state restore before serving when `--restore` is used and persistence is enabled.
+- Observability attachment before Quart starts.
 - Conditional startup mode:
-  - HTTP when `provider.tls` is absent, or when `provider.tls.enabled=false`.
-  - HTTPS when `provider.tls` is present and enabled with `provider.tls.cert_file` and `provider.tls.key_file` configured.
-- Parallel request surfaces: OpAMP HTTP, OpAMP WebSocket, and REST/UI/tool APIs.
+  - HTTP when provider TLS is not configured.
+  - HTTPS when provider TLS cert/key settings are configured.
+- Parallel request surfaces: OpAMP HTTP, OpAMP WebSocket, REST/UI/tool APIs, and metrics endpoints.
 
 ## Diagram 3: Command Queue and Dispatch Pipeline
 
@@ -41,7 +45,8 @@ What this shows:
 
 What this shows:
 
-- How `/api/clients/<client_id>/commands` normalizes input and queues `CommandRecord` entries.
+- How `/api/clients/<client_id>/commands` delegates to `command_queue.queue_command_from_payload(...)`.
+- How normalized requests queue `CommandRecord` entries on both `ClientRecord.commands` and visible event history.
 - Where command object factories are used for concrete command types.
 - How pending commands are consumed on the next client check-in and encoded as:
   - `ServerToAgent.command`
