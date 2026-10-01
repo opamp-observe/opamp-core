@@ -24,7 +24,7 @@ import time
 import traceback
 import tracemalloc
 from typing import Any
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -518,46 +518,6 @@ def _endpoint_host_for_local_call(host: str | None) -> str | None:
     return _bind_host_for_server_url(host)
 
 
-def _override_server_url_hostname_with_bind(
-    server_url: str | None, bind: str | None
-) -> str | None:
-    """Return server_url with host overridden by Fluentd monitor_agent bind.
-
-    Why implementation-specific: monitor_agent bind semantics determine the
-    runtime status endpoint location for Fluentd.
-    """
-    if not server_url:
-        return server_url
-    resolved_bind_host = _bind_host_for_server_url(bind)
-    if not resolved_bind_host:
-        return server_url
-
-    split_url = urlsplit(server_url)
-    if not split_url.netloc:
-        return server_url
-
-    auth_prefix = ""
-    if "@" in split_url.netloc:
-        auth_prefix = f"{split_url.netloc.rsplit('@', 1)[0]}@"
-
-    host_token = resolved_bind_host
-    if ":" in host_token and not host_token.startswith("["):
-        host_token = f"[{host_token}]"
-    if split_url.port is not None:
-        host_token = f"{host_token}:{split_url.port}"
-
-    overridden_url = urlunsplit(
-        (
-            split_url.scheme,
-            f"{auth_prefix}{host_token}",
-            split_url.path,
-            split_url.query,
-            split_url.fragment,
-        )
-    )
-    return overridden_url
-
-
 def find_monitor_agent_source_bind_and_port(
     config_path: str | pathlib.Path,
 ) -> tuple[str | None, int | None]:
@@ -616,10 +576,6 @@ def load_fluentd_config(config: consumer_config.ConsumerConfig) -> ConsumerConfi
     rpc_endpoint = find_rpc_endpoint(path)
     if bind is not None:
         config.agent_http_listen = bind
-        config.server_url = _override_server_url_hostname_with_bind(
-            config.server_url,
-            bind,
-        )
         logger.info(
             "located fluentd monitor_agent setting >%s< with value >%s<",
             KEY_FLUENTD_BIND,

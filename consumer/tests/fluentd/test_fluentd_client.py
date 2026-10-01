@@ -120,7 +120,7 @@ def test_load_fluentd_config_parses_monitor_agent_settings(tmp_path: Path) -> No
     assert loaded.agent_http_port == 24220
     assert loaded.agent_http_listen == "127.0.0.1"
     assert loaded.agent_http_server == "on"
-    assert loaded.server_url == "http://127.0.0.1"
+    assert loaded.server_url == "http://localhost"
     assert loaded.fluentd_rpc_host == "127.0.0.1"
     assert loaded.fluentd_rpc_port == 24444
     assert loaded.service_instance_id == "fluentd-instance"
@@ -184,7 +184,7 @@ def test_load_fluentd_config_does_not_use_non_monitor_agent_port(
     assert loaded.client_status_port == 24220
     assert loaded.agent_http_port == 24220
     assert loaded.agent_http_listen == "127.0.0.1"
-    assert loaded.server_url == "http://127.0.0.1"
+    assert loaded.server_url == "http://localhost"
 
 
 def test_find_monitor_agent_source_bind_and_port_yaml(
@@ -238,7 +238,7 @@ system:
     assert loaded.agent_http_port == 24220
     assert loaded.agent_http_listen == "127.0.0.1"
     assert loaded.agent_http_server == "on"
-    assert loaded.server_url == "http://127.0.0.1"
+    assert loaded.server_url == "http://localhost"
     assert loaded.fluentd_rpc_host == "127.0.0.1"
     assert loaded.fluentd_rpc_port == 24444
     assert loaded.service_instance_id == "fluentd-yaml-instance"
@@ -281,8 +281,8 @@ def test_fluentd_client_get_config_metadata_reads_supported_comment_fields(
     )
 
 
-def test_load_fluentd_config_overrides_server_url_host_with_bind(tmp_path: Path) -> None:
-    """Bind value should replace server_url hostname for monitor_agent configs."""
+def test_load_fluentd_config_preserves_provider_url_with_monitor_bind(tmp_path: Path) -> None:
+    """The local monitor bind must not replace the remote provider hostname."""
     config_path = tmp_path / "fluentd.conf"
     config_path.write_text(
         """
@@ -300,7 +300,8 @@ def test_load_fluentd_config_overrides_server_url_host_with_bind(tmp_path: Path)
 
     loaded = fluentd_client.load_fluentd_config(config)
 
-    assert loaded.server_url == "http://10.2.3.4:8080/ui?x=1"
+    assert loaded.server_url == "http://localhost:8080/ui?x=1"
+    assert loaded.agent_http_listen == "10.2.3.4"
 
 
 def test_load_fluentd_config_port_overrides_client_status_port_from_config(

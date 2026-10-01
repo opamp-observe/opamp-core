@@ -66,7 +66,11 @@ from opamp_consumer.client_transport_auth_mixin import (
 from opamp_consumer.component_version import component_version_text
 from opamp_consumer.config import ConsumerConfig
 from opamp_consumer.config_metadata import ConfigMetadata
-from opamp_consumer.custom_handlers import build_factory_lookup, create_handler  # noqa: F401
+from opamp_consumer.custom_handlers import (  # noqa: F401
+    build_factory_lookup,
+    create_handler,
+    resolve_handler_folder,
+)
 from opamp_consumer.full_update_controller import (
     AlwaysSend,
     FullUpdateControllerInterface,
@@ -75,12 +79,12 @@ from opamp_consumer.full_update_controller import (
 )
 from opamp_consumer.opamp_client_interface import OpAMPClientInterface
 from opamp_consumer.proto import anyvalue_pb2, opamp_pb2
+from opamp_consumer.remote_agent_config_write_error import (
+    RemoteAgentConfigWriteError,
+)
 from opamp_consumer.remote_config_status import (
     RemoteConfigStatusSnapshot,
     set_remote_config_status,
-)
-from opamp_consumer.remote_agent_config_write_error import (
-    RemoteAgentConfigWriteError,
 )
 from opamp_consumer.reporting_flag import ReportingFlag
 
@@ -214,7 +218,10 @@ class AbstractOpAMPClient(
         )
         self.data.agent_type_name = getattr(self, "_value_agent_type", "Agent")
         self.data.full_update_controller = self._create_full_update_controller()
-        self._custom_handler_folder = self.get_custom_handler_folder()
+        self._custom_handler_folder = resolve_handler_folder(
+            self.get_custom_handler_folder(),
+            pathlib.Path(__file__).resolve().parent / "custom_handlers",
+        )
         self._custom_handler_lookup = build_factory_lookup(
             self._custom_handler_folder,
             client_data=self.data,

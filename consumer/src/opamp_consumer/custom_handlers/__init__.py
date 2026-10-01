@@ -27,6 +27,7 @@ from opamp_consumer.custom_handlers.registry import (
     build_factory_lookup,
     create_handler,
     discover_handlers,
+    resolve_handler_folder,
 )
 
 __all__ = [
@@ -35,4 +36,5 @@ __all__ = [
     "build_factory_lookup",
     "create_handler",
     "discover_handlers",
+    "resolve_handler_folder",
 ]
