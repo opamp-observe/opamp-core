@@ -54,7 +54,7 @@ opamp-provider = "opamp_provider.server:main"
 
 [project.urls]
 Repository = "https://github.com/mp3monster/fluent-opamp"
-Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/mp3monster/fluent-opamp/main/github-landingpage/index.html"
+Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html"
 Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
 
 [tool.pytest.ini_options]
@@ -92,6 +92,9 @@ ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["opamp_provider", "shared"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
 
 [tool.hatch.build]
 exclude = [
