@@ -35,7 +35,7 @@
     "client_event_history_size": 50,
     "log_level": "DEBUG",
     "default_heartbeat_frequency": 30,
-    "latest_docs_url": "https://htmlpreview.github.io/?https://raw.githubusercontent.com/mp3monster/fluent-opamp/main/github-landingpage/index.html",
+    "latest_docs_url": "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html",
     "human_in_loop_approval": false,
     "allow-mcp": true,
     "allow-remote-config": true,
@@ -62,6 +62,12 @@
         "entry_point": "config_service.opamp_integration:register_config_service_feature",
         "label": "Config Editor",
         "url": "/config-service/ui",
+        "enabled": true
+      },
+      {
+        "entry_point": "client_config_generator_service.opamp_integration:register_client_config_generator_feature",
+        "label": "Client Config Generator",
+        "url": "/client-config-generator-service/ui",
         "enabled": true
       }
     ]
@@ -92,6 +98,14 @@
           ]
         }        
       ]
+    },
+    "client_config_generator": {
+      "web_port": 8095,
+      "log_level": "DEBUG",
+      "read_only": false,
+      "storage": {
+        "configuration_directory": "../generated-client-configs"
+      }
     }
   }
 }
