@@ -16,6 +16,7 @@ existing guide that already explains that part of the configuration in more dept
 | `otlp-endpoints` | Shared OTLP logs, metrics, and traces export settings | [`otlp_observability.md`](otlp_observability.md) |
 | `component-entry-points` | Additional Quart features exposed through the server feature menu | [`provider/README.md#web-ui`](../provider/README.md#web-ui) |
 | `opamp.config_catalog` | Catalog UI routes, scan sources, metadata, and help behavior | [`opamp_config_catalog_ui.md`](opamp_config_catalog_ui.md) |
+| `opamp.client_config_generator` | Schema-driven client configuration generator settings | [`client_config_generator_service.md`](client_config_generator_service.md) |
 
 ## `consumer`
 
@@ -103,6 +104,8 @@ The current default `config/opamp.json` uses this section for:
 - `component-entry-points.quart`
 - `component-entry-points.quart[*].label`
 - `component-entry-points.quart[*].url`
+- `config_service.opamp_integration:register_config_service_feature`
+- `client_config_generator_service.opamp_integration:register_client_config_generator_feature`
 
 When a feature entry is enabled and the target page is hosted inside the provider, the embedded page
 shows `Server Console` and `Back` buttons in its header. In standalone deployments those buttons stay
