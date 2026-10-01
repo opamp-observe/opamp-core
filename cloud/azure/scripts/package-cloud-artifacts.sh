@@ -10,6 +10,7 @@ COMPONENT_PATHS=(
   "consumer"
   "consumer-sim"
   "config-service"
+  "client-config-generator-service"
   "catalog-service"
   "cli"
   "agent_broker"

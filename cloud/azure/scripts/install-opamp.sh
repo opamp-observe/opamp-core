@@ -14,6 +14,7 @@ COMPONENT_PATHS=(
   "consumer"
   "consumer-sim"
   "config-service"
+  "client-config-generator-service"
   "catalog-service"
   "cli"
   "agent_broker"
@@ -107,6 +108,7 @@ case "$OPAMP_ROLE" in
     create_venv server
     install_matching_wheel server "opamp_server-*.whl"
     install_matching_wheel server "config_service-*.whl"
+    install_matching_wheel server "client_config_generator_service-*.whl"
     install_matching_wheel server "catalog_service-*.whl"
     install_matching_wheel server "svr_credentials_manager_service-*.whl"
     install_matching_wheel server "opamp_broker-*.whl"

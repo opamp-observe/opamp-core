@@ -89,6 +89,32 @@ cat > /etc/opamp/opamp-provider.json <<'EOF'
       "autosave_interval_seconds_since_change": 60
     }
   },
+  "component-entry-points": {
+    "quart": [
+      {
+        "entry_point": "config_service.opamp_integration:register_config_service_feature",
+        "label": "Config Editor",
+        "url": "/config-service/ui",
+        "enabled": true
+      },
+      {
+        "entry_point": "client_config_generator_service.opamp_integration:register_client_config_generator_feature",
+        "label": "Client Config Generator",
+        "url": "/client-config-generator-service/ui",
+        "enabled": true
+      }
+    ]
+  },
+  "opamp": {
+    "client_config_generator": {
+      "web_port": 8095,
+      "log_level": "DEBUG",
+      "read_only": false,
+      "storage": {
+        "configuration_directory": "/opt/opamp/generated-client-configs"
+      }
+    }
+  },
   "observability": {
     "enabled": true,
     "service_name": "opamp-provider",
