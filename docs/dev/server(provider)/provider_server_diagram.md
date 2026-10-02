@@ -102,6 +102,35 @@ classDiagram
       +ui_menu_items_from_component_entries()
     }
 
+    class ComponentEntryPoints {
+      <<config>>
+      +component-entry-points.quart
+      +Config Editor
+      +Client Config Generator
+      +Config Catalog
+    }
+
+    class ClientConfigGeneratorService {
+      <<component plugin>>
+      +register_client_config_generator_feature()
+      +schema UI
+      +list/load/validate/save API
+    }
+
+    class ConfigService {
+      <<component plugin>>
+      +register_config_service_feature()
+      +config editor UI
+      +validation API
+    }
+
+    class CatalogService {
+      <<component plugin>>
+      +register_catalog_feature()
+      +catalog UI
+      +catalog API
+    }
+
     class ProviderConfig {
       <<module>>
       +load_config_with_overrides()
@@ -191,6 +220,11 @@ classDiagram
     ProviderApp --> StatePersistence
     ProviderApp --> ProviderUiAssets
     ProviderApp --> ComponentFeatures
+    ProviderConfig --> ComponentEntryPoints
+    ComponentFeatures --> ComponentEntryPoints
+    ComponentFeatures ..> ConfigService
+    ComponentFeatures ..> ClientConfigGeneratorService
+    ComponentFeatures ..> CatalogService
     AppRoutesClients --> CommandQueue
     AppRoutesClients --> ClientStore
     AppRoutesSettings --> ClientStore
@@ -238,10 +272,12 @@ flowchart TD
     M --> O["POST /v1/opamp"]
     M --> P["WEBSOCKET /v1/opamp"]
     M --> Q["/api/* + /tool/* + /ui + /help + /doc-set + /metrics/*"]
+    M --> AA["component-entry-point routes"]
 
     N --> O
     N --> P
     N --> Q
+    N --> AA
 
     O --> R["opamp_http()"]
     R --> S["STORE.upsert_from_agent_msg(..., channel=HTTP)"]
@@ -253,6 +289,10 @@ flowchart TD
     W --> X["STORE.upsert_from_agent_msg(..., channel=websocket)"]
     X --> Y["ServerToAgentResponseBuilder.build_response(...)"]
     Y --> Z["encode_message() + websocket.send(...)"]
+
+    AA --> AB["/config-service/ui and API"]
+    AA --> AC["/client-config-generator-service/ui and API"]
+    AA --> AD["/catalog and catalog API"]
 ```
 
 ## Command Queue and Dispatch Pipeline

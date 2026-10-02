@@ -21,6 +21,7 @@ flowchart LR
     nginx -->|auth_request| oauth[OAuth2 Proxy]
     oauth --> keycloak
     nginx -->|local HTTP| provider[OpAMP Provider UI/API]
+    provider --> generator[Client Config Generator Service]
     provider --> catalog[Catalog Service]
     provider --> config[Config Service]
     provider --> creds[Credentials Manager]

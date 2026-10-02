@@ -150,6 +150,13 @@ classDiagram
         UI
     }
 
+    class ClientConfigGenerator {
+        <<default server plugin>>
+        Schema-driven consumer config UI
+        Load / validate / save API
+        Standalone-capable service
+    }
+
     class CatalogService {
         <<optional>>
         Catalog UI
@@ -175,6 +182,7 @@ classDiagram
     CLI ..> Consumer : local orchestration
     CLI ..> ConsumerSim : demo orchestration
     Provider ..> ConfigService : optional integration
+    Provider ..> ClientConfigGenerator : component-entry-point plugin
     Provider ..> CatalogService : optional integration
     AgentBroker ..> Provider : API / MCP usage
     AgentBroker ..> ConfigService : optional tooling path
@@ -191,6 +199,7 @@ sequenceDiagram
     participant Provider
     participant Consumer
     participant ConfigService as Config Service (optional)
+    participant Generator as Client Config Generator (default plugin)
     participant CatalogService as Catalog Service (optional)
     participant Broker as Agent Broker (optional)
 
@@ -203,6 +212,8 @@ sequenceDiagram
 
     Operator->>Provider: use Web UI / API
     Provider->>ConfigService: validate or edit config (optional)
+    Provider->>Generator: open schema-driven consumer config UI
+    Generator-->>Provider: save/load generated consumer JSON
     Provider->>CatalogService: browse catalog/help (optional)
     Broker->>Provider: operational request via API/MCP (optional)
 ```

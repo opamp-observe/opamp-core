@@ -17,8 +17,9 @@ Key points:
 
 ```mermaid
 flowchart LR
-    UI[Server UI and Config Catalog]
+    UI[Server UI<br/>Config Catalog<br/>Client Config Generator]
     Provider[OpAMP Provider<br/>127.0.0.1:8080]
+    Generator[Client Config Generator<br/>schema-driven JSON files]
     Logstash[Logstash Container<br/>beats input :5044]
 
     FBC[Fluent Bit Consumer<br/>Supervisor mode]
@@ -34,6 +35,8 @@ flowchart LR
     HB[Elastic Heartbeat]
 
     UI --> Provider
+    UI --> Generator
+    Generator -->|save/load generated consumer configs| Provider
 
     FBC <-->|WebSocket OpAMP| Provider
     VC <-->|WebSocket OpAMP| Provider
@@ -86,11 +89,14 @@ sequenceDiagram
     participant Operator
     participant UI as Server UI
     participant Catalog as Config Catalog
+    participant Generator as Client Config Generator
     participant Provider as OpAMP Provider
     participant Consumer as Selected Consumer
     participant Agent
 
     Operator->>UI: Select connected client
+    Operator->>Generator: Generate or adjust consumer JSON (optional)
+    Generator-->>UI: Saved JSON configuration file
     UI->>Catalog: Browse replacement configs
     Catalog-->>UI: Return docs/full-demo/replacements entry
     Operator->>UI: Deploy selected config
