@@ -63,6 +63,56 @@ def resolve_optional_path_from_config(
     return str((config_path.parent / path).resolve())
 
 
+def looks_like_executable_path(value: str) -> bool:
+    """Return whether an executable value is path-like rather than a PATH command.
+
+    Args:
+        value: Configured executable command or path text.
+
+    Returns:
+        True when the value should be resolved or launched as a filesystem path.
+    """
+    normalized_value = str(value or "").strip()
+    if not normalized_value:
+        return False
+    return (
+        "/" in normalized_value
+        or "\\" in normalized_value
+        or normalized_value.startswith((".", "~"))
+        or pathlib.Path(normalized_value).is_absolute()
+        or pathlib.PureWindowsPath(normalized_value).is_absolute()
+        or bool(pathlib.PureWindowsPath(normalized_value).drive)
+    )
+
+
+def resolve_optional_executable_from_config(
+    *,
+    raw_value: Any,
+    config_path: pathlib.Path,
+) -> str | None:
+    """Resolve an executable value that may be a PATH command or filesystem path.
+
+    Args:
+        raw_value: Optional configured executable command or path.
+        config_path: Path to the config file that owns relative paths.
+
+    Returns:
+        None for blank values, a bare command unchanged for PATH lookup, or an
+        absolute executable path resolved relative to the config file.
+    """
+    normalized_value = str(raw_value).strip() if raw_value is not None else ""
+    if not normalized_value:
+        return None
+    if not looks_like_executable_path(normalized_value):
+        return normalized_value
+    if pathlib.PureWindowsPath(normalized_value).is_absolute():
+        return normalized_value
+    return resolve_optional_path_from_config(
+        raw_value=normalized_value,
+        config_path=config_path,
+    )
+
+
 def _normalize_service_type(value: object) -> str:
     """Return a normalized plugin/service key."""
     return str(value or "").strip().lower()

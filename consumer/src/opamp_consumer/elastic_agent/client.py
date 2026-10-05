@@ -63,6 +63,8 @@ from opamp_consumer.config_metadata import ConfigMetadata
 from opamp_consumer.exceptions import AgentException
 from opamp_consumer.plugin_config import (
     ConsumerPluginConfigContext,
+    looks_like_executable_path,
+    resolve_optional_executable_from_config,
     resolve_optional_path_from_config,
 )
 from opamp_consumer.process_utils import ProcessUtils
@@ -201,40 +203,6 @@ def _resolve_elastic_env_provider_refs(value: str) -> str:
     return _ELASTIC_ENV_PROVIDER_REF.sub(resolve_match, value)
 
 
-def _resolve_optional_executable_from_config(
-    *,
-    raw_value: Any,
-    config_path: pathlib.Path,
-) -> str | None:
-    """Resolve an executable value that may be a PATH command or a filesystem path."""
-    normalized_value = str(raw_value).strip() if raw_value is not None else ""
-    if not normalized_value:
-        return None
-    if (
-        "/" not in normalized_value
-        and "\\" not in normalized_value
-        and not normalized_value.startswith((".", "~"))
-        and not pathlib.PureWindowsPath(normalized_value).drive
-    ):
-        return normalized_value
-    if pathlib.PureWindowsPath(normalized_value).is_absolute():
-        return normalized_value
-    return resolve_optional_path_from_config(
-        raw_value=normalized_value,
-        config_path=config_path,
-    )
-
-
-def _looks_like_executable_path(value: str) -> bool:
-    """Return whether an executable value is path-like rather than a PATH command."""
-    return (
-        "/" in value
-        or "\\" in value
-        or value.startswith((".", "~"))
-        or bool(pathlib.PureWindowsPath(value).drive)
-    )
-
-
 def process_consumer_config(
     context: ConsumerPluginConfigContext,
 ) -> dict[str, Any]:
@@ -277,7 +245,7 @@ def process_consumer_config(
         DEFAULT_ELASTIC_AGENT_STATUS_TIMEOUT_SECONDS,
     )
     return {
-        "elastic_agent_executable_path": _resolve_optional_executable_from_config(
+        "elastic_agent_executable_path": resolve_optional_executable_from_config(
             raw_value=executable_path,
             config_path=context.config_path,
         ),
@@ -405,7 +373,7 @@ class ElasticAgentCliLifecycle(_BaseClientProcessLifecycle):
 
     def _resolve_executable_for_subprocess(self, executable_path: str) -> str:
         """Resolve bare executable names before passing them to subprocess."""
-        if _looks_like_executable_path(executable_path):
+        if looks_like_executable_path(executable_path):
             return executable_path
         lookup_path = self._executable_lookup_path()
         resolved_path = shutil.which(executable_path, path=lookup_path)

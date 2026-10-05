@@ -57,7 +57,8 @@ from opamp_consumer.config_metadata import (
 )
 from opamp_consumer.plugin_config import (
     ConsumerPluginConfigContext,
-    resolve_optional_path_from_config,
+    looks_like_executable_path,
+    resolve_optional_executable_from_config,
 )
 from opamp_consumer.proto import opamp_pb2
 from opamp_consumer.reporting_flag import ReportingFlag
@@ -78,34 +79,6 @@ ENV_VECTOR_EXECUTABLE_PATH = "OPAMP_VECTOR_EXECUTABLE_PATH"
 ENV_VECTOR_API_HOST = "OPAMP_VECTOR_API_HOST"
 ENV_VECTOR_API_PORT = "OPAMP_VECTOR_API_PORT"
 VECTOR_HEALTH_PATH = "/health"
-
-
-def _looks_like_executable_path(value: str) -> bool:
-    """Return True when the value should be treated as a direct executable path."""
-    normalized = str(value or "").strip()
-    if not normalized:
-        return False
-    return (
-        pathlib.PureWindowsPath(normalized).is_absolute()
-        or pathlib.Path(normalized).is_absolute()
-        or any(separator in normalized for separator in ("/", "\\"))
-    )
-
-
-def _resolve_optional_executable_from_config(
-    *,
-    raw_value: Any,
-    config_path: pathlib.Path,
-) -> str | None:
-    normalized_value = str(raw_value).strip() if raw_value is not None else ""
-    if not normalized_value:
-        return None
-    if not _looks_like_executable_path(normalized_value):
-        return normalized_value
-    return resolve_optional_path_from_config(
-        raw_value=normalized_value,
-        config_path=config_path,
-    )
 
 
 def _parse_vector_api_address(config_text: str) -> tuple[str | None, int | None, bool | None]:
@@ -158,7 +131,7 @@ def process_consumer_config(
         DEFAULT_VECTOR_STATUS_TIMEOUT_SECONDS,
     )
     return {
-        "vector_executable_path": _resolve_optional_executable_from_config(
+        "vector_executable_path": resolve_optional_executable_from_config(
             raw_value=executable_path,
             config_path=context.config_path,
         ),
@@ -221,7 +194,7 @@ class VectorLifecycle(_BaseClientProcessLifecycle):
         return str(getattr(self._owner.config, "vector_executable_path", None) or VECTOR_CMD)
 
     def _resolve_executable_for_subprocess(self, executable_path: str) -> str:
-        if _looks_like_executable_path(executable_path):
+        if looks_like_executable_path(executable_path):
             return executable_path
         resolved_path = shutil.which(executable_path)
         if not resolved_path:
@@ -329,7 +302,7 @@ class VectorOpAMPClient(AbstractOpAMPClient):
 
     def add_agent_version(self, port: int) -> None:
         executable = str(getattr(self.config, "vector_executable_path", None) or VECTOR_CMD)
-        if not _looks_like_executable_path(executable):
+        if not looks_like_executable_path(executable):
             executable = shutil.which(executable) or executable
         try:
             completed = subprocess.run(

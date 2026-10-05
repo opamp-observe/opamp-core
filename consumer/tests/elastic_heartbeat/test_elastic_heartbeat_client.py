@@ -23,7 +23,6 @@ from pathlib import Path
 
 from opamp_consumer.abstract_client import KEY_SERVICE_INSTANCE_ID
 from opamp_consumer.config import ConsumerConfig
-from opamp_consumer.elastic_heartbeat import client as heartbeat_module
 from opamp_consumer.elastic_heartbeat.client import (
     ELASTIC_HEARTBEAT_CONFIG_FLAG,
     ELASTIC_HEARTBEAT_FOREGROUND_FLAG,

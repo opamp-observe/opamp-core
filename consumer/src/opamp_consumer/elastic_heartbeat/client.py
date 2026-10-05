@@ -76,6 +76,8 @@ from opamp_consumer.config_metadata import ConfigMetadata
 from opamp_consumer.exceptions import AgentException
 from opamp_consumer.plugin_config import (
     ConsumerPluginConfigContext,
+    looks_like_executable_path,
+    resolve_optional_executable_from_config,
     resolve_optional_path_from_config,
 )
 from opamp_consumer.process_utils import ProcessUtils
@@ -121,35 +123,6 @@ def _windows_no_console_kwargs() -> dict[str, Any]:
 def _command_for_log(command: list[str]) -> str:
     """Return a readable shell-style command string for diagnostics."""
     return shlex.join(str(part) for part in command)
-
-
-def _looks_like_executable_path(value: str) -> bool:
-    """Return whether an executable value is path-like rather than a PATH command."""
-    return (
-        "/" in value
-        or "\\" in value
-        or value.startswith((".", "~"))
-        or bool(pathlib.PureWindowsPath(value).drive)
-    )
-
-
-def _resolve_optional_executable_from_config(
-    *,
-    raw_value: Any,
-    config_path: pathlib.Path,
-) -> str | None:
-    """Resolve an optional Beat executable path or PATH command from config."""
-    normalized_value = str(raw_value).strip() if raw_value is not None else ""
-    if not normalized_value:
-        return None
-    if not _looks_like_executable_path(normalized_value):
-        return normalized_value
-    if pathlib.PureWindowsPath(normalized_value).is_absolute():
-        return normalized_value
-    return resolve_optional_path_from_config(
-        raw_value=normalized_value,
-        config_path=config_path,
-    )
 
 
 def _coerce_string_list(value: Any) -> list[str]:
@@ -288,7 +261,7 @@ def process_consumer_config(
         DEFAULT_HEARTBEAT_STATUS_TIMEOUT_SECONDS,
     )
     return {
-        "elastic_heartbeat_executable_path": _resolve_optional_executable_from_config(
+        "elastic_heartbeat_executable_path": resolve_optional_executable_from_config(
             raw_value=executable_path,
             config_path=context.config_path,
         ),
@@ -333,7 +306,7 @@ class ElasticHeartbeatLifecycle(_BaseClientProcessLifecycle):
 
     def _resolve_executable_for_subprocess(self, executable_path: str) -> str:
         """Resolve bare executable names before passing them to subprocess."""
-        if _looks_like_executable_path(executable_path):
+        if looks_like_executable_path(executable_path):
             return executable_path
         resolved_path = shutil.which(executable_path, path=self._executable_lookup_path())
         if not resolved_path:
