@@ -1,6 +1,8 @@
 # Vector Consumer Plugin
 
 The Vector plugin lets `opamp-consumer` supervise a Vector process and report it through OpAMP.
+For the built-in implementation capability matrix, see
+[docs/consumer_implementations.md](../../../docs/consumer_implementations.md).
 
 ## Consumer Configuration
 

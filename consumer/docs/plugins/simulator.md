@@ -2,6 +2,8 @@
 
 This page covers configuration that is specific to the `simulator` consumer plugin.
 Shared consumer keys are documented in [consumer/README.md](../../README.md).
+For the built-in implementation capability matrix, see
+[docs/consumer_implementations.md](../../../docs/consumer_implementations.md).
 
 The simulator is a development-only consumer. It does not launch a real telemetry
 agent; it reports synthetic local health and replays scripted responses to server

@@ -1,8 +1,24 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # config-service
 
 The config service can be run as part of the larger OpAMP server, or as a standalone package. When run in a standalone configuration, this effectively becomes a UI driven configuration editor and validation tool. The config-service is composed of a lightweight JavaScript and HTML presentation tier and a Python backend that serves the UI and provides validation logic, I/O, etc. 
 
 The editor currently primarily supports Fluent-Bit YAML, but it also includes some functionality for Fluentd (and will be enhanced over time).  Fluent Bit's Classic format isn't supported because it isn't the strategic format for the future. There is a config converter available [here](https://github.com/mp3monster/fluent-bit-classic-to-yaml-converter).
+
+The proposed multi-agent refactor and schema-driven Vector support are specified in the [multi-agent configuration editor roadmap](../docs/roadmap/vector_multi_agent_configuration_editor.md).
 
 ### This package ships:
 

@@ -2,6 +2,8 @@
 
 This page covers configuration that is specific to the `fluentd` consumer plugin.
 Shared consumer keys are documented in [consumer/README.md](../../README.md).
+For the built-in implementation capability matrix, see
+[docs/consumer_implementations.md](../../../docs/consumer_implementations.md).
 
 ## Plugin Identity
 
@@ -40,7 +42,7 @@ opamp-consumer --config-path ./opamp.json
 | `consumer.client_status_port` | Usually no | If omitted, the consumer parses the `monitor_agent` source port from `agent_config_path`. |
 | `consumer.processTracking` | No | `Supervisor` launches Fluentd. `Observer` attaches by regex. |
 | `consumer.processDetectionRegex` | Observer only | Regex used to discover an already running Fluentd process. |
-| `consumer.agent_capabilities` | No | Supports `AcceptsRemoteConfig` and `ReportsHeartbeat` in addition to mandatory capabilities. |
+| `consumer.agent_capabilities` | No | Supports `AcceptsRemoteConfig`, `ReportsEffectiveConfig`, and `ReportsHeartbeat` in addition to mandatory capabilities. |
 
 ## Required Monitor Source
 
