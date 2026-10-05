@@ -271,6 +271,7 @@ It includes:
 See:
 
 - [Consumer README](../consumer/README.md)
+- [Consumer implementations](consumer_implementations.md)
 - [Consumer UML source](<dev/client(consumer)/consumer_client_diagram.md>)
 - [Consumer rendered diagram walkthrough](consumer_client_diagrams.md)
 - [Consumer custom handlers](<dev/client(consumer)/consumer_custom_handlers.md>)
@@ -357,6 +358,7 @@ See:
 ## Core documentation map
 
 - [Features and spec alignment](features.md)
+- [Consumer implementations](consumer_implementations.md)
 - [Client config generator service](client_config_generator_service.md)
 - [Roadmap](roadmap/index.md)
 - [OpAMP JSON reference map](opamp_json_reference.md)
