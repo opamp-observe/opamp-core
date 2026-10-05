@@ -1,9 +1,25 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # OpAMP Feature Completion, ToDos and Future Features
 The following represents a brain dump of things that we want to/need to do. The ToDos are the primary focus, but may not be delivered immediately as we work toward a minimal implementation.
 
 ## OpAMP Specification
 
 The following is a summary of the features  based on the message exchange and the progress made, gaps and things that aren't in our plans.
+For the current built-in consumer implementation capability matrix, see
+[Consumer implementations](consumer_implementations.md).
 
 ### Client to Server
 
@@ -110,6 +126,8 @@ The main OpAMP Server, which provides the UI and controls for the deployed clien
 ##### Config Editor (Config Service)
 
 The config editor and its tools can be used to edit Fluent Bit and Fluentd configuration files.
+
+The proposed adapter architecture and first Vector implementation are defined in the [multi-agent configuration editor roadmap](roadmap/vector_multi_agent_configuration_editor.md).
 
 - Improve the validation feedback
 - Look at how we could provide a more visual representation of the configuration
