@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Roadmap
 
 This doesn't commit to any timelines and doesn't provide any guarantees, but it does identify ideas that could be pursued and developed
@@ -12,6 +26,7 @@ This doesn't commit to any timelines and doesn't provide any guarantees, but it 
 
 Extend the editor to support additional agent types, covering:
 
+- [Multi-agent configuration editor and Vector support](vector_multi_agent_configuration_editor.md) - implementation specification for refactoring `config-service`, adapting the Fluent Bit approach, and adding schema-driven Vector editing to the OpAMP server.
 - [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/)
 - [Vector](https://vector.dev/)
 - [Elastic Agent](https://www.elastic.co/elastic-agent)
@@ -65,6 +80,15 @@ Reference configurations to illustrate (and use the CLI to launch)
 
 
 # Automation and Deployment
+
+## Incorporate a deployment function in the server that will allow the user to:
+- SSH to a client and deploy an agent configuration,
+- deploy the observer/supervisor,
+- trigger the installation or update of the observability too e.g. Fluent Bit
+- Deploy the initial container
+- Allow the user to embed the feature into the server startup
+
+We should conmsider whether the deployment of the observability tool and its code is provided as a custom command, minimizing what can be done via the SSH tunnel, but also raises the question of permissions for the client side functionality.
 
 ## Code signing
 

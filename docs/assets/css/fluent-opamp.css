@@ -1,0 +1,307 @@
+/*
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+:root {
+  --fluent-opamp-text: #18212f;
+  --fluent-opamp-muted: #5b6470;
+  --fluent-opamp-border: #d6dce8;
+  --fluent-opamp-panel-bg: #ffffff;
+  --fluent-opamp-panel-soft: #f7f9ff;
+  --fluent-opamp-link: #1844af;
+  --fluent-opamp-accent: #b84816;
+  --fluent-opamp-code-bg: #eef2f8;
+  --fluent-opamp-page-bg: radial-gradient(
+    circle at top left,
+    #e7eeff 0%,
+    #f5f7fb 55%,
+    #fff4d8 100%
+  );
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  color: var(--fluent-opamp-text);
+}
+
+a {
+  color: var(--fluent-opamp-link);
+}
+
+a:hover,
+a:focus {
+  text-decoration: underline;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+.site-header {
+  border-bottom: 3px solid var(--fluent-opamp-accent);
+}
+
+.site-header .site-brand-inner {
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.page-content {
+  background: #f5f7fb;
+}
+
+.page-content > .wrapper {
+  background: var(--fluent-opamp-panel-bg);
+  border-top: 4px solid var(--fluent-opamp-link);
+  padding: 2rem clamp(1rem, 4vw, 3rem);
+}
+
+.page-content .framework > .main {
+  min-width: 0;
+  width: 100%;
+}
+
+.page-content .framework > .sidebar:empty {
+  display: none;
+  margin-left: 0 !important;
+  padding: 0;
+}
+
+.page-content h1,
+.page-content h2,
+.page-content h3 {
+  color: var(--fluent-opamp-text);
+  letter-spacing: 0;
+}
+
+.page-content h2 {
+  border-bottom: 1px solid var(--fluent-opamp-border);
+  padding-bottom: 0.35rem;
+}
+
+.page-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  width: max-content;
+}
+
+.page-content th,
+.page-content td {
+  border: 1px solid var(--fluent-opamp-border);
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.page-content th {
+  background: var(--fluent-opamp-panel-soft);
+}
+
+.page-content :not(pre) > code {
+  background: var(--fluent-opamp-code-bg);
+  border-radius: 3px;
+  color: #8e2f0c;
+  padding: 0.12rem 0.28rem;
+}
+
+.page-content pre {
+  border: 1px solid var(--fluent-opamp-border);
+  overflow-x: auto;
+}
+
+.page-content img {
+  height: auto;
+  max-width: 100%;
+}
+
+.site-footer .site-footer-inner {
+  border-top: 1px solid var(--fluent-opamp-border);
+}
+
+.fluent-opamp-landing {
+  margin: 0;
+  font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+  background: var(--fluent-opamp-page-bg);
+  min-height: 100vh;
+}
+
+.fluent-opamp-landing main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 2.5rem;
+}
+
+.fluent-opamp-landing .logo-wrap {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.fluent-opamp-landing .logo-wrap img {
+  width: min(380px, 80vw);
+  height: auto;
+  display: inline-block;
+}
+
+.fluent-opamp-landing h1 {
+  margin: 0 0 0.4rem;
+  text-align: center;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+.fluent-opamp-landing .subtitle {
+  margin: 0 0 1.6rem;
+  text-align: center;
+  color: var(--fluent-opamp-muted);
+}
+
+.fluent-opamp-landing .grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.fluent-opamp-landing .card {
+  background: linear-gradient(
+    180deg,
+    var(--fluent-opamp-panel-soft) 0%,
+    var(--fluent-opamp-panel-bg) 65%
+  );
+  border: 1px solid var(--fluent-opamp-border);
+  border-radius: 12px;
+  padding: 0.95rem 1rem;
+}
+
+.fluent-opamp-landing .card h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+.fluent-opamp-landing ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fluent-opamp-landing .card ul ul {
+  list-style: disc;
+  margin-top: 0.45rem;
+  padding-left: 1.3rem;
+}
+
+.fluent-opamp-landing li + li {
+  margin-top: 0.45rem;
+}
+
+.fluent-opamp-landing a {
+  text-decoration: none;
+}
+
+.fluent-opamp-landing .opamp-article {
+  margin-top: 1.5rem;
+  padding: 1.4rem 1.5rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--fluent-opamp-border);
+  border-radius: 12px;
+  line-height: 1.6;
+}
+
+.fluent-opamp-landing .opamp-article h2 {
+  margin: 0 0 0.85rem;
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+}
+
+.fluent-opamp-landing .opamp-article h3 {
+  margin: 1.35rem 0 0.45rem;
+  font-size: 1.02rem;
+}
+
+.fluent-opamp-landing .opamp-article p {
+  margin: 0.7rem 0;
+}
+
+.fluent-opamp-landing .opamp-article code {
+  font-family: "Cascadia Mono", "Courier New", monospace;
+  font-size: 0.92em;
+}
+
+.fluent-opamp-landing .article-source {
+  margin-top: 0;
+  color: var(--fluent-opamp-muted);
+  font-size: 0.9rem;
+}
+
+.fluent-opamp-landing .article-list,
+.fluent-opamp-landing .article-steps {
+  margin: 0.75rem 0;
+  padding-left: 1.35rem;
+}
+
+.fluent-opamp-landing .article-list {
+  list-style: disc;
+}
+
+.fluent-opamp-landing .article-steps {
+  list-style: decimal;
+}
+
+.fluent-opamp-landing .article-table {
+  width: 100%;
+  margin: 0.9rem 0;
+  font-size: 0.95rem;
+}
+
+.fluent-opamp-landing .article-table th,
+.fluent-opamp-landing .article-table td {
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--fluent-opamp-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.fluent-opamp-landing .article-table th {
+  background: var(--fluent-opamp-panel-soft);
+}
+
+.fluent-opamp-landing .footer {
+  margin-top: 1.25rem;
+  padding: 0.75rem 0.25rem 0.1rem;
+  text-align: center;
+  color: var(--fluent-opamp-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .fluent-opamp-landing .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-content > .wrapper {
+    border-top-width: 3px;
+    padding: 1.25rem 1rem;
+  }
+
+  .fluent-opamp-landing .opamp-article {
+    padding: 1rem;
+  }
+
+  .fluent-opamp-landing .article-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
