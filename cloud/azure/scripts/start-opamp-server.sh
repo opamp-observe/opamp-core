@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -euo pipefail
 
 OPAMP_HOME="${OPAMP_HOME:-/opt/opamp}"
 OPAMP_USER="${OPAMP_USER:-opamp}"
 OPAMP_PUBLIC_HOST="${OPAMP_PUBLIC_HOST:-$(hostname -f)}"
+OPAMP_SERVER_PRIVATE_IP="${OPAMP_SERVER_PRIVATE_IP:-10.42.0.10}"
 KEYCLOAK_ADMIN="${KEYCLOAK_ADMIN:-admin}"
 KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-opamp}"
@@ -12,6 +25,12 @@ KEYCLOAK_CLIENT_SECRET="${KEYCLOAK_CLIENT_SECRET:-}"
 OPAMP_UI_USER="${OPAMP_UI_USER:-opampuser}"
 OPAMP_UI_PASSWORD="${OPAMP_UI_PASSWORD:-}"
 OAUTH2_PROXY_COOKIE_SECRET="${OAUTH2_PROXY_COOKIE_SECRET:-}"
+
+if [[ "$OPAMP_PUBLIC_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  OPAMP_PUBLIC_SAN="IP:$OPAMP_PUBLIC_HOST"
+else
+  OPAMP_PUBLIC_SAN="DNS:$OPAMP_PUBLIC_HOST"
+fi
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "Run this script as root or with sudo." >&2
@@ -28,7 +47,7 @@ chown -R "$OPAMP_USER:$OPAMP_USER" "$OPAMP_HOME" /var/log/opamp /etc/opamp
 if [[ ! -s /etc/opamp/certs/opamp-selfsigned.crt || ! -s /etc/opamp/certs/opamp-selfsigned.key ]]; then
   openssl req -x509 -nodes -newkey rsa:4096 -days 365 \
     -subj "/CN=$OPAMP_PUBLIC_HOST" \
-    -addext "subjectAltName=DNS:$OPAMP_PUBLIC_HOST,IP:10.42.0.10" \
+    -addext "subjectAltName=$OPAMP_PUBLIC_SAN,IP:$OPAMP_SERVER_PRIVATE_IP" \
     -keyout /etc/opamp/certs/opamp-selfsigned.key \
     -out /etc/opamp/certs/opamp-selfsigned.crt
 fi
@@ -73,7 +92,7 @@ cat > /etc/opamp/opamp-provider.json <<'EOF'
     "minutes_keep_disconnected": 30,
     "retryAfterSeconds": 30,
     "client_event_history_size": 200,
-    "log_level": "INFO",
+    "log_level": "DEBUG",
     "human_in_loop_approval": false,
     "allow-remote-config": true,
     "allow-effective-config": true,

@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -euo pipefail
 
 OPAMP_ROLE="${OPAMP_ROLE:-server}"
 OPAMP_HOME="${OPAMP_HOME:-/opt/opamp}"
 OPAMP_USER="${OPAMP_USER:-opamp}"
+OPAMP_WHEEL_SOURCE_DIR="${OPAMP_WHEEL_SOURCE_DIR:-}"
 OPAMP_WHEEL_SOURCE_URL="${OPAMP_WHEEL_SOURCE_URL:-}"
-OPAMP_SOURCE_REPO="${OPAMP_SOURCE_REPO:-https://github.com/mp3monster/fluent-opamp.git}"
+OPAMP_SOURCE_REPO="${OPAMP_SOURCE_REPO:-https://github.com/opamp-observe/opamp-core.git}"
 OPAMP_SOURCE_REF="${OPAMP_SOURCE_REF:-main}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 
@@ -54,6 +67,8 @@ install -d -m 0755 /etc/opamp /var/log/opamp
 
 systemctl enable --now docker
 
+# Download the wheel manifest and its referenced wheels from an HTTPS artifact location.
+# The first parameter is the base URL containing the wheels directory.
 stage_wheels_from_url() {
   local base_url="$1"
   local manifest="$OPAMP_HOME/wheels/wheels.txt"
@@ -64,6 +79,23 @@ stage_wheels_from_url() {
   done < "$manifest"
 }
 
+# Copy the wheel manifest and its referenced wheels from a locally extracted artifact pack.
+# The first parameter is the artifact root containing the wheels directory.
+stage_wheels_from_directory() {
+  local artifact_root="$1"
+  local source_manifest="$artifact_root/wheels/wheels.txt"
+  if [[ ! -s "$source_manifest" ]]; then
+    echo "Wheel manifest not found at $source_manifest" >&2
+    exit 1
+  fi
+  while IFS= read -r wheel_name; do
+    [[ -z "$wheel_name" ]] && continue
+    cp "$artifact_root/wheels/$wheel_name" "$OPAMP_HOME/wheels/$wheel_name"
+  done < "$source_manifest"
+  cp "$source_manifest" "$OPAMP_HOME/wheels/wheels.txt"
+}
+
+# Build all deployable component wheels from a Git checkout when no artifact pack is supplied.
 stage_wheels_from_source() {
   local checkout="$OPAMP_HOME/source/current"
   rm -rf "$checkout"
@@ -78,18 +110,24 @@ stage_wheels_from_source() {
 
 rm -rf "$OPAMP_HOME/wheels"
 install -d -o "$OPAMP_USER" -g "$OPAMP_USER" "$OPAMP_HOME/wheels"
-if [[ -n "$OPAMP_WHEEL_SOURCE_URL" ]]; then
+if [[ -n "$OPAMP_WHEEL_SOURCE_DIR" ]]; then
+  stage_wheels_from_directory "$OPAMP_WHEEL_SOURCE_DIR"
+elif [[ -n "$OPAMP_WHEEL_SOURCE_URL" ]]; then
   stage_wheels_from_url "$OPAMP_WHEEL_SOURCE_URL"
 else
   stage_wheels_from_source
 fi
 
+# Create an isolated virtual environment for one deployed OpAMP role.
+# The first parameter is the environment name under the OpAMP home directory.
 create_venv() {
   local name="$1"
   "$PYTHON_BIN" -m venv "$OPAMP_HOME/venvs/$name"
   "$OPAMP_HOME/venvs/$name/bin/python" -m pip install --upgrade pip setuptools wheel
 }
 
+# Install the newest wheel matching a component pattern into a selected environment.
+# Parameters are the virtual environment name followed by the wheel filename pattern.
 install_matching_wheel() {
   local venv="$1"
   local pattern="$2"

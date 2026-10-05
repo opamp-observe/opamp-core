@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -euo pipefail
 
 OPAMP_ROLE="${OPAMP_ROLE:-all}"
@@ -10,6 +22,8 @@ if [[ "$(id -u)" -ne 0 ]]; then
   exit 1
 fi
 
+# Stop services for the selected server or consumer role before replacing wheels.
+# The first parameter is the role name.
 stop_role() {
   local role="$1"
   case "$role" in
@@ -22,6 +36,8 @@ stop_role() {
   esac
 }
 
+# Restart the role by invoking its platform-neutral startup script.
+# The first parameter is the role name.
 start_role() {
   local role="$1"
   case "$role" in

@@ -1,10 +1,24 @@
 #!/usr/bin/env bash
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -euo pipefail
 
 OPAMP_HOME="${OPAMP_HOME:-/opt/opamp}"
 OPAMP_USER="${OPAMP_USER:-opamp}"
 OPAMP_SERVER_URL="${OPAMP_SERVER_URL:-https://10.42.0.10}"
 OPAMP_SERVER_HOST="${OPAMP_SERVER_HOST:-opamp-server}"
+OPAMP_DEPLOYMENT_PLATFORM="${OPAMP_DEPLOYMENT_PLATFORM:-Azure}"
+OPAMP_DEPLOYMENT_SLUG="${OPAMP_DEPLOYMENT_PLATFORM,,}"
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "Run this script as root or with sudo." >&2
@@ -60,11 +74,11 @@ service:
       exporters: [self]
 EOF
 
-cat > "$OPAMP_HOME/config/simulator-responses.json" <<'EOF'
+cat > "$OPAMP_HOME/config/simulator-responses.json" <<EOF
 {
   "remote_config": {
     "status": "applied",
-    "last_remote_config_hash": "azure-bootstrap"
+    "last_remote_config_hash": "$OPAMP_DEPLOYMENT_SLUG-bootstrap"
   }
 }
 EOF
@@ -85,7 +99,7 @@ cat > /etc/opamp/opamp-consumer-simulator.json <<EOF
     "log_agent_api_responses": true,
     "agent_config_path": "$OPAMP_HOME/config/simulator-agent.yaml",
     "agent_additional_params": [
-      "{\"service_instance_uid\":\"azure-consumer-simulator\",\"client_version\":\"Azure wheel deployment\",\"config_version\":\"azure-bootstrap\"}"
+      "{\"service_instance_uid\":\"$OPAMP_DEPLOYMENT_SLUG-consumer-simulator\",\"client_version\":\"$OPAMP_DEPLOYMENT_PLATFORM wheel deployment\",\"config_version\":\"$OPAMP_DEPLOYMENT_SLUG-bootstrap\"}"
     ],
     "heartbeat_frequency": 10,
     "service_type": "simulator",
@@ -95,9 +109,9 @@ cat > /etc/opamp/opamp-consumer-simulator.json <<EOF
     },
     "full_update_controller_type": "SentCount",
     "allow_custom_capabilities": true,
-    "log_level": "info",
-    "service_name": "Azure Consumer Simulator",
-    "service_namespace": "Azure"
+    "log_level": "debug",
+    "service_name": "$OPAMP_DEPLOYMENT_PLATFORM Consumer Simulator",
+    "service_namespace": "$OPAMP_DEPLOYMENT_PLATFORM"
   }
 }
 EOF
