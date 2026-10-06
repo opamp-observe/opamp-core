@@ -10,18 +10,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-param(
-    [string]$ResourceGroup = "opamp-regression-rg",
-    [switch]$Wait
-)
-
-$ErrorActionPreference = "Stop"
-
-# Delete the VM resource group while preserving the separate retention resource
-# group. -Wait is useful when a caller must confirm billing resources are gone.
-if ($Wait) {
-    az group delete --name $ResourceGroup --yes | Out-Host
-} else {
-    az group delete --name $ResourceGroup --yes --no-wait | Out-Host
-}
-Write-Output "Retained Azure storage accounts are not deleted; use cloud/azure/destroy-bucket.ps1 explicitly."
+*.sh text eol=lf

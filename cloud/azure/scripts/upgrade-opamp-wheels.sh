@@ -13,6 +13,8 @@
 
 set -euo pipefail
 
+# Perform an in-place wheel replacement on an existing VM. Infrastructure and
+# retained storage are untouched; only selected application services are cycled.
 OPAMP_ROLE="${OPAMP_ROLE:-all}"
 OPAMP_HOME="${OPAMP_HOME:-/opt/opamp}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -50,6 +52,8 @@ start_role() {
   esac
 }
 
+# Each role is stopped before its environment is rebuilt, then restarted through
+# the same startup path used during initial provisioning.
 case "$OPAMP_ROLE" in
   server|consumer)
     stop_role "$OPAMP_ROLE"

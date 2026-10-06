@@ -13,6 +13,8 @@
 
 set -euo pipefail
 
+# Configure the complete server role after install-opamp.sh creates its Python
+# environment. Containers provide identity and telemetry; systemd runs OpAMP services.
 OPAMP_HOME="${OPAMP_HOME:-/opt/opamp}"
 OPAMP_USER="${OPAMP_USER:-opamp}"
 OPAMP_PUBLIC_HOST="${OPAMP_PUBLIC_HOST:-$(hostname -f)}"
@@ -25,6 +27,11 @@ KEYCLOAK_CLIENT_SECRET="${KEYCLOAK_CLIENT_SECRET:-}"
 OPAMP_UI_USER="${OPAMP_UI_USER:-opampuser}"
 OPAMP_UI_PASSWORD="${OPAMP_UI_PASSWORD:-}"
 OAUTH2_PROXY_COOKIE_SECRET="${OAUTH2_PROXY_COOKIE_SECRET:-}"
+KEYCLOAK_CONTAINER_NAME="opamp-keycloak"
+KEYCLOAK_IMAGE="quay.io/keycloak/keycloak:25.0"
+KEYCLOAK_READY_ATTEMPTS="${KEYCLOAK_READY_ATTEMPTS:-60}"
+KEYCLOAK_READY_INTERVAL_SECONDS="${KEYCLOAK_READY_INTERVAL_SECONDS:-5}"
+KEYCLOAK_READY_URL="http://127.0.0.1:8081/realms/master"
 
 if [[ "$OPAMP_PUBLIC_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   OPAMP_PUBLIC_SAN="IP:$OPAMP_PUBLIC_HOST"
@@ -44,6 +51,8 @@ fi
 install -d -m 0755 /etc/opamp /etc/opamp/certs /var/log/opamp "$OPAMP_HOME/config" "$OPAMP_HOME/runtime"
 chown -R "$OPAMP_USER:$OPAMP_USER" "$OPAMP_HOME" /var/log/opamp /etc/opamp
 
+# Phase 1: create the regression TLS identity and application secrets locally.
+# Generated values are persisted so rerunning startup does not rotate credentials.
 if [[ ! -s /etc/opamp/certs/opamp-selfsigned.crt || ! -s /etc/opamp/certs/opamp-selfsigned.key ]]; then
   openssl req -x509 -nodes -newkey rsa:4096 -days 365 \
     -subj "/CN=$OPAMP_PUBLIC_HOST" \
@@ -83,6 +92,7 @@ UI password: $OPAMP_UI_PASSWORD
 EOF
 chmod 0600 /etc/opamp/keycloak-client-secret /etc/opamp/opamp-ui-password /etc/opamp/oauth2-cookie-secret /etc/opamp/opamp-ui-user.txt
 
+# Phase 2: write provider and collector configuration consumed by later services.
 cat > /etc/opamp/opamp-provider.json <<'EOF'
 {
   "provider": {
@@ -176,32 +186,52 @@ service:
       exporters: [debug, file]
 EOF
 
+# Phase 3: start containerized telemetry and identity dependencies before any
+# Python services that publish telemetry or require browser authentication.
 docker rm -f opamp-otel-collector >/dev/null 2>&1 || true
 docker run -d --name opamp-otel-collector --restart unless-stopped --network host \
   -v /etc/opamp/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro \
   -v /var/log/opamp:/var/log/opamp \
   otel/opentelemetry-collector-contrib:0.104.0
 
-docker rm -f opamp-keycloak >/dev/null 2>&1 || true
-docker run -d --name opamp-keycloak --restart unless-stopped --network host \
+docker rm -f "$KEYCLOAK_CONTAINER_NAME" >/dev/null 2>&1 || true
+docker run -d --name "$KEYCLOAK_CONTAINER_NAME" --restart unless-stopped --network host \
   -e KEYCLOAK_ADMIN="$KEYCLOAK_ADMIN" \
   -e KEYCLOAK_ADMIN_PASSWORD="$KEYCLOAK_ADMIN_PASSWORD" \
-  quay.io/keycloak/keycloak:25.0 \
-  start-dev --http-port=8081 --hostname-url="https://$OPAMP_PUBLIC_HOST:8443" --proxy-headers=xforwarded
+  "$KEYCLOAK_IMAGE" \
+  start-dev --http-port=8081 --hostname="https://$OPAMP_PUBLIC_HOST:8443" --proxy-headers=xforwarded
 
-for _ in $(seq 1 60); do
-  if curl -fsS http://127.0.0.1:8081/ >/dev/null 2>&1; then
-    break
-  fi
-  sleep 5
-done
+# Wait until Keycloak accepts realm requests before running its administration CLI.
+# The configured attempt count and interval bound startup time on smaller cloud instances.
+wait_for_keycloak() {
+  local attempt_number
+  local container_status
 
-docker exec opamp-keycloak /opt/keycloak/bin/kcadm.sh config credentials \
+  for ((attempt_number = 1; attempt_number <= KEYCLOAK_READY_ATTEMPTS; attempt_number++)); do
+    container_status="$(docker inspect --format '{{.State.Status}}' "$KEYCLOAK_CONTAINER_NAME" 2>/dev/null || true)"
+    if [[ "$container_status" == "running" ]] &&
+      curl -fsS "$KEYCLOAK_READY_URL" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep "$KEYCLOAK_READY_INTERVAL_SECONDS"
+  done
+
+  container_status="$(docker inspect --format '{{.State.Status}}' "$KEYCLOAK_CONTAINER_NAME" 2>/dev/null || true)"
+  echo "Keycloak did not become ready; container status: ${container_status:-unknown}" >&2
+  docker logs --tail 80 "$KEYCLOAK_CONTAINER_NAME" >&2 || true
+  return 1
+}
+
+if ! wait_for_keycloak; then
+  exit 1
+fi
+
+docker exec "$KEYCLOAK_CONTAINER_NAME" /opt/keycloak/bin/kcadm.sh config credentials \
   --server http://127.0.0.1:8081 --realm master \
   --user "$KEYCLOAK_ADMIN" --password "$KEYCLOAK_ADMIN_PASSWORD"
-docker exec opamp-keycloak /opt/keycloak/bin/kcadm.sh create realms \
+docker exec "$KEYCLOAK_CONTAINER_NAME" /opt/keycloak/bin/kcadm.sh create realms \
   -s realm="$KEYCLOAK_REALM" -s enabled=true >/dev/null 2>&1 || true
-docker exec opamp-keycloak /opt/keycloak/bin/kcadm.sh create clients -r "$KEYCLOAK_REALM" \
+docker exec "$KEYCLOAK_CONTAINER_NAME" /opt/keycloak/bin/kcadm.sh create clients -r "$KEYCLOAK_REALM" \
   -s clientId="$KEYCLOAK_CLIENT_ID" \
   -s enabled=true \
   -s publicClient=false \
@@ -209,11 +239,12 @@ docker exec opamp-keycloak /opt/keycloak/bin/kcadm.sh create clients -r "$KEYCLO
   -s standardFlowEnabled=true \
   -s directAccessGrantsEnabled=true \
   -s 'redirectUris=["https://'"$OPAMP_PUBLIC_HOST"'/oauth2/callback"]' >/dev/null 2>&1 || true
-docker exec opamp-keycloak /opt/keycloak/bin/kcadm.sh create users -r "$KEYCLOAK_REALM" \
+docker exec "$KEYCLOAK_CONTAINER_NAME" /opt/keycloak/bin/kcadm.sh create users -r "$KEYCLOAK_REALM" \
   -s username="$OPAMP_UI_USER" -s enabled=true >/dev/null 2>&1 || true
-docker exec opamp-keycloak /opt/keycloak/bin/kcadm.sh set-password -r "$KEYCLOAK_REALM" \
+docker exec "$KEYCLOAK_CONTAINER_NAME" /opt/keycloak/bin/kcadm.sh set-password -r "$KEYCLOAK_REALM" \
   --username "$OPAMP_UI_USER" --new-password "$OPAMP_UI_PASSWORD" --temporary=false
 
+# OAuth2 Proxy translates the Keycloak browser session into Nginx auth decisions.
 docker rm -f opamp-oauth2-proxy >/dev/null 2>&1 || true
 docker run -d --name opamp-oauth2-proxy --restart unless-stopped --network host \
   quay.io/oauth2-proxy/oauth2-proxy:v7.6.0 \
@@ -229,6 +260,7 @@ docker run -d --name opamp-oauth2-proxy --restart unless-stopped --network host 
   --ssl-insecure-skip-verify=true \
   --upstream=file:///dev/null
 
+# Phase 4: define systemd units for durable process supervision and restart behavior.
 cat > /etc/systemd/system/opamp-provider.service <<EOF
 [Unit]
 Description=OpAMP Provider
@@ -330,6 +362,8 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
+# Phase 5: Nginx terminates self-signed TLS, delegates browser authentication to
+# OAuth2 Proxy, and publishes Keycloak separately on port 8443.
 cat > /etc/nginx/sites-available/opamp <<EOF
 server {
     listen 443 ssl;
@@ -387,6 +421,8 @@ ln -sf /etc/nginx/sites-available/opamp /etc/nginx/sites-enabled/opamp
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
 
+# Enable services only after all configuration validates, then restart them to
+# apply this run's generated files deterministically.
 systemctl daemon-reload
 systemctl enable --now opamp-provider config-service catalog-service svr-credentials-manager-service opamp-broker nginx
 systemctl restart opamp-provider config-service catalog-service svr-credentials-manager-service opamp-broker nginx

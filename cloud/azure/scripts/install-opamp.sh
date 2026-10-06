@@ -13,6 +13,8 @@
 
 set -euo pipefail
 
+# Prepare one VM role from packaged wheels. This script runs as root during VM
+# bootstrap and is shared by AWS user data and Azure Custom Script Extensions.
 OPAMP_ROLE="${OPAMP_ROLE:-server}"
 OPAMP_HOME="${OPAMP_HOME:-/opt/opamp}"
 OPAMP_USER="${OPAMP_USER:-opamp}"
@@ -42,13 +44,14 @@ if [[ "$(id -u)" -ne 0 ]]; then
   exit 1
 fi
 
+# Phase 1: install host-level tools used by every role and establish stable
+# filesystem ownership for the unprivileged OpAMP service account.
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends \
   ca-certificates \
   curl \
   docker.io \
-  docker-compose-plugin \
   git \
   jq \
   nginx \
@@ -74,6 +77,7 @@ stage_wheels_from_url() {
   local manifest="$OPAMP_HOME/wheels/wheels.txt"
   curl -fsSL "$base_url/wheels/wheels.txt" -o "$manifest"
   while IFS= read -r wheel_name; do
+    wheel_name="${wheel_name%$'\r'}"
     [[ -z "$wheel_name" ]] && continue
     curl -fsSL "$base_url/wheels/$wheel_name" -o "$OPAMP_HOME/wheels/$wheel_name"
   done < "$manifest"
@@ -89,6 +93,7 @@ stage_wheels_from_directory() {
     exit 1
   fi
   while IFS= read -r wheel_name; do
+    wheel_name="${wheel_name%$'\r'}"
     [[ -z "$wheel_name" ]] && continue
     cp "$artifact_root/wheels/$wheel_name" "$OPAMP_HOME/wheels/$wheel_name"
   done < "$source_manifest"
@@ -108,6 +113,8 @@ stage_wheels_from_source() {
   (cd "$OPAMP_HOME/wheels" && ls -1 *.whl > wheels.txt)
 }
 
+# Phase 2: select exactly one artifact source. Cloud deployments normally use
+# a local extracted AWS archive or an Azure HTTPS base URL; Git is a fallback.
 rm -rf "$OPAMP_HOME/wheels"
 install -d -o "$OPAMP_USER" -g "$OPAMP_USER" "$OPAMP_HOME/wheels"
 if [[ -n "$OPAMP_WHEEL_SOURCE_DIR" ]]; then
@@ -140,6 +147,8 @@ install_matching_wheel() {
   "$OPAMP_HOME/venvs/$venv/bin/python" -m pip install --find-links "$OPAMP_HOME/wheels" "$match"
 }
 
+# Phase 3: rebuild isolated role environments. Server and consumer dependencies
+# remain separate even when both roles are installed on one diagnostic host.
 rm -rf "$OPAMP_HOME/venvs/server" "$OPAMP_HOME/venvs/consumer"
 case "$OPAMP_ROLE" in
   server)

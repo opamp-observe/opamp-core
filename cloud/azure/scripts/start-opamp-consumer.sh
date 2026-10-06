@@ -13,6 +13,8 @@
 
 set -euo pipefail
 
+# Configure and start the consumer role after install-opamp.sh has populated its
+# virtual environment. This script is provider-neutral; platform values affect labels.
 OPAMP_HOME="${OPAMP_HOME:-/opt/opamp}"
 OPAMP_USER="${OPAMP_USER:-opamp}"
 OPAMP_SERVER_URL="${OPAMP_SERVER_URL:-https://10.42.0.10}"
@@ -28,6 +30,8 @@ fi
 install -d -m 0755 /etc/opamp /var/log/opamp "$OPAMP_HOME/config" "$OPAMP_HOME/runtime"
 chown -R "$OPAMP_USER:$OPAMP_USER" "$OPAMP_HOME" /var/log/opamp /etc/opamp
 
+# Phase 1: run a local collector for simulator self-telemetry. Host networking
+# lets the Python service use the same loopback OTLP endpoint on either cloud.
 cat > /etc/opamp/otel-collector.yaml <<'EOF'
 receivers:
   otlp:
@@ -65,6 +69,8 @@ docker run -d --name opamp-otel-collector --restart unless-stopped --network hos
   -v /var/log/opamp:/var/log/opamp \
   otel/opentelemetry-collector-contrib:0.104.0
 
+# Phase 2: write the simulated agent and OpAMP client configuration. Server TLS
+# verification is disabled because regression environments use a self-signed certificate.
 cat > "$OPAMP_HOME/config/simulator-agent.yaml" <<'EOF'
 service:
   pipelines:
@@ -116,6 +122,7 @@ cat > /etc/opamp/opamp-consumer-simulator.json <<EOF
 }
 EOF
 
+# Phase 3: systemd owns long-running process supervision after bootstrap exits.
 cat > /etc/systemd/system/opamp-consumer-simulator.service <<EOF
 [Unit]
 Description=OpAMP Consumer Simulator
