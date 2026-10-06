@@ -1,4 +1,4 @@
-# Fluent OpAMP Documentation Hub
+# OpAMP Documentation Hub
 
 This repository contains a small but fairly complete OpAMP-oriented platform built around a provider,
 consumers, optional configuration/catalog services, an optional local CLI, and an optional collaboration
