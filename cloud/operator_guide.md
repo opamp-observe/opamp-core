@@ -154,6 +154,20 @@ then both files can be uploaded to the existing retained location.
   artifact was built from the intended source and has already been validated.
 - Never delete retained storage merely to reset compute infrastructure.
 
+## Regression evidence
+
+Infrastructure deployment proves that the environment bootstrapped; it does
+not run the local container regression pack. Run and retain a selected test
+with `python cloud/run_regression.py --provider <aws|azure> --only <test-id>`.
+The command uploads `dist/test-reports/` even when a test fails, then returns
+the test process exit code. Use `--upload-only` after a test was run separately.
+
+AWS reads its default bucket from `dist/aws-artifact-bucket.txt`. Azure reads
+its default storage account from
+`dist/azure-retention-storage-account.txt`. Each upload uses a new UTC result
+set and stores evidence below `<result-set>/test-reports/`, including a manifest
+that records the destination and regression exit status.
+
 ## Generated local files
 
 | Path | Purpose |
@@ -164,6 +178,7 @@ then both files can be uploaded to the existing retained location.
 | `dist/azure-retention-storage-account.txt` | Latest Azure retained account name |
 | `dist/aws-key-pairs/` | Private keys created by the AWS deploy script |
 | `dist/*-regression-results/<timestamp>/` | Output JSON and connection guide |
+| `dist/test-reports/` | Local regression evidence uploaded by `cloud/run_regression.py` |
 
 Treat private keys and deployment outputs as operational data. They are ignored
 by source control and should be protected according to the environment's access

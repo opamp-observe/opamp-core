@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Release Notes
 
 ## 5.1
@@ -20,6 +34,17 @@
 * Added `cli-config` commands to view, summarize, and safely switch the active CLI demo profile configuration, with autocomplete support and friendlier interactive error messages.
 * Fixed Broker startup from the CLI and source-tree command line by ensuring repo-level shared modules are importable.
 * Improved background startup failures so Broker and other managed processes report a useful log detail alongside the exit code and log path.
+
+### Cloud Deployments
+* Added equivalent two-VM regression and demonstration environments for AWS CloudFormation and Azure Resource Manager, including networking, restricted administrative access, OpAMP server and consumer roles, Keycloak, OAuth2 Proxy, Nginx, and OpenTelemetry Collectors.
+* Added Bash and Windows PowerShell deployment, teardown, and artifact-packaging commands, plus a manually triggered GitHub Actions AWS deployment using OIDC credentials.
+* Added automatic Python wheel packaging and Linux bootstrap staging, including cross-platform UTF-8 and LF normalization for scripts and wheel manifests produced on Windows.
+* Added optional AWS EC2 key-pair creation with protected local PEM storage, existing-key inference from PEM filenames, automatic administrator CIDR detection, and regional key validation.
+* Added timestamped retained S3 and Azure Blob storage outside the ordinary infrastructure teardown boundary, with private regression-result retention and separate explicit storage-destruction commands.
+* Added generated Markdown connection guides containing service URLs and ready-to-run SSH commands, retained locally and in cloud storage alongside provider deployment outputs.
+* Added a provider-neutral regression command that runs selected test sets and uploads complete local evidence, including failed-run status manifests, to retained AWS or Azure storage.
+* Added application-aware deployment completion and diagnostics: AWS wait conditions report VM bootstrap failures, server installer and startup logs are retained, and Keycloak readiness is checked before realm configuration.
+* Added deployment cost guidance, cleanup instructions, safe-rerun behavior, provider terminology, resource ownership, and failure recovery documentation in the [cloud operator guide](../../cloud/operator_guide.md), [AWS guide](../../cloud/aws/readme.md), and [Azure guide](../../cloud/azure/README.md).
 
 ### 5.0
 * Decoupling of the agent logic so that the consumer is easier to extend and implement users own custom plugins if wanted
