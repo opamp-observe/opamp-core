@@ -1,0 +1,309 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mp3monster.org/schemas/opamp-consumer-config.json",
+  "title": "OpAMP Consumer Configuration",
+  "description": "Configuration for an OpAMP consumer running in supervisor or observer mode.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "consumer"
+  ],
+  "properties": {
+    "consumer": {
+      "title": "Consumer",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "server_url",
+        "transport",
+        "processTracking",
+        "service_type",
+        "heartbeat_frequency",
+        "log_level"
+      ],
+      "properties": {
+        "server_url": {
+          "type": "string",
+          "title": "Server URL",
+          "description": "Base URL of the OpAMP provider.",
+          "format": "uri",
+          "default": "http://localhost:8080"
+        },
+        "server_port": {
+          "type": "integer",
+          "title": "Server port hint",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 8080
+        },
+        "transport": {
+          "type": "string",
+          "title": "Transport",
+          "enum": [
+            "http",
+            "https",
+            "websocket"
+          ],
+          "default": "http",
+          "x-options": [
+            {
+              "label": "HTTP",
+              "value": "http"
+            },
+            {
+              "label": "HTTPS",
+              "value": "https"
+            },
+            {
+              "label": "websocket",
+              "value": "websocket"
+            }
+          ],
+          "x-refresh-form": true
+        },
+        "tls": {
+          "type": "object",
+          "title": "TLS",
+          "additionalProperties": true,
+          "properties": {
+            "verify_server": {
+              "type": "boolean",
+              "title": "Verify provider certificate",
+              "default": true
+            },
+            "ca_file": {
+              "type": "string",
+              "title": "Custom CA file"
+            }
+          },
+          "x-visible-when": {
+            "path": "consumer.transport",
+            "values": [
+              "https",
+              "websocket"
+            ]
+          }
+        },
+        "processTracking": {
+          "type": "string",
+          "title": "Process mode",
+          "enum": [
+            "Supervisor",
+            "Observer"
+          ],
+          "default": "Supervisor"
+        },
+        "processDetectionRegex": {
+          "type": "string",
+          "title": "Process detection regular expression",
+          "description": "Required in Observer mode to find the externally managed agent process.",
+          "minLength": 1,
+          "x-modes": [
+            "Observer"
+          ]
+        },
+        "agent_config_path": {
+          "type": "string",
+          "title": "Agent configuration path",
+          "description": "Configuration passed to the managed agent.",
+          "default": "./fluent-bit.yaml",
+          "x-modes": [
+            "Supervisor"
+          ]
+        },
+        "agent_additional_params": {
+          "type": "array",
+          "title": "Additional agent parameters",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "x-modes": [
+            "Supervisor"
+          ]
+        },
+        "service_type": {
+          "type": "string",
+          "title": "Agent type",
+          "enum": [
+            "fluentbit",
+            "fluentd",
+            "elastic_agent",
+            "elastic_heartbeat",
+            "simulator",
+            "vector"
+          ],
+          "default": "fluentbit"
+        },
+        "client_status_port": {
+          "type": "integer",
+          "title": "Agent status port",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 2020
+        },
+        "chat_ops_port": {
+          "type": "integer",
+          "title": "ChatOps port",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 8888,
+          "x-ui-section": "Custom Config Values"
+        },
+        "heartbeat_frequency": {
+          "type": "integer",
+          "title": "Heartbeat frequency (seconds)",
+          "minimum": 1,
+          "default": 30
+        },
+        "service_name": {
+          "type": "string",
+          "title": "Service name",
+          "default": "Fluentbit"
+        },
+        "service_namespace": {
+          "type": "string",
+          "title": "Service namespace",
+          "default": "FluentBitNS"
+        },
+        "log_level": {
+          "type": "string",
+          "title": "Log level",
+          "enum": [
+            "debug",
+            "info",
+            "warning",
+            "error",
+            "critical"
+          ],
+          "default": "debug"
+        },
+        "server-authorization": {
+          "type": "string",
+          "title": "Server authorization",
+          "enum": [
+            "none",
+            "env-var",
+            "config-var",
+            "idp"
+          ],
+          "default": "none"
+        },
+        "OpAMP-token": {
+          "type": "string",
+          "title": "OpAMP token",
+          "description": "Static token used only with config-var authorization.",
+          "x-secret": true
+        },
+        "full_update_controller_type": {
+          "type": "string",
+          "title": "Full update controller",
+          "enum": [
+            "SentCount",
+            "AlwaysSend",
+            "TimeSend"
+          ],
+          "default": "SentCount"
+        },
+        "full_update_controller": {
+          "type": "object",
+          "title": "Full update settings",
+          "additionalProperties": true,
+          "properties": {
+            "fullResendAfter": {
+              "type": "integer",
+              "title": "Full resend threshold",
+              "minimum": 1,
+              "default": 1
+            }
+          }
+        },
+        "allow_custom_capabilities": {
+          "type": "boolean",
+          "title": "Allow custom capabilities",
+          "default": true,
+          "x-ui-section": "Custom Config Values"
+        },
+        "preserve_previous_config": {
+          "type": "boolean",
+          "title": "Preserve replaced configuration",
+          "default": false
+        },
+        "log_agent_api_responses": {
+          "type": "boolean",
+          "title": "Log agent API responses",
+          "default": false
+        },
+        "agent_capabilities": {
+          "type": "array",
+          "title": "Optional agent capabilities",
+          "items": {
+            "type": "string",
+            "enum": [
+              "AcceptsRemoteConfig",
+              "ReportsEffectiveConfig",
+              "ReportsHeartbeat",
+              "ReportsAvailableComponents",
+              "ReportsConnectionSettingsStatus"
+            ]
+          },
+          "uniqueItems": true,
+          "default": [
+            "AcceptsRemoteConfig",
+            "ReportsHeartbeat"
+          ],
+          "x-control": "multi-select",
+          "x-options": [
+            {
+              "label": "Accepts remote config",
+              "value": "AcceptsRemoteConfig"
+            },
+            {
+              "label": "Reports effective config",
+              "value": "ReportsEffectiveConfig"
+            },
+            {
+              "label": "Reports heartbeat",
+              "value": "ReportsHeartbeat"
+            },
+            {
+              "label": "Reports available components",
+              "value": "ReportsAvailableComponents"
+            },
+            {
+              "label": "Reports connection settings status",
+              "value": "ReportsConnectionSettingsStatus"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "consumer": {
+            "properties": {
+              "processTracking": {
+                "const": "Observer"
+              }
+            },
+            "required": [
+              "processTracking"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "consumer": {
+            "required": [
+              "processDetectionRegex"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

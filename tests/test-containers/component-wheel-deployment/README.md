@@ -10,6 +10,7 @@ The test validates these components:
 - `consumer`
 - `consumer-sim`
 - `config-service`
+- `client-config-generator-service`
 - `catalog-service`
 - `cli`
 - `agent_broker`

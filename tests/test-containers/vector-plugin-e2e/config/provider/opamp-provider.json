@@ -1,0 +1,28 @@
+{
+  "provider": {
+    "delayed_comms_seconds": 10,
+    "significant_comms_seconds": 30,
+    "webui_port": 8080,
+    "minutes_keep_disconnected": 5,
+    "retryAfterSeconds": 2,
+    "client_event_history_size": 50,
+    "log_level": "DEBUG",
+    "default_heartbeat_frequency": 3,
+    "human_in_loop_approval": false,
+    "allow-remote-config": true,
+    "allow-effective-config": true,
+    "allow-connection-settings": false,
+    "opamp-use-authorization": "none",
+    "ui-use-authorization": "none",
+    "metrics": {
+      "enabled": true,
+      "graph_history_minutes": 0
+    },
+    "tls": {
+      "enabled": false
+    },
+    "state_persistence": {
+      "enabled": false
+    }
+  }
+}

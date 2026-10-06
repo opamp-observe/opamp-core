@@ -179,9 +179,9 @@ class OpAMPClient(AbstractOpAMPClient):
             if port is None:
                 logger.warning("hot reload skipped because no Fluent Bit HTTP port is configured")
                 return False
-            host = str(self.config.agent_http_listen or "").strip() or "localhost"
+            host = str(self.config.agent_http_listen or "").strip() or "127.0.0.1"
             if host == "0.0.0.0":
-                host = "localhost"
+                host = "127.0.0.1"
             if ":" in host and not host.startswith("["):
                 host = f"[{host}]"
             scheme = "http"

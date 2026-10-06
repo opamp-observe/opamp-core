@@ -49,6 +49,7 @@ REPO_RUFF_SECURITY_TARGETS = (
     "cli/src",
     "catalog-service/src",
     "config-service/src",
+    "client-config-generator-service/src",
     "agent_broker/opamp_broker",
     "shared",
     "scripts",

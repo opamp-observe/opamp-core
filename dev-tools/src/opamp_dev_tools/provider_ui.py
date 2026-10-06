@@ -43,7 +43,7 @@ def compact_provider_ui_assets(
         runtime.info("Provider UI clean-only complete.")
         return False
 
-    _require_npx()
+    npx_command = _resolve_npx_command()
 
     for source_name in js_filenames:
         source_path = resolved_html_dir / source_name
@@ -52,7 +52,7 @@ def compact_provider_ui_assets(
         mini_path = resolved_html_dir / _mini_filename(source_name)
         runtime.run(
             [
-                "npx",
+                npx_command,
                 "--yes",
                 "esbuild",
                 str(source_path),
@@ -78,10 +78,11 @@ def _resolve_html_dir(repo_root: Path, html_dir: str) -> Path:
     return (repo_root / path).resolve()
 
 
-def _require_npx() -> None:
-    """Require `npx` to be available for esbuild execution."""
-    if shutil.which("npx"):
-        return
+def _resolve_npx_command() -> str:
+    """Return the executable npx path so Windows ``.cmd`` launchers work."""
+    npx_command = shutil.which("npx")
+    if npx_command:
+        return npx_command
     raise RuntimeError(
         "npx was not found on PATH. Install Node.js (which includes npm/npx) "
         "before running UI compaction."

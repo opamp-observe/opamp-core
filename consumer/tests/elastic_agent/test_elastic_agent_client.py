@@ -23,6 +23,7 @@ import threading
 from types import SimpleNamespace
 from typing import Any, cast
 
+from opamp_consumer.abstract_client import KEY_SERVICE_INSTANCE_ID
 from opamp_consumer.config import ConsumerConfig
 from opamp_consumer.elastic_agent import client as elastic_client_module
 from opamp_consumer.elastic_agent.client import (
@@ -842,3 +843,32 @@ def test_elastic_health_transform_handles_numeric_state_payload(tmp_path) -> Non
         == "degraded: Recoverable: logstash request failed"
     )
     assert message.health.component_health_map["http/metrics-monitoring"].healthy is True
+
+
+def test_elastic_agent_supports_remote_config_capabilities(tmp_path) -> None:
+    config = _elastic_config(tmp_path)
+    client = ElasticAgentOpAMPClient(config.server_url or "", config)
+
+    supported = client.get_supported_capabilities()
+
+    assert "AcceptsRemoteConfig" in supported
+    assert "ReportsEffectiveConfig" in supported
+
+
+def test_elastic_agent_description_defaults_instance_id_to_service_name(
+    tmp_path,
+) -> None:
+    """Elastic Agent should report a friendly instance id when config omits one."""
+    config = _elastic_config(tmp_path)
+    config.service_instance_id = None
+    config.service_name = "FullDemoElasticAgent"
+    client = ElasticAgentOpAMPClient(config.server_url or "", config)
+
+    description = client.get_agent_description()
+    identifying = {
+        item.key: item.value.string_value
+        for item in description.identifying_attributes
+        if item.value.WhichOneof("value") == "string_value"
+    }
+
+    assert identifying[KEY_SERVICE_INSTANCE_ID] == "FullDemoElasticAgent"

@@ -35,6 +35,8 @@ class VersionTarget:
 VERSION_TARGETS: tuple[VersionTarget, ...] = (
     VersionTarget(path="agent_broker/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
     VersionTarget(path="catalog-service/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
+    VersionTarget(path="client-config-generator-service/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
+    VersionTarget(path="client-config-generator-service/src/client_config_generator_service/__init__.py", pattern=r'^__version__ = "[^"]+"$', replacement='__version__ = "{version}"'),
     VersionTarget(path="cli/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
     VersionTarget(path="config-service/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
     VersionTarget(path="config-service/build_config.py", pattern=r'^PACKAGE_VERSION = "[^"]+"$', replacement='PACKAGE_VERSION = "{version}"'),

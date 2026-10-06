@@ -32,9 +32,9 @@
     "help": "Try `/opamp help`, `/opamp tools`, `/opamp opstate`, or mention me with a question."
   },
   "paths": {
-    "opamp_project_root": "../fluent-opamp",
-    "opamp_config_path": "../fluent-opamp/config/opamp.json",
-    "provider_port_override": 8070
+    "opamp_project_root": "..",
+    "opamp_config_path": "../config/opamp.json",
+    "provider_port_override": null
   },
   "mcp": {
     "request_timeout_seconds": 30,
@@ -49,7 +49,7 @@
   "mcp_server": {
     "enabled": true,
     "host": "127.0.0.1",
-    "port": 8080,
+    "port": 8081,
     "path": "/mcp"
   },
   "planner": {
@@ -57,7 +57,7 @@
     "llm_enabled": true,
     "AIState": "on",
     "provider": "openai",
-    "model": "gpt-5.3",
+    "model": "gpt-5.4",
     "request_timeout_seconds": 30,
     "temperature": 0.0,
     "api_key_env_var": "OPENAI_API_KEY",

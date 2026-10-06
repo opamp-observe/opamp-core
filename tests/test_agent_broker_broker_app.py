@@ -18,6 +18,8 @@ import asyncio
 import importlib
 import json
 import logging
+import os
+import subprocess
 import sys
 import types
 from pathlib import Path
@@ -98,6 +100,27 @@ def _install_dependency_stubs() -> None:
 
 _install_dependency_stubs()
 broker_app = importlib.import_module("opamp_broker.broker_app")
+
+
+def test_broker_app_imports_shared_when_started_from_agent_broker_cwd() -> None:
+    """Verifies source-tree command-line starts can import repo-level shared modules."""
+    env = dict(os.environ)
+    env.pop("PYTHONPATH", None)
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import opamp_broker.broker_app; import shared.observability; print('ok')",
+        ],
+        cwd=str(AGENT_BROKER_ROOT),
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "ok" in completed.stdout
 
 
 def _base_config(send_shutdown_goodbye: bool) -> dict[str, Any]:

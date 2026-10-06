@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Build and install each OpAMP component wheel in isolated clean venvs."""
 
 from __future__ import annotations
@@ -38,6 +50,11 @@ COMPONENTS: tuple[Component, ...] = (
     ),
     Component("consumer-sim", "consumer-sim", ("consumer_sim_launcher", "opamp_consumer_sim")),
     Component("config-service", "config-service", ("config_service.app",)),
+    Component(
+        "client-config-generator-service",
+        "client-config-generator-service",
+        ("client_config_generator_service.app",),
+    ),
     Component("catalog-service", "catalog-service", ("catalog_service.app",)),
     Component("cli", "cli", ("opamp_cli.main",)),
     Component("agent-broker", "agent_broker", ("opamp_broker.broker_app",)),

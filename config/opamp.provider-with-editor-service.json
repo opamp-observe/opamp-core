@@ -8,7 +8,7 @@
     "client_event_history_size": 50,
     "log_level": "DEBUG",
     "default_heartbeat_frequency": 30,
-    "latest_docs_url": "https://htmlpreview.github.io/?https://raw.githubusercontent.com/mp3monster/fluent-opamp/main/github-landingpage/index.html",
+    "latest_docs_url": "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html",
     "human_in_loop_approval": false,
     "allow-mcp": true,
     "opamp-use-authorization": "none",

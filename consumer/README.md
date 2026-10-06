@@ -18,6 +18,7 @@ This document consolidates all consumer configuration options and their CLI over
   - [Consumer Config Keys](#consumer-config-keys)
   - [Default Capabilities](#default-capabilities)
   - [Agent Capability Reference](#agent-capability-reference)
+  - [Built-In Implementation Matrix](#built-in-implementation-matrix)
   - [Connection Settings](#connection-settings)
   - [Fluent Bit Comment Metadata](#fluent-bit-comment-metadata)
   - [CLI Example](#cli-example)
@@ -217,7 +218,7 @@ That guide includes:
 | `consumer.heartbeat_frequency` | integer | Yes (`--heartbeat-frequency`) | Heartbeat interval in seconds. | `30` |
 | `consumer.full_update_controller` | object | Yes (`--full-update-controller`, JSON string) | Full update controller settings. `fullResendAfter` controls when all reporting flags are reset to `true`. | `{"fullResendAfter":1}` |
 | `consumer.full_update_controller_type` | string | No | Full update controller implementation name (`SentCount`, `AlwaysSend`, `TimeSend`). | `"SentCount"` |
-| `consumer.service_type` | string | No | Concrete consumer implementation (`fluentbit`, `fluentd`, `elastic_agent`, `elastic_heartbeat`, `simulator`) or a configured plugin key. Default `fluentbit`. | `"fluentbit"` |
+| `consumer.service_type` | string | No | Concrete consumer implementation (`fluentbit`, `fluentd`, `elastic_agent`, `elastic_heartbeat`, `simulator`, `vector`) or a configured plugin key. Default `fluentbit`. | `"fluentbit"` |
 | `consumer.simulator_responses_path` | string | No | Required when `service_type=simulator`; path to simulator scripted server-request response JSON. | `"./consumer/simulator-responses.example.json"` |
 | `consumer.log_level` | string | Yes (`--log-level`) | Consumer log level name (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`). Resolved via Python `logging` names. | `"debug"` |
 | `consumer.transport` | string | No | OpAMP transport mode (`http` or `websocket`). | `"http"` |
@@ -276,17 +277,21 @@ Notes:
 
 The `consumer.agent_capabilities` setting accepts any `AgentCapabilities` name from the shared OpAMP enum.
 
+For a per-implementation support matrix with links to the concrete source files
+and upstream agent documents, see
+[Consumer implementations](../docs/consumer_implementations.md).
+
 Current built-in consumer support:
 
 - All built-in consumer types support `ReportsStatus`, `AcceptsRestartCommand`, and `ReportsHealth`.
-- Current built-in consumer types (`fluentbit`, `fluentd`, `elastic_agent`, `elastic_heartbeat`, and `simulator`) support the mandatory capabilities. Fluent Bit, Fluentd, Elastic Heartbeat, and simulator also support `ReportsHeartbeat`; Fluent Bit, Fluentd, and simulator also support `AcceptsRemoteConfig`.
+- Current built-in consumer types (`fluentbit`, `fluentd`, `elastic_agent`, `elastic_heartbeat`, `simulator`, and `vector`) support the mandatory capabilities. Fluent Bit, Fluentd, Elastic Agent, Elastic Heartbeat, simulator, and Vector also support `ReportsHeartbeat`, `AcceptsRemoteConfig`, and `ReportsEffectiveConfig`.
 - Other names in the table below are valid OpAMP capability names, but current built-in consumer clients do not enable them because they are not in their supported-capability lists.
 
 | Capability | Mask | Meaning | Current built-in consumer support |
 |---|---:|---|---|
 | `ReportsStatus` | `0x00000001` | Agent sends normal status-bearing `AgentToServer` updates. | Yes |
 | `AcceptsRemoteConfig` | `0x00000002` | Agent can receive and apply server-provided remote configuration. | Yes |
-| `ReportsEffectiveConfig` | `0x00000004` | Agent reports the effective configuration currently running after processing config inputs. | No |
+| `ReportsEffectiveConfig` | `0x00000004` | Agent reports the effective configuration currently running after processing config inputs. | Yes |
 | `AcceptsPackages` | `0x00000008` | Agent can receive package installation or upgrade offers from the server. | No |
 | `ReportsPackageStatuses` | `0x00000010` | Agent reports package download/install state back to the server. | No |
 | `ReportsOwnTraces` | `0x00000020` | Agent can report connection settings or status for its own trace export pipeline. | No |
@@ -300,6 +305,11 @@ Current built-in consumer support:
 | `ReportsHeartbeat` | `0x00002000` | Agent reports heartbeat-related runtime information through the consumer heartbeat path. | Yes |
 | `ReportsAvailableComponents` | `0x00004000` | Agent can report a component inventory / component map. | No |
 | `ReportsConnectionSettingsStatus` | `0x00008000` | Agent reports status for previously offered connection settings. | No |
+
+## Built-In Implementation Matrix
+
+The built-in consumer implementation and OpAMP capability matrix is maintained
+in [docs/consumer_implementations.md](../docs/consumer_implementations.md).
 
 ## Connection Settings
 
@@ -370,9 +380,22 @@ When installed as a package, console scripts are available:
 - `opamp-consumer-elastic-heartbeat` -> `opamp_consumer.elastic_heartbeat.client:main`
 - `opamp-consumer-fluentd` -> `opamp_consumer.fluentd.client:main`
 - `opamp-consumer-simulator` -> `opamp_consumer.simulator.client:main`
+- `opamp-consumer-vector` -> `opamp_consumer.vector.client:main`
 
 Each consumer `--help` response prints JSON config/help content and includes
 `component_version` (git commit/date derived version metadata).
+
+## Built-In Plugin Registry
+
+Built-in `consumer.service_type` mappings are loaded at startup from
+`src/opamp_consumer/builtin_consumer_plugins.json`. The packaged file defines
+the default Fluent Bit, Fluentd, Elastic Agent, Elastic Heartbeat, simulator,
+and Vector entry points.
+
+Set `OPAMP_CONSUMER_BUILTIN_PLUGINS_PATH` to point at an alternate JSON file
+when a deployment needs to replace that startup registry without modifying
+Python code. Per-consumer `consumer.plugins` entries are still applied after
+the startup registry and can add, override, or disable service types.
 
 ## Elastic Heartbeat Consumer
 
@@ -382,6 +405,14 @@ as the reference implementation for other Elastic Beat monitor plugins.
 
 See [consumer/docs/plugins/elastic-heartbeat.md](docs/plugins/elastic-heartbeat.md)
 for config keys, demo files, and container regression coverage.
+
+## Vector Consumer
+
+The `vector` plugin supervises Vector with `vector --config`, polls the Vector
+health API, and supports the self-monitoring demo under
+[docs/vector-self-monitor](../docs/vector-self-monitor/readme.md).
+
+See [consumer/docs/plugins/vector.md](docs/plugins/vector.md) for plugin-specific settings.
 
 ## Fluentd Consumer
 

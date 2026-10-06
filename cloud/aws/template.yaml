@@ -1,0 +1,562 @@
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Two-instance OpAMP regression environment with an authenticated UI.
+
+Parameters:
+  NamePrefix:
+    Type: String
+    Default: opamp
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9-]{1,20}"
+    Description: Short prefix used in resource names and tags.
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Existing EC2 key pair used for SSH access.
+  AdminSourceCidr:
+    Type: String
+    AllowedPattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/(?:[0-9]|[12][0-9]|3[0-2])$"
+    Description: IPv4 CIDR allowed to SSH to both instances.
+  InstanceType:
+    Type: String
+    Default: t3.small
+    AllowedValues:
+      - t3.small
+      - t3.medium
+      - t3.large
+    Description: EC2 instance type for the server and consumer.
+  VpcCidr:
+    Type: String
+    Default: 10.42.0.0/16
+    Description: IPv4 CIDR for the deployment VPC.
+  PublicSubnetCidr:
+    Type: String
+    Default: 10.42.0.0/24
+    Description: IPv4 CIDR for the public subnet.
+  ServerPrivateIp:
+    Type: String
+    Default: 10.42.0.10
+    Description: Static private IPv4 address for the server instance.
+  ConsumerPrivateIp:
+    Type: String
+    Default: 10.42.0.20
+    Description: Static private IPv4 address for the consumer instance.
+  ArtifactBucket:
+    Type: String
+    MinLength: 3
+    Description: Existing private S3 bucket containing the artifact archive.
+  ArtifactKey:
+    Type: String
+    Default: opamp-cloud/opamp-cloud-artifacts.tar.gz
+    Description: S3 object key for the packaged scripts and wheels.
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+    Description: Canonical Ubuntu 22.04 AMD64 AMI public parameter.
+  KeycloakAdminUser:
+    Type: String
+    Default: admin
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9._-]{2,31}"
+    Description: Initial Keycloak administrator username.
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:
+        Ref: VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${NamePrefix}-vpc
+        - Key: Project
+          Value: opamp
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${NamePrefix}-igw
+        - Key: Project
+          Value: opamp
+
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: InternetGateway
+      VpcId:
+        Ref: Vpc
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock:
+        Ref: PublicSubnetCidr
+      MapPublicIpOnLaunch: true
+      VpcId:
+        Ref: Vpc
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${NamePrefix}-public-subnet
+        - Key: Project
+          Value: opamp
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${NamePrefix}-public-routes
+        - Key: Project
+          Value: opamp
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+      RouteTableId:
+        Ref: PublicRouteTable
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: PublicSubnet
+
+  ServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: OpAMP server HTTPS, Keycloak, and restricted SSH access.
+      VpcId:
+        Ref: Vpc
+      SecurityGroupIngress:
+        - Description: OpAMP UI and protocol endpoint
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - Description: Keycloak administration and realm endpoint
+          IpProtocol: tcp
+          FromPort: 8443
+          ToPort: 8443
+          CidrIp: 0.0.0.0/0
+        - Description: Restricted administrator SSH
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp:
+            Ref: AdminSourceCidr
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${NamePrefix}-server-sg
+        - Key: Project
+          Value: opamp
+
+  ConsumerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: OpAMP consumer with restricted SSH access.
+      VpcId:
+        Ref: Vpc
+      SecurityGroupIngress:
+        - Description: Restricted administrator SSH
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp:
+            Ref: AdminSourceCidr
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${NamePrefix}-consumer-sg
+        - Key: Project
+          Value: opamp
+
+  KeycloakAdminSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Generated administrator credentials for the OpAMP Keycloak deployment.
+      GenerateSecretString:
+        SecretStringTemplate:
+          Fn::Sub: '{"username":"${KeycloakAdminUser}"}'
+        GenerateStringKey: password
+        PasswordLength: 32
+        ExcludePunctuation: true
+        RequireEachIncludedType: true
+      Tags:
+        - Key: Project
+          Value: opamp
+
+  ServerInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: ReadOpampDeploymentArtifacts
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource:
+                  Fn::Sub: arn:${AWS::Partition}:s3:::${ArtifactBucket}/${ArtifactKey}
+        - PolicyName: ReadGeneratedKeycloakSecret
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  Ref: KeycloakAdminSecret
+      Tags:
+        - Key: Project
+          Value: opamp
+
+  ServerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: ServerInstanceRole
+
+  ConsumerInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: ReadOpampDeploymentArtifacts
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource:
+                  Fn::Sub: arn:${AWS::Partition}:s3:::${ArtifactBucket}/${ArtifactKey}
+      Tags:
+        - Key: Project
+          Value: opamp
+
+  ConsumerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: ConsumerInstanceRole
+
+  ServerElasticIp:
+    Type: AWS::EC2::EIP
+    DependsOn: GatewayAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${NamePrefix}-server-eip
+        - Key: Project
+          Value: opamp
+
+  ServerWaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  ServerInstance:
+    Type: AWS::EC2::Instance
+    DependsOn: GatewayAttachment
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: true
+            Encrypted: true
+            VolumeSize: 30
+            VolumeType: gp3
+      IamInstanceProfile:
+        Ref: ServerInstanceProfile
+      ImageId:
+        Ref: LatestAmiId
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: KeyName
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpPutResponseHopLimit: 1
+        HttpTokens: required
+        InstanceMetadataTags: disabled
+      PrivateIpAddress:
+        Ref: ServerPrivateIp
+      PropagateTagsToVolumeOnCreation: true
+      SecurityGroupIds:
+        - Ref: ServerSecurityGroup
+      SubnetId:
+        Ref: PublicSubnet
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${NamePrefix}-server
+        - Key: Project
+          Value: opamp
+        - Key: Role
+          Value: server
+      UserData:
+        Fn::Base64:
+          Fn::Sub: |
+            #!/usr/bin/env bash
+            set -Eeuo pipefail
+            exec > >(tee /var/log/opamp-bootstrap.log | logger -t opamp-bootstrap -s 2>/dev/console) 2>&1
+
+            # Report bootstrap status to the server wait handle.
+            # Parameters are the status value and a human-readable reason.
+            signal_cloudformation() {
+              status="$1"
+              reason="$2"
+              curl -fsS -X PUT -H 'Content-Type:' \
+                --data-binary "{\"Status\":\"$status\",\"Reason\":\"$reason\",\"UniqueId\":\"server\",\"Data\":\"$status\"}" \
+                '${ServerWaitHandle}'
+            }
+
+            trap 'signal_cloudformation FAILURE "Server bootstrap failed at line $LINENO"' ERR
+            export AWS_DEFAULT_REGION='${AWS::Region}'
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y --no-install-recommends awscli ca-certificates curl jq tar
+
+            artifact_root=/tmp/opamp-cloud-artifacts
+            artifact_archive=/tmp/opamp-cloud-artifacts.tar.gz
+            install -d "$artifact_root"
+            aws s3 cp 's3://${ArtifactBucket}/${ArtifactKey}' "$artifact_archive" --only-show-errors
+            tar -xzf "$artifact_archive" -C "$artifact_root"
+            chmod +x "$artifact_root"/scripts/*.sh
+
+            installer_log=/var/log/opamp-install.log
+            if ! OPAMP_ROLE=server \
+              OPAMP_WHEEL_SOURCE_DIR="$artifact_root" \
+              bash "$artifact_root/scripts/install-opamp.sh" 2>&1 | tee "$installer_log"; then
+              installer_error="$(tail -n 3 "$installer_log" | tr '\n' ' ' | tr -cd '[:alnum:] ._:/=-' | cut -c1-180)"
+              if [[ -z "$installer_error" ]]; then installer_error="see opamp-install.log"; fi
+              trap - ERR
+              signal_cloudformation FAILURE "Server installer failed: $installer_error"
+              exit 1
+            fi
+
+            keycloak_secret_json="$(aws secretsmanager get-secret-value \
+              --secret-id '${KeycloakAdminSecret}' --query SecretString --output text)"
+            keycloak_admin_user="$(printf '%s' "$keycloak_secret_json" | jq -r '.username')"
+            keycloak_admin_password="$(printf '%s' "$keycloak_secret_json" | jq -r '.password')"
+
+            server_start_log=/var/log/opamp-server-start.log
+            if ! KEYCLOAK_ADMIN="$keycloak_admin_user" \
+              KEYCLOAK_ADMIN_PASSWORD="$keycloak_admin_password" \
+              OPAMP_PUBLIC_HOST='${ServerElasticIp}' \
+              OPAMP_SERVER_PRIVATE_IP='${ServerPrivateIp}' \
+              bash "$artifact_root/scripts/start-opamp-server.sh" 2>&1 | tee "$server_start_log"; then
+              server_start_error="$(tail -n 5 "$server_start_log" | tr '\n' ' ' | tr -cd '[:alnum:] ._:/=-' | cut -c1-180)"
+              if [[ -z "$server_start_error" ]]; then server_start_error="see opamp-server-start.log"; fi
+              trap - ERR
+              signal_cloudformation FAILURE "Server startup failed: $server_start_error"
+              exit 1
+            fi
+
+            signal_cloudformation SUCCESS "Server bootstrap completed"
+            trap - ERR
+
+  ServerElasticIpAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - ServerElasticIp
+          - AllocationId
+      InstanceId:
+        Ref: ServerInstance
+
+  ServerWaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    DependsOn:
+      - ServerInstance
+      - ServerElasticIpAssociation
+    Properties:
+      Count: 1
+      Handle:
+        Ref: ServerWaitHandle
+      Timeout: "3600"
+
+  ConsumerWaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  ConsumerInstance:
+    Type: AWS::EC2::Instance
+    DependsOn:
+      - GatewayAttachment
+      - ServerWaitCondition
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: true
+            Encrypted: true
+            VolumeSize: 30
+            VolumeType: gp3
+      IamInstanceProfile:
+        Ref: ConsumerInstanceProfile
+      ImageId:
+        Ref: LatestAmiId
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: KeyName
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpPutResponseHopLimit: 1
+        HttpTokens: required
+        InstanceMetadataTags: disabled
+      PrivateIpAddress:
+        Ref: ConsumerPrivateIp
+      PropagateTagsToVolumeOnCreation: true
+      SecurityGroupIds:
+        - Ref: ConsumerSecurityGroup
+      SubnetId:
+        Ref: PublicSubnet
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${NamePrefix}-consumer
+        - Key: Project
+          Value: opamp
+        - Key: Role
+          Value: consumer
+      UserData:
+        Fn::Base64:
+          Fn::Sub: |
+            #!/usr/bin/env bash
+            set -Eeuo pipefail
+            exec > >(tee /var/log/opamp-bootstrap.log | logger -t opamp-bootstrap -s 2>/dev/console) 2>&1
+
+            # Report bootstrap status to the consumer wait handle.
+            # Parameters are the status value and a human-readable reason.
+            signal_cloudformation() {
+              status="$1"
+              reason="$2"
+              curl -fsS -X PUT -H 'Content-Type:' \
+                --data-binary "{\"Status\":\"$status\",\"Reason\":\"$reason\",\"UniqueId\":\"consumer\",\"Data\":\"$status\"}" \
+                '${ConsumerWaitHandle}'
+            }
+
+            trap 'signal_cloudformation FAILURE "Consumer bootstrap failed at line $LINENO"' ERR
+            export AWS_DEFAULT_REGION='${AWS::Region}'
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y --no-install-recommends awscli ca-certificates curl tar
+
+            artifact_root=/tmp/opamp-cloud-artifacts
+            artifact_archive=/tmp/opamp-cloud-artifacts.tar.gz
+            install -d "$artifact_root"
+            aws s3 cp 's3://${ArtifactBucket}/${ArtifactKey}' "$artifact_archive" --only-show-errors
+            tar -xzf "$artifact_archive" -C "$artifact_root"
+            chmod +x "$artifact_root"/scripts/*.sh
+
+            installer_log=/var/log/opamp-install.log
+            if ! OPAMP_ROLE=consumer \
+              OPAMP_WHEEL_SOURCE_DIR="$artifact_root" \
+              bash "$artifact_root/scripts/install-opamp.sh" 2>&1 | tee "$installer_log"; then
+              installer_error="$(tail -n 3 "$installer_log" | tr '\n' ' ' | tr -cd '[:alnum:] ._:/=-' | cut -c1-180)"
+              if [[ -z "$installer_error" ]]; then installer_error="see opamp-install.log"; fi
+              trap - ERR
+              signal_cloudformation FAILURE "Consumer installer failed: $installer_error"
+              exit 1
+            fi
+
+            OPAMP_DEPLOYMENT_PLATFORM=AWS \
+              OPAMP_SERVER_URL='https://${ServerPrivateIp}' \
+              OPAMP_SERVER_HOST='${ServerElasticIp}' \
+              bash "$artifact_root/scripts/start-opamp-consumer.sh"
+
+            signal_cloudformation SUCCESS "Consumer bootstrap completed"
+            trap - ERR
+
+  ConsumerWaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    DependsOn: ConsumerInstance
+    Properties:
+      Count: 1
+      Handle:
+        Ref: ConsumerWaitHandle
+      Timeout: "3600"
+
+Outputs:
+  OpampUiUrl:
+    Description: Self-signed HTTPS endpoint for the authenticated OpAMP UI.
+    Value:
+      Fn::Sub: https://${ServerElasticIp}/
+  KeycloakUrl:
+    Description: Self-signed HTTPS endpoint for Keycloak.
+    Value:
+      Fn::Sub: https://${ServerElasticIp}:8443/
+  KeycloakAdminSecretArn:
+    Description: Secrets Manager ARN containing the generated Keycloak credentials.
+    Value:
+      Ref: KeycloakAdminSecret
+  ServerSsh:
+    Description: SSH command for the server instance.
+    Value:
+      Fn::Sub: ssh ubuntu@${ServerElasticIp}
+  ConsumerSsh:
+    Description: SSH command for the consumer instance.
+    Value:
+      Fn::Sub: ssh ubuntu@${ConsumerInstance.PublicDnsName}
+  ServerInstanceId:
+    Description: EC2 instance ID for the server.
+    Value:
+      Ref: ServerInstance
+  ConsumerInstanceId:
+    Description: EC2 instance ID for the consumer.
+    Value:
+      Ref: ConsumerInstance

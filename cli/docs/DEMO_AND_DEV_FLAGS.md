@@ -4,6 +4,7 @@ This note documents two behavior switches used by the OpAMP CLI and nearby consu
 
 - `OPAMP_DEMO`
 - `APP_ENABLE_DEV_FEATURES`
+- `SMART_LOG_VIEWER`
 
 This file is intentionally kept as a standalone CLI note rather than being linked from the main project docs.
 
@@ -23,14 +24,16 @@ Each profile in that file provides:
 - an optional `scenario_description`
 - a consumer simulator instances file
 - a Fluent Bit OpAMP config path
-- a Fluent Bit agent config path
 - a Fluentd OpAMP config path
-- a Fluentd agent config path
 - an Elastic Agent OpAMP config path
-- an Elastic Agent config path
 - an Elastic Heartbeat OpAMP config path
-- an Elastic Heartbeat config path
+- a Vector OpAMP config path
+- optional profile-level agent config path overrides for legacy configs
 - optional container start commands
+
+For new demo setup, prefer putting agent paths in `consumer.agent_config_path`
+inside each OpAMP JSON config. The CLI only needs profile-level
+`agent_config_path` when the consumer config does not already provide one.
 
 When `OPAMP_DEMO` is enabled:
 
@@ -68,6 +71,15 @@ The launch sequence is:
 2. Start `opamp_consumer.client` with the Elastic Heartbeat consumer config.
 3. The consumer loads the `elastic_heartbeat` plugin and launches Heartbeat as a supervisor-managed process.
 4. Heartbeat monitors `localhost` and `blog.mp3monster.org` every 5 seconds, sends events to Logstash, and Logstash writes `tests/logstash/out/heartbeat-events.jsonl`.
+
+The `Demo setup (Full multi-agent remote config)` profile uses `docs/full-demo`:
+
+- Fluent Bit and Fluentd consumers run in supervisor mode.
+- Vector, Elastic Agent, and Elastic Heartbeat consumers run in observer mode.
+- The profile starts the `logstash-full-demo` container before launching consumers.
+- The profile points only at consumer OpAMP JSON files; each JSON file supplies
+  its own `consumer.agent_config_path`.
+- The matching provider config exposes `docs/full-demo/active`, `docs/full-demo/replacements`, and `docs/full-demo/consumers` through the server catalog so replacement configs can be deployed from the UI.
 
 ## `APP_ENABLE_DEV_FEATURES`
 
@@ -108,6 +120,32 @@ One important non-CLI interaction is the security checks flow:
 
 That keeps validation runs aligned with non-dev behavior.
 
+## `SMART_LOG_VIEWER`
+
+`SMART_LOG_VIEWER=true` switches enabled process tailing from separate terminal
+tail windows to Smart Log Viewer. The CLI writes
+`cli/runtime/smart-log-viewer/config.json` with discovered client log files and
+starts `smart-log-viewer --config cli/runtime/smart-log-viewer`.
+
+Install Smart Log Viewer with:
+
+```bash
+npm install -g smart-log-viewer
+```
+
+Smart Log Viewer also requires `tail` on `PATH` because it starts
+`tail -F -n 100 <file>` for each watched log. Linux and macOS usually include
+`tail` by default. On Windows, install Microsoft Coreutils:
+
+```powershell
+winget install --id Microsoft.Coreutils --exact
+```
+
+Open a new terminal after installing Coreutils so the updated `PATH` is picked
+up before running `opamp-cli`.
+
+The CLI only uses this when `enable-process-tail` is active.
+
 ## CLI Replacements
 
 The CLI now covers the main lifecycle operations that older wrapper scripts previously handled. Those workflows can be performed with:
@@ -116,6 +154,8 @@ The CLI now covers the main lifecycle operations that older wrapper scripts prev
 - `opamp-cli stop simulator`
 - `opamp-cli start fluentbit client`
 - `opamp-cli stop fluentbit client`
+- `opamp-cli start vector client`
+- `opamp-cli stop vector client`
 - `opamp-cli start fluentd client`
 - `opamp-cli stop fluentd client`
 - `opamp-cli dev-containers logstash`

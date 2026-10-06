@@ -21,8 +21,8 @@ import logging
 import subprocess
 from pathlib import Path
 
+from opamp_consumer.abstract_client import KEY_SERVICE_INSTANCE_ID
 from opamp_consumer.config import ConsumerConfig
-from opamp_consumer.elastic_heartbeat import client as heartbeat_module
 from opamp_consumer.elastic_heartbeat.client import (
     ELASTIC_HEARTBEAT_CONFIG_FLAG,
     ELASTIC_HEARTBEAT_FOREGROUND_FLAG,
@@ -280,6 +280,34 @@ def test_heartbeat_health_transform_populates_component(tmp_path: Path) -> None:
 
     assert message.health.component_health_map["Elastic Heartbeat"].healthy is True
     assert message.health.component_health_map["Elastic Heartbeat"].status == "ok"
+
+
+def test_heartbeat_supports_remote_config_capabilities(tmp_path: Path) -> None:
+    config = _heartbeat_config(tmp_path)
+    client = ElasticHeartbeatOpAMPClient(config.server_url or "", config)
+
+    supported = client.get_supported_capabilities()
+
+    assert "AcceptsRemoteConfig" in supported
+    assert "ReportsEffectiveConfig" in supported
+
+
+def test_heartbeat_description_defaults_instance_id_to_service_name(
+    tmp_path: Path,
+) -> None:
+    config = _heartbeat_config(tmp_path)
+    config.service_instance_id = None
+    config.service_name = "FullDemoHeartbeat"
+    client = ElasticHeartbeatOpAMPClient(config.server_url or "", config)
+
+    description = client.get_agent_description()
+    identifying = {
+        item.key: item.value.string_value
+        for item in description.identifying_attributes
+        if item.value.WhichOneof("value") == "string_value"
+    }
+
+    assert identifying[KEY_SERVICE_INSTANCE_ID] == "FullDemoHeartbeat"
 
 
 def test_heartbeat_config_test_uses_beat_test_config_command(monkeypatch, tmp_path: Path) -> None:

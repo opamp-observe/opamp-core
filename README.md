@@ -45,18 +45,21 @@ The documentation includes background such as the implementation philosophies th
 - [provider/README.md](provider/README.md) — provider configuration and web UI notes.
 - [catalog-service/README.md](catalog-service/README.md) — optional catalog service overview and setup notes.
 - [config-service/README.md](config-service/README.md) — optional editor/config service overview and setup notes.
+- [docs/client_config_generator_service.md](docs/client_config_generator_service.md) — schema-driven consumer configuration generator deployment, API, and file-safety guide.
 - [agent_broker/README.md](agent_broker/README.md) — optional conversation broker overview, setup, and run modes.
 - [agent_broker/docs/README.md](agent_broker/docs/README.md) — broker documentation index and operational guides.
 
-## Optional Components
+## Support Components
 
-The core OpAMP provider/server and consumer/client run without the optional
-components listed below:
+The core OpAMP provider/server and consumer/client can run on their own, while
+the support components below provide integrated UI, demo, validation, or
+collaboration features:
 
 - `agent_broker/` — conversation broker
 - `consumer-sim/` — simulator launcher and local demo/test helper
 - `catalog-service/` — catalog browsing and supporting service components
 - `config-service/` — editor/config validation service components
+- `client-config-generator-service/` — schema-driven consumer configuration generator included in the default server config and also usable as a standalone service
 
 When used, these components run as separate processes or supporting services
 with their own startup/shutdown flow and configuration.
@@ -68,6 +71,7 @@ The repository supports independent deployable Python artefacts for:
 - `provider`
 - `consumer`
 - `catalog-service`
+- `client-config-generator-service`
 - `cli`
 - `consumer-sim`
 
@@ -97,6 +101,7 @@ For the full build matrix and output paths, start with:
 - `cli` — optional local launcher/orchestration utility and docs.
 - `config` — default configuration files (including `opamp.json`).
 - `config-service` — optional editor/config validation service package and docs.
+- `client-config-generator-service` — default server plugin and optional standalone schema-driven consumer configuration generator package, UI, and API.
 - `consumer` — the OpAMP consumer (client) package, tests, and config samples.
 - `consumer-sim` — optional simulator launcher utilities and docs.
 - `dist` — generated wheels, source distributions, manuals, and SBOMs.

@@ -48,6 +48,7 @@ def _ensure_optional_component_paths() -> None:
     """Ensure optional embedded component source paths are importable."""
     root = _repo_root()
     candidates = [
+        root / "client-config-generator-service" / "src",
         root / "config-service" / "src",
         root / "consumer" / "src",
         root / "svr-credentials-mgr" / "src",

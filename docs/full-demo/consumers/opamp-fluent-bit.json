@@ -1,0 +1,32 @@
+{
+  "consumer": {
+    "server_url": "http://127.0.0.1:8080",
+    "client_status_port": 2020,
+    "chat_ops_port": 8888,
+    "transport": "websocket",
+    "processTracking": "Supervisor",
+    "tls": {
+      "verify_server": false,
+      "enabled": false
+    },
+    "server-authorization": "none",
+    "log_agent_api_responses": false,
+    "agent_config_path": "docs/full-demo/active/fluent-bit.yaml",
+    "agent_additional_params": [],
+    "heartbeat_frequency": 5,
+    "service_type": "fluentbit",
+    "full_update_controller": {
+      "fullResendAfter": 1
+    },
+    "full_update_controller_type": "SentCount",
+    "allow_custom_capabilities": true,
+    "log_level": "debug",
+    "service_name": "FullDemoFluentBit",
+    "service_namespace": "FullDemo",
+    "agent_capabilities": [
+      "AcceptsRemoteConfig",
+      "ReportsEffectiveConfig",
+      "ReportsHeartbeat"
+    ]
+  }
+}

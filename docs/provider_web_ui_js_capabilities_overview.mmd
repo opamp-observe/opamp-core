@@ -17,6 +17,7 @@ flowchart LR
 
     subgraph Backend["Provider API Endpoints"]
         APICLIENTS["/api/clients\n(filter params + totals)"]
+        APIFEATURES["/api/ui/features\n(component feature menu)"]
         APISETTINGS["/api/settings/*\n(comms/client/diagnostic/help)"]
         APICOMMANDS["/api/commands/custom\n/api/clients/:id/*"]
         APISHUTDOWN["/api/shutdown"]
@@ -36,6 +37,7 @@ flowchart LR
     PREFSAVE --> STATE
 
     FUN --> APICLIENTS
+    FUN --> APIFEATURES
     FUN --> APISETTINGS
     FUN --> APICOMMANDS
     FUN --> APISHUTDOWN

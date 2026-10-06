@@ -1,0 +1,32 @@
+{
+  "consumer": {
+    "server_url": "http://127.0.0.1:8080",
+    "client_status_port": 24220,
+    "chat_ops_port": 8889,
+    "transport": "http",
+    "processTracking": "Supervisor",
+    "tls": {
+      "verify_server": false,
+      "enabled": false
+    },
+    "server-authorization": "none",
+    "log_agent_api_responses": false,
+    "agent_config_path": "docs/full-demo/active/fluentd.conf",
+    "agent_additional_params": [],
+    "heartbeat_frequency": 5,
+    "service_type": "fluentd",
+    "full_update_controller": {
+      "fullResendAfter": 1
+    },
+    "full_update_controller_type": "SentCount",
+    "allow_custom_capabilities": true,
+    "log_level": "debug",
+    "service_name": "FullDemoFluentd",
+    "service_namespace": "FullDemo",
+    "agent_capabilities": [
+      "AcceptsRemoteConfig",
+      "ReportsEffectiveConfig",
+      "ReportsHeartbeat"
+    ]
+  }
+}

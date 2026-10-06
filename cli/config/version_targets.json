@@ -111,6 +111,26 @@
       ]
     },
     {
+      "id": "client-config-generator-service-python",
+      "label": "Client config generator service Python package",
+      "currentVersionSource": {
+        "path": "client-config-generator-service/pyproject.toml",
+        "pattern": "^version = \"([^\"]+)\"$"
+      },
+      "targets": [
+        {
+          "path": "client-config-generator-service/pyproject.toml",
+          "pattern": "^version = \"[^\"]+\"$",
+          "replacement": "version = \"{version}\""
+        },
+        {
+          "path": "client-config-generator-service/src/client_config_generator_service/__init__.py",
+          "pattern": "^__version__ = \"[^\"]+\"$",
+          "replacement": "__version__ = \"{version}\""
+        }
+      ]
+    },
+    {
       "id": "config-service-backend-module",
       "label": "Config service backend module",
       "currentVersionSource": {

@@ -92,11 +92,41 @@ classDiagram
       +_health_from_metrics()
     }
 
+    class ElasticAgentOpAMPClient {
+      +get_custom_handler_folder()
+      +_create_runtime_process_lifecycle()
+      +add_agent_version()
+      +poll_local_status_with_codes()
+      +get_agent_description()
+      +_health_from_metrics()
+    }
+
+    class ElasticHeartbeatOpAMPClient {
+      +get_custom_handler_folder()
+      +_create_runtime_process_lifecycle()
+      +poll_local_status_with_codes()
+      +get_agent_description()
+      +_health_from_metrics()
+    }
+
+    class VectorOpAMPClient {
+      +get_custom_handler_folder()
+      +_create_runtime_process_lifecycle()
+      +add_agent_version()
+      +poll_local_status_with_codes()
+      +get_agent_description()
+      +_health_from_metrics()
+    }
+
     class SimulatorOpAMPClient {
       +launch_agent_process()
       +terminate_agent_process()
       +restart_agent_process()
     }
+
+    class ElasticAgentCliLifecycle
+    class ElasticHeartbeatLifecycle
+    class VectorLifecycle
 
     class OpAMPClientData
     class ConsumerConfig
@@ -136,6 +166,10 @@ classDiagram
       +run_client()
       +run_default_client_main()
     }
+    class plugin_loader {
+      <<module>>
+      +load_consumer_plugin()
+    }
 
     OpAMPClientInterface <|.. AbstractOpAMPClient
     ClientTransportAuthorizationMixin <|-- AbstractOpAMPClient
@@ -149,7 +183,17 @@ classDiagram
 
     AbstractOpAMPClient <|-- OpAMPClient
     AbstractOpAMPClient <|-- FluentdOpAMPClient
+    AbstractOpAMPClient <|-- ElasticAgentOpAMPClient
+    AbstractOpAMPClient <|-- ElasticHeartbeatOpAMPClient
+    AbstractOpAMPClient <|-- VectorOpAMPClient
     AbstractOpAMPClient <|-- SimulatorOpAMPClient
+
+    _BaseClientProcessLifecycle <|-- ElasticAgentCliLifecycle
+    _BaseClientProcessLifecycle <|-- ElasticHeartbeatLifecycle
+    _BaseClientProcessLifecycle <|-- VectorLifecycle
+    ElasticAgentOpAMPClient ..> ElasticAgentCliLifecycle
+    ElasticHeartbeatOpAMPClient ..> ElasticHeartbeatLifecycle
+    VectorOpAMPClient ..> VectorLifecycle
 
     AbstractOpAMPClient *-- OpAMPClientData
     AbstractOpAMPClient --> ConsumerConfig
@@ -161,24 +205,47 @@ classDiagram
     AbstractOpAMPClient --> client_message_builder
     ClientTransportAuthorizationMixin --> client_transport
     OpAMPClient --> client_bootstrap
+    plugin_loader ..> OpAMPClient
+    plugin_loader ..> FluentdOpAMPClient
+    plugin_loader ..> ElasticAgentOpAMPClient
+    plugin_loader ..> ElasticHeartbeatOpAMPClient
+    plugin_loader ..> VectorOpAMPClient
+    plugin_loader ..> SimulatorOpAMPClient
 ```
 
 ## Runtime Entrypoints
 
 ```mermaid
 flowchart TD
-    A["installed CLI: opamp-consumer"] --> B["python -m opamp_consumer.fluentbit.client"]
-    C["installed CLI: opamp-consumer-fluentd"] --> D["python -m opamp_consumer.fluentd.client"]
+    A["installed CLI: opamp-consumer"] --> B["python -m opamp_consumer.client"]
+    B --> C["client.py routes by consumer.service_type"]
+    C --> D["plugin_loader.load_consumer_plugin(...)"]
 
-    B --> G["fluentbit.client.main()"]
-    G --> H["client_bootstrap.run_default_client_main(...)"]
-    H --> I["OpAMPClient (Fluent Bit)"]
+    D --> E["fluentbit -> opamp_consumer.fluentbit.client.main()"]
+    D --> F["fluentd -> opamp_consumer.fluentd.client.main()"]
+    D --> G["elastic_agent -> opamp_consumer.elastic_agent.client.main()"]
+    D --> H["elastic_heartbeat -> opamp_consumer.elastic_heartbeat.client.main()"]
+    D --> I["vector -> opamp_consumer.vector.client.main()"]
+    D --> J["simulator -> opamp_consumer.simulator.client.main()"]
 
-    D --> J["fluentd.client.main()"]
-    J --> K["FluentdOpAMPClient (Fluentd)"]
+    K["installed CLI: opamp-consumer-fluentd"] --> F
+    L["installed CLI: opamp-consumer-elastic-heartbeat"] --> H
+    M["installed CLI: opamp-consumer-vector"] --> I
+    N["installed CLI: opamp-consumer-simulator"] --> J
 
-    I --> L["AbstractOpAMPClient + mixins"]
-    K --> L
+    E --> O["OpAMPClient (Fluent Bit)"]
+    F --> P["FluentdOpAMPClient (Fluentd)"]
+    G --> Q["ElasticAgentOpAMPClient (Elastic Agent)"]
+    H --> R["ElasticHeartbeatOpAMPClient (Elastic Heartbeat)"]
+    I --> S["VectorOpAMPClient (Vector)"]
+    J --> T["SimulatorOpAMPClient (Simulator)"]
+
+    O --> U["AbstractOpAMPClient + mixins"]
+    P --> U
+    Q --> U
+    R --> U
+    S --> U
+    T --> U
 ```
 
 ## Runtime Process Tracking Strategy

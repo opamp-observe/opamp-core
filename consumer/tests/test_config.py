@@ -77,6 +77,19 @@ def test_log_level_loads_from_config_file(tmp_path, monkeypatch) -> None:
     assert loaded.log_level == "info"
 
 
+def test_service_instance_id_loads_from_config_file(tmp_path, monkeypatch) -> None:
+    """Consumer service_instance_id should be preserved when loading file config."""
+    raw = _base_consumer_config()
+    raw["consumer"]["service_instance_id"] = "friendly-agent-01"
+    config_path = tmp_path / "opamp.json"
+    config_path.write_text(json.dumps(raw, indent=2), encoding="utf-8")
+    monkeypatch.setenv(consumer_config.ENV_OPAMP_CONFIG_PATH, str(config_path))
+
+    loaded = consumer_config.load_config()
+
+    assert loaded.service_instance_id == "friendly-agent-01"
+
+
 def test_preserve_previous_config_defaults_false_when_missing(
     tmp_path, monkeypatch
 ) -> None:
@@ -149,6 +162,7 @@ def test_elastic_agent_plugin_config_section_loads_fields(tmp_path) -> None:
     raw = _base_consumer_config()
     raw["consumer"]["service_type"] = "elastic_agent"
     raw["consumer"]["agent_config_path"] = str(agent_config_path)
+    raw["consumer"]["service_instance_id"] = "elastic-agent-demo"
     raw["consumer"]["elastic_agent"] = {
         "executable_path": "elastic-agent",
         "home_path": "elastic-home",
@@ -172,11 +186,41 @@ def test_elastic_agent_plugin_config_section_loads_fields(tmp_path) -> None:
     )
 
     assert loaded.elastic_agent_executable_path == "elastic-agent"
+    assert loaded.service_instance_id == "elastic-agent-demo"
     assert loaded.elastic_agent_home_path == str(home_path)
     assert loaded.elastic_agent_api_host == "127.0.0.1"
     assert loaded.elastic_agent_api_port == 6792
     assert loaded.elastic_agent_api_failon == "failed"
     assert loaded.elastic_agent_status_timeout_seconds == 2
+
+
+def test_vector_plugin_defaults_load_without_vector_config_section(tmp_path) -> None:
+    """Vector-owned defaults should not live on the shared ConsumerConfig dataclass."""
+    agent_config_path = tmp_path / "vector.yaml"
+    agent_config_path.write_text("api:\n  enabled: true\n", encoding="utf-8")
+    raw = _base_consumer_config()
+    raw["consumer"]["service_type"] = "vector"
+    raw["consumer"]["agent_config_path"] = str(agent_config_path)
+    raw["consumer"].pop("vector", None)
+    config_path = tmp_path / "opamp.json"
+    config_path.write_text(json.dumps(raw, indent=2), encoding="utf-8")
+
+    loaded = consumer_config.load_config_with_overrides(
+        config_path=config_path,
+        server_url=None,
+        server_port=None,
+        agent_config_path=None,
+        agent_additional_params=None,
+        heartbeat_frequency=None,
+        log_level=None,
+        full_update_controller=None,
+    )
+
+    assert "vector_executable_path" not in consumer_config.ConsumerConfig.__dataclass_fields__
+    assert loaded.vector_executable_path == "vector"
+    assert loaded.vector_api_host == "127.0.0.1"
+    assert loaded.vector_api_port == 8686
+    assert loaded.vector_status_timeout_seconds == 5.0
 
 
 def test_process_tracking_defaults_to_supervisor_when_missing(

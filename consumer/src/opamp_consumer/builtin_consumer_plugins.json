@@ -1,0 +1,34 @@
+{
+  "plugins": [
+    {
+      "service_type": "fluentbit",
+      "entry_point": "opamp_consumer.fluentbit.client:main",
+      "enabled": true
+    },
+    {
+      "service_type": "fluentd",
+      "entry_point": "opamp_consumer.fluentd.client:main",
+      "enabled": true
+    },
+    {
+      "service_type": "elastic_agent",
+      "entry_point": "opamp_consumer.elastic_agent.client:main",
+      "enabled": true
+    },
+    {
+      "service_type": "elastic_heartbeat",
+      "entry_point": "opamp_consumer.elastic_heartbeat.client:main",
+      "enabled": true
+    },
+    {
+      "service_type": "simulator",
+      "entry_point": "opamp_consumer.simulator.client:main",
+      "enabled": true
+    },
+    {
+      "service_type": "vector",
+      "entry_point": "opamp_consumer.vector.client:main",
+      "enabled": true
+    }
+  ]
+}

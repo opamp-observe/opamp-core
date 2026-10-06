@@ -1,0 +1,164 @@
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Deploy AWS OpAMP regression environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Create/update or destroy the CloudFormation stack
+        required: true
+        default: deploy
+        type: choice
+        options:
+          - deploy
+          - destroy
+      aws_region:
+        description: AWS region
+        required: true
+        default: eu-west-2
+        type: string
+      stack_name:
+        description: CloudFormation stack name
+        required: true
+        default: opamp-regression
+        type: string
+      artifact_bucket:
+        description: Existing retained S3 bucket; leave blank to create a timestamped bucket
+        required: false
+        type: string
+      artifact_key:
+        description: S3 object key for the generated artifact archive
+        required: true
+        default: opamp-cloud/opamp-cloud-artifacts.tar.gz
+        type: string
+      key_name:
+        description: Existing EC2 key pair name (required for deploy)
+        required: false
+        type: string
+      admin_source_cidr:
+        description: IPv4 CIDR allowed to SSH, normally your address with /32
+        required: false
+        type: string
+      instance_type:
+        description: EC2 instance type
+        required: true
+        default: t3.small
+        type: choice
+        options:
+          - t3.small
+          - t3.medium
+          - t3.large
+      name_prefix:
+        description: Prefix for AWS resource names and tags
+        required: true
+        default: opamp
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: aws-opamp-${{ inputs.stack_name }}-${{ inputs.aws_region }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-or-destroy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      AWS_REGION: ${{ inputs.aws_region }}
+      STACK_NAME: ${{ inputs.stack_name }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          aws-region: ${{ inputs.aws_region }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: opamp-${{ github.run_id }}
+
+      - name: Set up Python
+        if: inputs.action == 'deploy'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate deployment inputs
+        if: inputs.action == 'deploy'
+        shell: bash
+        env:
+          INPUT_ADMIN_SOURCE_CIDR: ${{ inputs.admin_source_cidr }}
+          INPUT_KEY_NAME: ${{ inputs.key_name }}
+        run: |
+          set -euo pipefail
+          [[ -n "$INPUT_KEY_NAME" ]] || { echo "key_name is required" >&2; exit 1; }
+          [[ -n "$INPUT_ADMIN_SOURCE_CIDR" ]] || { echo "admin_source_cidr is required" >&2; exit 1; }
+
+      - name: Create workflow parameter file
+        if: inputs.action == 'deploy'
+        shell: bash
+        env:
+          INPUT_ADMIN_SOURCE_CIDR: ${{ inputs.admin_source_cidr }}
+          INPUT_INSTANCE_TYPE: ${{ inputs.instance_type }}
+          INPUT_KEY_NAME: ${{ inputs.key_name }}
+          INPUT_NAME_PREFIX: ${{ inputs.name_prefix }}
+        run: |
+          printf '%s\n' \
+            "NamePrefix=$INPUT_NAME_PREFIX" \
+            "KeyName=$INPUT_KEY_NAME" \
+            "AdminSourceCidr=$INPUT_ADMIN_SOURCE_CIDR" \
+            "InstanceType=$INPUT_INSTANCE_TYPE" \
+            "VpcCidr=10.42.0.0/16" \
+            "PublicSubnetCidr=10.42.0.0/24" \
+            "ServerPrivateIp=10.42.0.10" \
+            "ConsumerPrivateIp=10.42.0.20" \
+            "KeycloakAdminUser=admin" \
+            > cloud/aws/parameters.workflow.env
+
+      - name: Package and deploy AWS stack
+        if: inputs.action == 'deploy'
+        shell: bash
+        env:
+          ARTIFACT_BUCKET: ${{ inputs.artifact_bucket }}
+          ARTIFACT_KEY: ${{ inputs.artifact_key }}
+          PARAMETERS_FILE: cloud/aws/parameters.workflow.env
+          CLOUDFORMATION_ROLE_ARN: ${{ secrets.AWS_CLOUDFORMATION_ROLE_ARN }}
+        run: bash cloud/aws/deploy.sh
+
+      - name: Summarize retained AWS storage
+        if: inputs.action == 'deploy'
+        shell: bash
+        run: |
+          retained_bucket="$(cat dist/aws-artifact-bucket.txt)"
+          connection_guide="$(find dist/aws-regression-results -name connection_details.md -type f | sort | tail -n 1)"
+          {
+            cat "$connection_guide"
+            echo ""
+            echo "## Retained AWS storage"
+            echo ""
+            echo "Bucket: \`$retained_bucket\`"
+            echo ""
+            echo "This bucket is not deleted when the CloudFormation stack is destroyed."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Destroy AWS stack
+        if: inputs.action == 'destroy'
+        shell: bash
+        env:
+          WAIT_FOR_DELETE: "true"
+        run: bash cloud/aws/destroy.sh

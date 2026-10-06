@@ -70,9 +70,10 @@ Everything else in this repository is optional, supportive, or internal.
 | Component | Role | Required | Deployment notes |
 | --- | --- | --- | --- |
 | `provider` | OpAMP server, Web UI, HTTP API, MCP endpoints | Yes | Primary control-plane component |
-| `consumer` | OpAMP client/supervisor for Fluent Bit, Fluentd, Elastic Agent, Elastic Heartbeat, and simulator flows | Yes for end-to-end OpAMP | At least one consumer is needed to exercise provider-to-agent behavior |
+| `consumer` | OpAMP client/supervisor for Fluent Bit, Fluentd, Elastic Agent, Elastic Heartbeat, Vector, and simulator flows | Yes for end-to-end OpAMP | At least one consumer is needed to exercise provider-to-agent behavior |
 | `cli` | Local operator launcher/orchestration utility | Optional | Convenience tool for start/stop/status workflows |
 | `config-service` | Configuration editor, validation API, Python-served UI | Optional | Can run standalone or be registered into the provider environment |
+| `client-config-generator-service` | Schema-driven OpAMP consumer configuration generator and file API | Default server plugin; standalone-capable | Supports provider-plugin deployment, standalone deployment, and Supervisor/Observer modes |
 | `catalog-service` | Configuration catalog backend and UI | Optional | Can run standalone or be registered into the provider environment |
 | `agent_broker` | Collaboration/chat-oriented broker with Slack integration | Optional | Separate process and separate deployment concern |
 | `consumer-sim` | Multi-instance simulator launcher and test helper | Optional | Useful for demos, tests, and repeatable local scenarios |
@@ -100,6 +101,7 @@ These components extend the baseline but are not required for the OpAMP protocol
 - `cli`
   - local operator convenience for launch/stop/list/status flows
 - `config-service`
+- `client-config-generator-service`
   - configuration editing and validation workflows
 - `catalog-service`
   - catalog browsing and help content for supported configs
@@ -128,6 +130,9 @@ classDiagram
         <<required for end-to-end>>
         Fluent Bit client
         Fluentd client
+        Elastic Agent client
+        Elastic Heartbeat client
+        Vector client
         Simulator client
     }
 
@@ -143,6 +148,13 @@ classDiagram
         Config editing
         Validation API
         UI
+    }
+
+    class ClientConfigGenerator {
+        <<default server plugin>>
+        Schema-driven consumer config UI
+        Load / validate / save API
+        Standalone-capable service
     }
 
     class CatalogService {
@@ -170,6 +182,7 @@ classDiagram
     CLI ..> Consumer : local orchestration
     CLI ..> ConsumerSim : demo orchestration
     Provider ..> ConfigService : optional integration
+    Provider ..> ClientConfigGenerator : component-entry-point plugin
     Provider ..> CatalogService : optional integration
     AgentBroker ..> Provider : API / MCP usage
     AgentBroker ..> ConfigService : optional tooling path
@@ -186,6 +199,7 @@ sequenceDiagram
     participant Provider
     participant Consumer
     participant ConfigService as Config Service (optional)
+    participant Generator as Client Config Generator (default plugin)
     participant CatalogService as Catalog Service (optional)
     participant Broker as Agent Broker (optional)
 
@@ -198,6 +212,8 @@ sequenceDiagram
 
     Operator->>Provider: use Web UI / API
     Provider->>ConfigService: validate or edit config (optional)
+    Provider->>Generator: open schema-driven consumer config UI
+    Generator-->>Provider: save/load generated consumer JSON
     Provider->>CatalogService: browse catalog/help (optional)
     Broker->>Provider: operational request via API/MCP (optional)
 ```
@@ -246,6 +262,8 @@ It includes:
 
 - Fluent Bit-oriented client behavior
 - Fluentd-oriented client behavior
+- Elastic Agent and Elastic Heartbeat client behavior
+- Vector client behavior
 - simulator client behavior
 - custom handler support
 - update controller behavior
@@ -253,6 +271,7 @@ It includes:
 See:
 
 - [Consumer README](../consumer/README.md)
+- [Consumer implementations](consumer_implementations.md)
 - [Consumer UML source](<dev/client(consumer)/consumer_client_diagram.md>)
 - [Consumer rendered diagram walkthrough](consumer_client_diagrams.md)
 - [Consumer custom handlers](<dev/client(consumer)/consumer_custom_handlers.md>)
@@ -288,6 +307,15 @@ See:
 - [Catalog service README](../catalog-service/README.md)
 - [Catalog service docs](../catalog-service/docs/README.md)
 
+### Client config generator service
+
+The client config generator is enabled in the default server config and can also run standalone. Its server-provided JSON Schema drives a browser form for Supervisor and Observer consumer deployments, and its API can list, load, validate, and safely save selected JSON files.
+
+See:
+
+- [Client config generator guide](client_config_generator_service.md)
+- [Client config generator package README](../client-config-generator-service/readme.md)
+
 ### Agent broker
 
 The broker is optional and sits outside the core provider/consumer loop. It is aimed at collaboration,
@@ -314,6 +342,7 @@ See:
 - `catalog-service/` - optional catalog service package and UI
 - `cli/` - optional local CLI utility
 - `config-service/` - optional config editor/validator service and UI
+- `client-config-generator-service/` - default server plugin and standalone-capable schema-driven consumer config generator service and UI
 - `config/` - default runtime configuration files
 - `consumer/` - required end-to-end client package
 - `consumer-sim/` - optional simulator launcher utilities
@@ -329,6 +358,9 @@ See:
 ## Core documentation map
 
 - [Features and spec alignment](features.md)
+- [Consumer implementations](consumer_implementations.md)
+- [Client config generator service](client_config_generator_service.md)
+- [Roadmap](roadmap/index.md)
 - [OpAMP JSON reference map](opamp_json_reference.md)
 - [Provider config reference](provider_config_reference.md)
 - [UI screenshots](screenshots.md)

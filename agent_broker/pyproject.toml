@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.25"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -8,7 +8,7 @@ version = "0.5.0"
 description = "OpAMP conversation broker package for standalone wheel deployment"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 authors = [{ name = "mp3monster.org" }]
 keywords = ["opamp", "observability", "broker", "chatops", "automation"]
 dependencies = [
@@ -41,7 +41,7 @@ opamp-broker = "opamp_broker.broker_app:run"
 
 [project.urls]
 Repository = "https://github.com/mp3monster/fluent-opamp"
-Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/mp3monster/fluent-opamp/main/github-landingpage/index.html"
+Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html"
 Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
 
 [tool.pytest.ini_options]

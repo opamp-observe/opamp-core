@@ -1,0 +1,21 @@
+# Licensed under the Apache License, Version 2.0.
+# Copyright 2026 mp3monster.org
+
+outputs:
+  default:
+    type: elasticsearch
+    hosts: ["http://provider:8080"]
+
+management:
+  mode: local
+
+inputs: []
+
+agent.monitoring:
+  enabled: true
+  logs: false
+  metrics: false
+  http:
+    enabled: true
+    host: 127.0.0.1
+    port: 6791

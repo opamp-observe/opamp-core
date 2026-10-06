@@ -1,0 +1,26 @@
+# Licensed under the Apache License, Version 2.0.
+# Copyright 2026 mp3monster.org
+
+name: shutdown-e2e-elastic-heartbeat
+
+heartbeat.monitors:
+  - type: http
+    id: opamp-provider
+    name: OpAMP provider
+    urls: ["http://provider:8080/api/clients"]
+    schedule: "@every 5s"
+
+http.enabled: true
+http.host: 127.0.0.1
+http.port: 5066
+
+output.file:
+  path: /evidence
+  filename: heartbeat-events
+  number_of_files: 2
+
+logging.to_files: true
+logging.files:
+  path: /evidence
+  name: heartbeat
+  keepfiles: 3

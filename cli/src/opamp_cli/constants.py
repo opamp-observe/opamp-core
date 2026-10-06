@@ -33,6 +33,7 @@ CLI_PROCESS_STATE_FILENAME = "managed_processes.json"
 CLI_SETTINGS_FILENAME = "settings.json"
 CLI_COMPONENT_LOG_FILENAME = "opamp_cli.log"
 CLI_SETTING_ENABLE_PROCESS_TAIL = "enable_process_tail"
+CLI_SETTING_DEMO_CONFIG_PATH = "demo_config_path"
 CLI_DEMO_FLAG_ENV = "OPAMP_DEMO"
 APP_ENABLE_DEV_FEATURES_ENV = "APP_ENABLE_DEV_FEATURES"
 OPAMP_CONFIG_PATH_ENV = "OPAMP_CONFIG_PATH"
@@ -64,6 +65,10 @@ COMMAND_HELP = "help"
 COMMAND_LIST = "list"
 COMMAND_STATUS = "status"
 COMMAND_CONFIG = "config"
+COMMAND_CLI_CONFIG = "cli-config"
+COMMAND_CLI_CONFIG_VIEW = "view"
+COMMAND_CLI_CONFIG_SUMMARY = "summary"
+COMMAND_CLI_CONFIG_CHANGE = "change-config"
 COMMAND_EXIT = "exit"
 COMMAND_QUIT = "quit"
 COMMAND_DEMO = "demo"
@@ -96,6 +101,7 @@ ACTION_ID_BROKER = "broker"
 ACTION_ID_SIMULATOR = "simulator"
 ACTION_ID_FLUENTBIT_CLIENT = "fluentbit_client"
 ACTION_ID_FLUENTD_CLIENT = "fluentd_client"
+ACTION_ID_VECTOR_CLIENT = "vector_client"
 ACTION_ID_ALL_CLIENTS = "all_clients"
 ACTION_ID_ALL_MANAGED = "all_managed"
 LABEL_SERVER = "Server"
@@ -105,6 +111,7 @@ LABEL_BROKER = "Broker"
 LABEL_SIMULATOR = "Simulator"
 LABEL_FLUENTBIT_CLIENT = "Fluent Bit client"
 LABEL_FLUENTD_CLIENT = "Fluentd client"
+LABEL_VECTOR_CLIENT = "Vector client"
 LABEL_ALL_CLIENTS = "All clients"
 LABEL_ALL_MANAGED_PROCESSES = "All managed processes"
 SIMULATOR_RECORD_PREFIX = "Simulator"
@@ -112,11 +119,13 @@ DEMO_PROFILE_KEY_FLUENTBIT = "fluentbit"
 DEMO_PROFILE_KEY_FLUENTD = "fluentd"
 DEMO_PROFILE_KEY_ELASTIC_AGENT = "elastic_agent"
 DEMO_PROFILE_KEY_ELASTIC_HEARTBEAT = "elastic_heartbeat"
+DEMO_PROFILE_KEY_VECTOR = "vector"
 DEMO_CONSUMER_CLIENT_CONFIG_KEYS = (
     DEMO_PROFILE_KEY_FLUENTBIT,
     DEMO_PROFILE_KEY_FLUENTD,
     DEMO_PROFILE_KEY_ELASTIC_AGENT,
     DEMO_PROFILE_KEY_ELASTIC_HEARTBEAT,
+    DEMO_PROFILE_KEY_VECTOR,
 )
 
 # The order of these identifiers is user-visible and position-sensitive.
@@ -133,6 +142,7 @@ GUIDED_START_ACTION_ORDER = [
     ACTION_ID_SIMULATOR,
     ACTION_ID_FLUENTBIT_CLIENT,
     ACTION_ID_FLUENTD_CLIENT,
+    ACTION_ID_VECTOR_CLIENT,
 ]
 GUIDED_STOP_ACTION_ORDER = [
     ACTION_ID_SERVER,
@@ -142,6 +152,7 @@ GUIDED_STOP_ACTION_ORDER = [
     ACTION_ID_CONFIG_SERVICE,
     ACTION_ID_FLUENTBIT_CLIENT,
     ACTION_ID_FLUENTD_CLIENT,
+    ACTION_ID_VECTOR_CLIENT,
     ACTION_ID_ALL_CLIENTS,
     ACTION_ID_ALL_MANAGED,
 ]
@@ -153,6 +164,7 @@ GUIDED_ACTION_ALIASES = {
     ACTION_ID_SIMULATOR: ["sim"],
     ACTION_ID_FLUENTBIT_CLIENT: ["fluent bit", "fluentbit", "fluent bit client", "fb"],
     ACTION_ID_FLUENTD_CLIENT: ["fluentd", "fluentd client", "fd"],
+    ACTION_ID_VECTOR_CLIENT: ["vector", "vector client"],
     ACTION_ID_ALL_CLIENTS: ["clients"],
     ACTION_ID_ALL_MANAGED: ["all", "everything"],
 }
@@ -164,6 +176,9 @@ HELP_TEXT = """Usage:
   opamp-cli help
   opamp-cli list
   opamp-cli status
+  opamp-cli cli-config view
+  opamp-cli cli-config summary
+  opamp-cli cli-config change-config
   opamp-cli config validate <path>
   opamp-cli config metadata <path>
   opamp-cli demo
@@ -181,11 +196,15 @@ Behavior:
   - Interactive `start`, `stop`, and `restart` commands open guided multi-stage choices.
   - `list` shows the current CLI option hierarchy and guided targets.
   - `status` shows recorded managed processes, PID liveness, and log paths.
+  - `cli-config view` prints the active CLI demo profile config file and its absolute path.
+  - `cli-config summary` prints a brief summary of the active CLI demo profile config file.
+  - `cli-config change-config` prompts for a replacement CLI demo profile config and keeps the current config unchanged if loading fails.
   - `clear-logs` removes CLI-managed logs and configured demo log files.
   - `setup-venv` creates or updates a repository-level Python virtual environment, installs local tooling, and can open an activated shell.
   - `config validate` validates one file or directory tree using config-service logic when available.
   - `config metadata` adds missing config-service header metadata without overwriting existing values.
   - `enable-process-tail` opens a new shell tailing each managed process log after start.
+  - Set SMART_LOG_VIEWER=true with process tailing enabled to open Smart Log Viewer instead.
   - `disable-process-tail` stops opening log-tail shells for future managed starts.
   - If first token is `script`, generate an OS-native script file.
   - Otherwise execute the command immediately.
@@ -209,6 +228,12 @@ Examples:
 
   # Show managed process status
   opamp-cli status
+
+  # Show CLI profile config summary
+  opamp-cli cli-config summary
+
+  # Change the active CLI profile config
+  opamp-cli cli-config change-config
 
   # Validate one config file
   opamp-cli config validate ./fluent-bit.yaml
@@ -266,5 +291,6 @@ Notes:
   - Set OPAMP_DEMO=true to enable demo consumer options from cli/config/demo_consumer_profiles.json.
   - Guided starts record launched PIDs in cli/runtime/managed_processes.json.
   - Process-tail shells are opened on a best-effort basis and may be unavailable in headless terminals.
+  - Set SMART_LOG_VIEWER=true to generate cli/runtime/smart-log-viewer/config.json and launch smart-log-viewer instead of separate tail shells.
   - `clear-logs` discovers log locations from CLI defaults, managed-process state, the effective OpAMP config file, and demo profile config.
 """

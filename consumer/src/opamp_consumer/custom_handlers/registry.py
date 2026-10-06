@@ -30,6 +30,31 @@ if TYPE_CHECKING:
     from opamp_consumer.abstract_client import OpAMPClientData
 
 
+def resolve_handler_folder(
+    requested_folder: str | pathlib.Path,
+    fallback_folder: str | pathlib.Path,
+) -> pathlib.Path:
+    """Return an existing agent-specific folder or the shared fallback folder.
+
+    Args:
+        requested_folder: Agent-specific custom handler directory.
+        fallback_folder: Shared built-in custom handler directory.
+
+    Returns:
+        The requested folder when it exists, otherwise the fallback folder.
+    """
+    requested_path = pathlib.Path(requested_folder)
+    if requested_path.is_dir():
+        return requested_path
+    fallback_path = pathlib.Path(fallback_folder)
+    logging.getLogger(__name__).debug(
+        "custom handler folder %s is unavailable; using shared handlers from %s",
+        requested_path,
+        fallback_path,
+    )
+    return fallback_path
+
+
 def _load_module_from_path(path: pathlib.Path) -> types.ModuleType | None:
     """Dynamically import a handler module from disk and return it when load succeeds.
 

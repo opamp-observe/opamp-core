@@ -12,6 +12,10 @@ environment:
 The deployment is intended for regression, upgrade, and demonstration use. It
 uses self-signed certificates by default.
 
+Start with the [cloud operator guide](../operator_guide.md) for a provider-neutral
+walkthrough of the lifecycle, terminology, ownership boundaries, and failure
+model. This document supplies the Azure-specific commands and settings.
+
 ## Architecture
 
 ```mermaid
@@ -21,6 +25,7 @@ flowchart LR
     nginx -->|auth_request| oauth[OAuth2 Proxy]
     oauth --> keycloak
     nginx -->|local HTTP| provider[OpAMP Provider UI/API]
+    provider --> generator[Client Config Generator Service]
     provider --> catalog[Catalog Service]
     provider --> config[Config Service]
     provider --> creds[Credentials Manager]
@@ -56,6 +61,10 @@ The ARM template creates:
 - one network security group per VM
 - a Custom Script Extension on each VM
 
+The deploy script also creates a timestamped storage account in a separate
+retention resource group. That account contains the public VM bootstrap
+artifacts and a private `opamp-regression-results` container.
+
 The server VM listens publicly on:
 
 - `443` for the OpAMP UI, protected by Keycloak login through OAuth2 Proxy
@@ -70,7 +79,8 @@ The consumer VM listens publicly only on SSH from `adminSourceCidr`.
 - `parameters.example.json` - example parameters file to copy and edit
 - `deploy.sh` / `deploy.ps1` - create or update the resource group deployment
 - `destroy.sh` / `destroy.ps1` - delete the resource group and everything in it
-- `scripts/package-cloud-artifacts.sh` - builds wheels and prepares deployable artifacts
+- `destroy-bucket.sh` / `destroy-bucket.ps1` - permanently delete retained Azure storage
+- `scripts/package-cloud-artifacts.sh` / `.ps1` - build wheels and deployable artifacts
 - `scripts/install-opamp.sh` - installs OS packages, downloads or builds wheels, creates venvs
 - `scripts/start-opamp-server.sh` - starts server-side services, Keycloak, OAuth2 Proxy, Nginx, and OTel Collector
 - `scripts/start-opamp-consumer.sh` - starts the consumer simulator and OTel Collector
@@ -92,6 +102,7 @@ Install these on your workstation:
 - Bash, or PowerShell on Windows
 - an Azure subscription
 - an SSH key pair
+- permission to create resource groups and storage accounts and to list storage account keys
 
 Sign in to Azure:
 
@@ -122,14 +133,17 @@ Use that value with `/32` for `adminSourceCidr`.
 
 ## Package The Artifacts
 
-The Azure VM extension must download scripts from an HTTPS URL. The simplest
-path is to package the scripts and wheels, upload them to Azure Storage, then
-give the template the storage URL.
+The deploy scripts package and upload the scripts and wheels automatically.
+Run a packager directly only when you need to inspect or reuse its output:
 
 From the repository root:
 
 ```bash
 bash cloud/azure/scripts/package-cloud-artifacts.sh
+```
+
+```powershell
+.\cloud\azure\scripts\package-cloud-artifacts.ps1
 ```
 
 This creates:
@@ -142,40 +156,11 @@ dist/cloud-azure-artifacts/
     *.whl
 ```
 
-Create a storage account and container:
-
-```bash
-RESOURCE_GROUP=opamp-artifacts-rg
-LOCATION=uksouth
-STORAGE_ACCOUNT=<globally-unique-storage-name>
-
-az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
-az storage account create \
-  --resource-group "$RESOURCE_GROUP" \
-  --name "$STORAGE_ACCOUNT" \
-  --location "$LOCATION" \
-  --sku Standard_LRS \
-  --allow-blob-public-access true
-az storage container create \
-  --account-name "$STORAGE_ACCOUNT" \
-  --name opamp-cloud \
-  --public-access blob \
-  --auth-mode login
-az storage blob upload-batch \
-  --account-name "$STORAGE_ACCOUNT" \
-  --destination opamp-cloud \
-  --source dist/cloud-azure-artifacts \
-  --auth-mode login \
-  --overwrite
-```
-
-Your artifact URL will look like:
-
-```text
-https://<storage-account>.blob.core.windows.net/opamp-cloud
-```
-
-Use that value for both `artifactBaseUrl` and `wheelArtifactBaseUrl`.
+When no storage account is supplied, deployment creates one named from the
+current UTC date and time plus a subscription suffix, for example
+`opamp20261005174530abc12`. It is placed in `<resource-group>-retained`, which
+is separate from the VM resource group. The generated name is written to
+`dist/azure-retention-storage-account.txt`.
 
 ## Configure Parameters
 
@@ -189,9 +174,11 @@ Edit `cloud/azure/parameters.local.json`:
 
 - replace `sshPublicKey` with the contents of your `.pub` key
 - replace `adminSourceCidr` with your public IP plus `/32`
-- replace both artifact URLs with your storage container URL
 - set `keycloakAdminPassword` to a long password
 - change `location` if required
+
+The deploy scripts override `artifactBaseUrl` and `wheelArtifactBaseUrl` with
+the generated storage URL, so their example values do not need to be edited.
 
 Keep `parameters.local.json` out of source control.
 
@@ -212,7 +199,8 @@ PowerShell:
 .\cloud\azure\deploy.ps1 `
   -ResourceGroup opamp-regression-rg `
   -Location uksouth `
-  -ParametersFile cloud/azure/parameters.local.json
+  -ParametersFile cloud/azure/parameters.local.json `
+  -SshPrivateKeyFile "$HOME/.ssh/opamp-azure"
 ```
 
 When the deployment completes, Azure prints outputs like:
@@ -221,6 +209,33 @@ When the deployment completes, Azure prints outputs like:
 - `keycloakUrl`
 - `serverSsh`
 - `consumerSsh`
+
+It also generates
+`dist/azure-regression-results/<UTC timestamp>/connection_details.md` with the
+OpAMP and Keycloak URLs plus SSH commands for both VMs. Set
+`SSH_PRIVATE_KEY_FILE` for Bash or `-SshPrivateKeyFile` for PowerShell to add
+the local identity path to those commands; otherwise they use the SSH agent or
+default identity. The script prints the guide path, retained storage account,
+and private results location. Pass
+`STORAGE_ACCOUNT=<name>` to Bash or `-StorageAccount <name>` to PowerShell to
+reuse an existing account. Use `SKIP_PACKAGE=true` or `-SkipPackage` to reuse
+the existing local artifact directory.
+
+Each successful deployment uploads its ARM outputs and `connection_details.md`
+under the private `opamp-regression-results/<UTC timestamp>/` prefix. Upload
+additional reports to that private container, for example:
+
+```bash
+STORAGE_ACCOUNT="$(cat dist/azure-retention-storage-account.txt)"
+RESULT_SET="$(date -u +%Y%m%d%H%M%S)"
+az storage blob upload-batch \
+  --account-name "$STORAGE_ACCOUNT" \
+  --destination opamp-regression-results \
+  --destination-path "$RESULT_SET" \
+  --source test-results \
+  --auth-mode key \
+  --overwrite
+```
 
 Open `opampUiUrl` in a browser. Because the certificate is self-signed, the
 browser will show a certificate warning. Continue only if the hostname matches
@@ -305,6 +320,32 @@ sequenceDiagram
     ConsumerVM->>ConsumerVM: Rebuild venv and restart consumer
 ```
 
+## Running Cost
+
+This environment is metered and is not permanently free. Its main cost drivers
+are two `Standard_B2s` Linux VMs, two Standard SSD LRS operating-system disks,
+two Standard static public IPv4 addresses, retained blob storage, and outbound
+data transfer. Prices vary by region and agreement; use the
+[Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) for
+a current estimate.
+
+An Azure free account includes an introductory credit, but the template's
+default `Standard_B2s` size is not one of the Linux VM sizes included in the
+12-month free allowance. The currently listed free sizes are `B1s`,
+`B2pts v2`, and `B2ats v2`; these smaller sizes are not recommended for this
+multi-service regression environment. The introductory credit can cover the
+default deployment temporarily, after which normal VM, disk, public IP, and
+bandwidth charges apply. See the
+[Azure free account limits](https://azure.microsoft.com/free/),
+[Linux VM pricing](https://azure.microsoft.com/pricing/details/virtual-machines/linux/),
+[managed disk pricing](https://azure.microsoft.com/pricing/details/managed-disks/),
+and [public IP pricing](https://azure.microsoft.com/pricing/details/ip-addresses/).
+
+Deallocating both VMs stops their compute charges, but retained disks and
+public IP addresses can continue to incur charges. Delete the deployment's
+resource group when the regression environment is no longer required. The
+separate retention account remains billable until it is explicitly deleted.
+
 ## Tear Down
 
 Deleting the deployment resource group removes the VMs, disks, IP addresses,
@@ -322,12 +363,24 @@ PowerShell:
 .\cloud\azure\destroy.ps1 -ResourceGroup opamp-regression-rg
 ```
 
-The artifact storage account is separate in this guide. Delete it when no
-longer needed:
+The timestamped storage account is deliberately outside the deployment resource
+group. Deleting the regression infrastructure therefore preserves its artifact
+pack and private deployment-output record. The following commands permanently
+delete the account, every container, and all retained results:
 
 ```bash
-az group delete --name opamp-artifacts-rg --yes --no-wait
+bash cloud/azure/destroy-bucket.sh <storage-account-name>
 ```
+
+```powershell
+.\cloud\azure\destroy-bucket.ps1 -StorageAccount <storage-account-name>
+```
+
+The cleanup script discovers the account's retained resource group and deletes
+the storage account with every container. It leaves the empty retention
+resource group in place so it cannot remove unrelated retained accounts. Azure
+calls this resource a storage account rather than a bucket; `-BucketName` is
+accepted as a PowerShell alias for `-StorageAccount`.
 
 ## Notes And Limits
 

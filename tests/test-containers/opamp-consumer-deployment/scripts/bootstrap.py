@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Copyright 2026 mp3monster.org
+
 """Bootstrap runtime for the OpAMP consumer deployment test container."""
 
 from __future__ import annotations
@@ -25,7 +38,14 @@ UNPACKED_WHEEL_DIR = RUNTIME_ROOT / "wheel-unpacked"
 ELK_DOWNLOADS_DIR = DOWNLOADS_DIR / "elk"
 LOG_GENERATOR_DOWNLOADS_DIR = DOWNLOADS_DIR / "log-generator"
 
-SUPPORTED_DEPLOYMENTS = {"fluentbit", "fluentd", "elastic_heartbeat"}
+SUPPORTED_DEPLOYMENTS = {
+    "elastic_agent",
+    "elastic_heartbeat",
+    "fluentbit",
+    "fluentd",
+    "simulator",
+    "vector",
+}
 SUPPORTED_TRANSPORTS = {"http", "websocket"}
 CONSUMER_PLUGIN_ENTRY_POINT_GROUP = "opamp_consumer.plugins"
 BUILTIN_CONSUMER_PLUGINS = [
@@ -52,6 +72,11 @@ BUILTIN_CONSUMER_PLUGINS = [
     {
         "service_type": "simulator",
         "entry_point": "opamp_consumer.simulator.client:main",
+        "enabled": True,
+    },
+    {
+        "service_type": "vector",
+        "entry_point": "opamp_consumer.vector.client:main",
         "enabled": True,
     },
 ]
@@ -409,6 +434,12 @@ def _default_agent_template(deployment: str) -> Path:
         return DEFAULTS_DIR / "fluent-bit.yaml"
     if deployment == "elastic_heartbeat":
         return DEFAULTS_DIR / "heartbeat.yml"
+    if deployment == "elastic_agent":
+        return DEFAULTS_DIR / "elastic-agent.yml"
+    if deployment == "vector":
+        return DEFAULTS_DIR / "vector.yaml"
+    if deployment == "simulator":
+        return DEFAULTS_DIR / "simulator-agent.yaml"
     return DEFAULTS_DIR / "fluentd.conf"
 
 
@@ -425,6 +456,9 @@ def _build_default_consumer_config(
         "fluentbit": "Fluentbit",
         "fluentd": "Fluentd",
         "elastic_heartbeat": "ElasticHeartbeat",
+        "elastic_agent": "ElasticAgent",
+        "vector": "Vector",
+        "simulator": "Simulator",
     }
     heartbeat_frequency = 5 if deployment == "elastic_heartbeat" else 15
     config: dict[str, Any] = {
@@ -459,6 +493,33 @@ def _build_default_consumer_config(
             "status_timeout_seconds": 5,
         }
         consumer["processTracking"] = "Supervisor"
+    if deployment == "elastic_agent":
+        consumer = config["consumer"]
+        consumer["client_status_port"] = 6791
+        consumer["elastic_agent"] = {
+            "executable_path": "/usr/share/elastic-agent/elastic-agent",
+            "home_path": "/usr/share/elastic-agent",
+            "api_host": "127.0.0.1",
+            "api_port": 6791,
+            "api_failon": "failed",
+            "status_timeout_seconds": 10,
+        }
+        consumer["processTracking"] = "Supervisor"
+    if deployment == "vector":
+        consumer = config["consumer"]
+        consumer["client_status_port"] = 8686
+        consumer["vector"] = {
+            "executable_path": "vector",
+            "api_host": "127.0.0.1",
+            "api_port": 8686,
+            "status_timeout_seconds": 5,
+        }
+        consumer["processTracking"] = "Supervisor"
+    if deployment == "simulator":
+        consumer = config["consumer"]
+        consumer["simulator_responses_path"] = str(
+            DEFAULTS_DIR / "simulator-responses.json"
+        )
     return config
 
 
@@ -473,6 +534,9 @@ def _stage_agent_config(
         "fluentbit": "fluent-bit.yaml",
         "fluentd": "fluentd.conf",
         "elastic_heartbeat": "heartbeat.yml",
+        "elastic_agent": "elastic-agent.yml",
+        "vector": "vector.yaml",
+        "simulator": "simulator-agent.yaml",
     }.get(deployment, "agent.conf")
     staged_path = STAGED_CONFIG_DIR / agent_filename
     source_path_raw = cfg.get("AGENT_CONFIG_PATH", "").strip()
@@ -544,6 +608,30 @@ def _stage_consumer_config(
     if service_namespace_override:
         consumer["service_namespace"] = service_namespace_override
 
+    if deployment == "elastic_agent":
+        consumer["elastic_agent"] = {
+            "executable_path": "/usr/share/elastic-agent/elastic-agent",
+            "home_path": "/usr/share/elastic-agent",
+            "api_host": "127.0.0.1",
+            "api_port": 6791,
+            "api_failon": "failed",
+            "status_timeout_seconds": 10,
+        }
+        consumer["processTracking"] = "Supervisor"
+
+    if deployment == "simulator":
+        simulator_responses_path = cfg.get(
+            "SIMULATOR_RESPONSES_PATH",
+            str(DEFAULTS_DIR / "simulator-responses.json"),
+        ).strip()
+        consumer["simulator_responses_path"] = simulator_responses_path
+
+    service_instance_id_override = cfg.get(
+        "SERVICE_INSTANCE_ID_OVERRIDE", ""
+    ).strip()
+    if service_instance_id_override:
+        consumer["service_instance_id"] = service_instance_id_override
+
     staged_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     return staged_path
 
@@ -573,6 +661,9 @@ def _launch_consumer(deployment: str, consumer_config_path: Path, agent_config_p
         "fluentbit": "opamp-consumer-fluentbit.log",
         "fluentd": "opamp-consumer-fluentd.log",
         "elastic_heartbeat": "opamp-consumer-elastic-heartbeat.log",
+        "elastic_agent": "opamp-consumer-elastic-agent.log",
+        "vector": "opamp-consumer-vector.log",
+        "simulator": "opamp-consumer-simulator.log",
     }.get(deployment, "opamp-consumer.log")
     log_path = output_dir / log_name
     command = [
@@ -582,9 +673,16 @@ def _launch_consumer(deployment: str, consumer_config_path: Path, agent_config_p
         "--agent-config-path",
         str(agent_config_path),
     ]
+    process_environment = os.environ.copy()
+    process_environment["OPAMP_CONFIG_PATH"] = str(consumer_config_path)
     _log(f"launching opamp-consumer; logging to {log_path}")
     with log_path.open("a", encoding="utf-8") as handle:
-        process = subprocess.Popen(command, stdout=handle, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(
+            command,
+            stdout=handle,
+            stderr=subprocess.STDOUT,
+            env=process_environment,
+        )
         process.wait()
         sys.exit(process.returncode)
 
@@ -633,10 +731,16 @@ def main() -> int:
         _install_fluentbit(agent_version, cfg)
     elif deployment == "elastic_heartbeat":
         _install_heartbeat(agent_version, cfg)
+    elif deployment in {"elastic_agent", "simulator", "vector"}:
+        raise ConfigError(
+            f"{deployment} installation requires SKIP_AGENT_INSTALL=true"
+        )
     else:
         _install_fluentd(agent_version)
 
     hostname_override = cfg.get("HOSTNAME_OVERRIDE", "").strip() or None
+    if cfg.get("APP_ENABLE_DEV_FEATURES", "").strip():
+        os.environ["APP_ENABLE_DEV_FEATURES"] = cfg["APP_ENABLE_DEV_FEATURES"].strip()
     staged_agent_path = _stage_agent_config(
         deployment=deployment,
         cfg=cfg,

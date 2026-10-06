@@ -76,6 +76,8 @@ from opamp_consumer.config_metadata import ConfigMetadata
 from opamp_consumer.exceptions import AgentException
 from opamp_consumer.plugin_config import (
     ConsumerPluginConfigContext,
+    looks_like_executable_path,
+    resolve_optional_executable_from_config,
     resolve_optional_path_from_config,
 )
 from opamp_consumer.process_utils import ProcessUtils
@@ -91,7 +93,7 @@ ELASTIC_HEARTBEAT_TEST_CONFIG_COMMAND = "test"
 ELASTIC_HEARTBEAT_TEST_CONFIG_TARGET = "config"
 ELASTIC_HEARTBEAT_HTTP_ROOT_PATH = "/"
 ELASTIC_HEARTBEAT_HTTP_STATS_PATH = "/stats"
-ELASTIC_HEARTBEAT_DEFAULT_API_HOST = "localhost"
+ELASTIC_HEARTBEAT_DEFAULT_API_HOST = "127.0.0.1"
 ELASTIC_HEARTBEAT_DEFAULT_API_PORT = 5066
 DEFAULT_HEARTBEAT_STATUS_TIMEOUT_SECONDS = 5.0
 DEFAULT_STOP_WAIT_SECONDS = 5.0
@@ -121,35 +123,6 @@ def _windows_no_console_kwargs() -> dict[str, Any]:
 def _command_for_log(command: list[str]) -> str:
     """Return a readable shell-style command string for diagnostics."""
     return shlex.join(str(part) for part in command)
-
-
-def _looks_like_executable_path(value: str) -> bool:
-    """Return whether an executable value is path-like rather than a PATH command."""
-    return (
-        "/" in value
-        or "\\" in value
-        or value.startswith((".", "~"))
-        or bool(pathlib.PureWindowsPath(value).drive)
-    )
-
-
-def _resolve_optional_executable_from_config(
-    *,
-    raw_value: Any,
-    config_path: pathlib.Path,
-) -> str | None:
-    """Resolve an optional Beat executable path or PATH command from config."""
-    normalized_value = str(raw_value).strip() if raw_value is not None else ""
-    if not normalized_value:
-        return None
-    if not _looks_like_executable_path(normalized_value):
-        return normalized_value
-    if pathlib.PureWindowsPath(normalized_value).is_absolute():
-        return normalized_value
-    return resolve_optional_path_from_config(
-        raw_value=normalized_value,
-        config_path=config_path,
-    )
 
 
 def _coerce_string_list(value: Any) -> list[str]:
@@ -288,7 +261,7 @@ def process_consumer_config(
         DEFAULT_HEARTBEAT_STATUS_TIMEOUT_SECONDS,
     )
     return {
-        "elastic_heartbeat_executable_path": _resolve_optional_executable_from_config(
+        "elastic_heartbeat_executable_path": resolve_optional_executable_from_config(
             raw_value=executable_path,
             config_path=context.config_path,
         ),
@@ -333,7 +306,7 @@ class ElasticHeartbeatLifecycle(_BaseClientProcessLifecycle):
 
     def _resolve_executable_for_subprocess(self, executable_path: str) -> str:
         """Resolve bare executable names before passing them to subprocess."""
-        if _looks_like_executable_path(executable_path):
+        if looks_like_executable_path(executable_path):
             return executable_path
         resolved_path = shutil.which(executable_path, path=self._executable_lookup_path())
         if not resolved_path:
@@ -597,10 +570,12 @@ class ElasticHeartbeatOpAMPClient(AbstractOpAMPClient):
     _runtime_config_flag = ELASTIC_HEARTBEAT_CONFIG_FLAG
     _heartbeat_paths = (ELASTIC_HEARTBEAT_HTTP_ROOT_PATH, ELASTIC_HEARTBEAT_HTTP_STATS_PATH)
     _value_agent_type = VALUE_AGENT_TYPE_ELASTIC_HEARTBEAT
-    _localhost_base = "http://localhost"
+    _localhost_base = "http://127.0.0.1"
     _json_key_agent = "beat"
     SUPPORTED_AGENT_CAPABILITY_NAMES = (
         *consumer_config.MANDATORY_AGENT_CAPABILITY_NAMES,
+        "AcceptsRemoteConfig",
+        "ReportsEffectiveConfig",
         "ReportsHeartbeat",
     )
 
@@ -684,7 +659,10 @@ class ElasticHeartbeatOpAMPClient(AbstractOpAMPClient):
     ) -> opamp_pb2.AgentDescription:
         """Build Heartbeat description with stable service type."""
         self.data.agent_type_name = VALUE_AGENT_TYPE_ELASTIC_HEARTBEAT
-        description = super().get_agent_description(instance_uid)
+        fallback_instance_uid = instance_uid
+        if fallback_instance_uid is None and not self.config.service_instance_id:
+            fallback_instance_uid = self.config.service_name
+        description = super().get_agent_description(fallback_instance_uid)
         for attribute in description.identifying_attributes:
             if attribute.key == KEY_SERVICE_TYPE:
                 attribute.value.string_value = VALUE_AGENT_TYPE_ELASTIC_HEARTBEAT

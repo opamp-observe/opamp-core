@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Copyright 2026 mp3monster.org
+
 """Run containerized OpAMP regression tests and summarize outcomes."""
 
 from __future__ import annotations
@@ -66,6 +79,10 @@ def _ensure_regression_directories(repo_root: Path) -> None:
         repo_root / "dist" / "test-reports" / "opamp-consumer-deployment" / "fluentbit",
         repo_root / "dist" / "test-reports" / "opamp-consumer-deployment" / "fluentd",
         repo_root / "dist" / "test-reports" / "opamp-consumer-deployment" / "elastic-heartbeat",
+        repo_root / "dist" / "test-reports" / "agent-shutdown-e2e",
+        repo_root / "dist" / "test-reports" / "agent-shutdown-e2e" / "provider",
+        repo_root / "dist" / "test-reports" / "vector-plugin-e2e",
+        repo_root / "dist" / "test-reports" / "vector-plugin-e2e" / "consumer-vector",
         repo_root / "dist" / "test-reports" / "config-service-ui-playwright-batch",
         repo_root / "config-service" / "dist",
     ):
@@ -76,6 +93,9 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
     bash = _bash_executable()
     consumer_plugin_image = "opamp-consumer-plugin-startup-regression:latest"
     component_wheel_image = "opamp-component-wheel-deployment:latest"
+    client_config_generator_deployment_image = (
+        "opamp-client-config-generator-deployment:latest"
+    )
     consumer_deployment_image = "opamp-consumer-deployment-test:latest"
     config_service_ui_image = "config-service-ui-playwright-batch:latest"
     return [
@@ -108,6 +128,38 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                     "-v",
                     f"{repo_root / 'dist/test-reports/component-wheel-deployment'}:/host-output",
                     component_wheel_image,
+                ),
+            ),
+        ),
+        RegressionTest(
+            test_id="client-config-generator-service-deployment",
+            description=(
+                "Verifies enabled provider deployment exposes the client config generator "
+                "while a disabled component entry leaves its menu item and routes unavailable."
+            ),
+            commands=(
+                (
+                    "docker",
+                    "build",
+                    "-f",
+                    str(
+                        repo_root
+                        / "tests/test-containers/client-config-generator-service-deployment/Dockerfile"
+                    ),
+                    "-t",
+                    client_config_generator_deployment_image,
+                    str(
+                        repo_root
+                        / "tests/test-containers/client-config-generator-service-deployment"
+                    ),
+                ),
+                (
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{repo_root}:/workspace/opamp",
+                    client_config_generator_deployment_image,
                 ),
             ),
         ),
@@ -223,6 +275,22 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
             commands=((bash, _bash_path(repo_root / "tests/test-containers/st001/scripts/run_st001.sh"), "all"),),
         ),
         RegressionTest(
+            test_id="agent-shutdown-e2e",
+            description=(
+                "Uses the provider UI to shut down all six built-in consumer types "
+                "in sequence, then verifies process exit and provider disconnect state."
+            ),
+            commands=(
+                (
+                    bash,
+                    _bash_path(
+                        repo_root
+                        / "tests/test-containers/agent-shutdown-e2e/scripts/run_agent_shutdown_e2e.sh"
+                    ),
+                ),
+            ),
+        ),
+        RegressionTest(
             test_id="st002",
             description="Runs ST-002 socket and HTTP simulator/provider container scenarios.",
             commands=((bash, _bash_path(repo_root / "tests/test-containers/st002/scripts/run_st002.sh"), "all"),),
@@ -231,6 +299,14 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
             test_id="st004",
             description="Runs ST-004 Keycloak authorization container scenario.",
             commands=((bash, _bash_path(repo_root / "tests/test-containers/st004/scripts/run_st004.sh"), "keycloak"),),
+        ),
+        RegressionTest(
+            test_id="vector-plugin-e2e",
+            description=(
+                "Runs a provider plus Vector-supervising consumer and verifies "
+                "Vector health/output evidence."
+            ),
+            commands=((bash, _bash_path(repo_root / "tests/test-containers/vector-plugin-e2e/scripts/run_vector_plugin_e2e.sh")),),
         ),
         RegressionTest(
             test_id="config-service-ui-playwright-batch",

@@ -1,0 +1,93 @@
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[build-system]
+requires = ["setuptools>=82", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "client-config-generator-service"
+version = "0.1.0"
+description = "Schema-driven OpAMP consumer configuration generator service and UI."
+readme = "readme.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{ name = "Phil Wilkins" }]
+keywords = ["opamp", "consumer", "configuration", "generator", "schema", "ui"]
+dependencies = [
+  "jsonschema>=4.21",
+  "quart>=0.20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pylint>=3.0",
+  "pytest>=8.0",
+  "pytest-asyncio>=0.23",
+  "pytest-cov>=7.0.0",
+  "ruff>=0.15.0",
+]
+
+[project.scripts]
+client-config-generator-service = "client_config_generator_service.app:main"
+
+[project.urls]
+Repository = "https://github.com/mp3monster/fluent-opamp"
+Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html"
+Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+client_config_generator_service = ["config/*.json", "html/*", "schemas/*.json"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "-s",
+  "--cov=client_config_generator_service",
+  "--cov-report=term-missing",
+  "--cov-report=xml:coverage.xml",
+  "--cov-branch",
+]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["client_config_generator_service"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+precision = 2
+exclude_lines = [
+  "pragma: no cover",
+  "if __name__ == .__main__.:",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "S"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["client_config_generator_service"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]

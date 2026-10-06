@@ -1,0 +1,36 @@
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0.
+#
+# config-service: config_type=Fluent Bit
+# agent_description: Full demo Fluent Bit replacement configuration
+# config_version: 2026.09.10-replacement
+# configuration_date: 2026-09-10
+# SCM_source_name: docs/full-demo/replacements
+# SCM_config_version: full-demo-replacement
+# service_instance_id: full-demo-fluent-bit
+
+env:
+  flush_interval: '1'
+
+service:
+  flush: ${flush_interval}
+  log_level: debug
+  http_server: on
+  http_listen: 127.0.0.1
+  http_port: 2020
+
+pipeline:
+  inputs:
+    - name: dummy
+      tag: full.demo.fluentbit
+      dummy: '{"agent":"fluent-bit","profile":"full-demo","variant":"replacement"}'
+
+  outputs:
+    - name: stdout
+      match: "*"
+
+    - name: file
+      match: "*"
+      path: docs/full-demo/out/fluent-bit
+      file: replacement.log
+      format: plain

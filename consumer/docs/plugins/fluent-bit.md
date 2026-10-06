@@ -3,6 +3,8 @@
 This page covers configuration that is specific to the `fluentbit` consumer plugin.
 Shared consumer keys such as `server_url`, `transport`, TLS, auth, process tracking,
 capabilities, and update controllers are documented in [consumer/README.md](../../README.md).
+For the built-in implementation capability matrix, see
+[docs/consumer_implementations.md](../../../docs/consumer_implementations.md).
 
 ## Plugin Identity
 

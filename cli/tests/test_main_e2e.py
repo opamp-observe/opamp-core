@@ -90,6 +90,7 @@ def test_help_command_prints_usage() -> None:
     assert "Usage:" in completed.stdout
     assert "opamp-cli start server" in completed.stdout
     assert "opamp-cli setup-venv" in completed.stdout
+    assert "opamp-cli cli-config summary" in completed.stdout
     assert "opamp-cli dev-containers" in completed.stdout
     assert "opamp-cli dev-version-bump" in completed.stdout
 
@@ -100,6 +101,7 @@ def test_status_command_reports_runtime_paths() -> None:
     assert completed.returncode == 0
     assert "OpAMP config file:" in completed.stdout
     assert "OpAMP config loaded:" in completed.stdout
+    assert "CLI config file:" in completed.stdout
     assert "State file:" in completed.stdout
     assert "Log directory:" in completed.stdout
     assert "CLI log file:" in completed.stdout
@@ -112,10 +114,24 @@ def test_list_command_reports_option_hierarchy() -> None:
     assert "Control flags:" in completed.stdout
     assert "Top-level commands:" in completed.stdout
     assert "Config commands:" in completed.stdout
+    assert "CLI config commands:" in completed.stdout
+    assert "  cli-config:" in completed.stdout
+    assert "    - view" in completed.stdout
+    assert "    - summary" in completed.stdout
+    assert "    - change-config" in completed.stdout
     assert "  config:" in completed.stdout
     assert "    - validate <path>" in completed.stdout
     assert "    - metadata <path>" in completed.stdout
     assert "Guided actions:" in completed.stdout
+
+
+def test_cli_config_summary_e2e_reports_default_config() -> None:
+    completed = _run_cli("cli-config", "summary")
+
+    assert completed.returncode == 0
+    assert "CLI config summary:" in completed.stdout
+    assert "- Demo configs:" in completed.stdout
+    assert "- CLI config file:" in completed.stdout
 
 
 def test_dev_version_bump_is_recognized_as_dev_command() -> None:

@@ -62,3 +62,4 @@ dev-notes/
 # definitions
 proto/anyvalue.proto
 proto/opamp.proto
+cli/runtime/

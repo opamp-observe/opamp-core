@@ -1,3 +1,22 @@
+---
+layout: framework
+title: Documentation
+permalink: /
+---
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Documentation
 
 Welcome to the Fluent Bit & Fluentd OpAMP implementation docs. This page links to the core guides and outlines where to look for configuration, scripts, and feature notes.
@@ -11,6 +30,8 @@ Use these docs for repository builds and deployable artefacts:
 - [Component Versioning](dev/component_versioning.md) — how git-derived version metadata is refreshed before packaging.
 - [MCP scripts and usage](../mcp/README.md) — MCP tool wheel, sdist, and SBOM flow.
 - [Standalone Packaging](../config-service/docs/standalone-packaging.md) — standalone config-service packaging and SBOM flow.
+- [AWS deployment](../cloud/aws/readme.md) — command-line and GitHub Actions deployment of the two-instance regression environment.
+- [Azure deployment](../cloud/azure/README.md) — ARM deployment of the equivalent two-VM regression environment.
 
 Primary repository-wide build outputs now include independent artefacts for:
 
@@ -24,8 +45,10 @@ Primary repository-wide build outputs now include independent artefacts for:
 
 - [Setup README](README.md) — full setup and run instructions.
 - [Features - spec alignment](features.md) — feature notes and design direction.
+- [Roadmap](roadmap/index.md) — future ideas under consideration, without timeline commitments.
 - [UI examples](screenshots.md) - Some of the elements of the UI to illustrate the user experience.
 - [Client (consumer)_diagrams (as images)](consumer_client_diagrams.md) — rendered consumer diagrams with explanation per diagram panel.
+- [Consumer implementations](consumer_implementations.md) — built-in consumer/client matrix with OpAMP capability support and upstream agent reference links.
 - [Server_(provider) diagrams (as images)](provider_server_diagrams.md) — rendered provider/server diagrams plus links to auth, endpoints, and command docs.
 - [Authentication](authentication.md) — bearer token auth modes, static-token setup, Keycloak/JWT setup, and MCP token usage.
 - [Web Endpoints](endpoints.md) — provider endpoint inventory, including UI/API/tool/MCP routes and `/doc-set`.

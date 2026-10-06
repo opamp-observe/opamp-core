@@ -2,6 +2,8 @@
 
 This page covers configuration that is specific to the `elastic_agent` consumer plugin.
 Shared consumer keys are documented in [consumer/README.md](../../README.md).
+For the built-in implementation capability matrix, see
+[docs/consumer_implementations.md](../../../docs/consumer_implementations.md).
 
 ## Plugin Identity
 
@@ -44,7 +46,7 @@ opamp-consumer --config-path ./opamp.json
 | `consumer.elastic_agent.api_failon` | No | `failon` query value for `/liveness`: `heartbeat`, `failed`, or `degraded`. Environment override: `OPAMP_ELASTIC_AGENT_API_FAILON`. |
 | `consumer.elastic_agent.status_timeout_seconds` | No | Timeout for Elastic Agent CLI status and monitoring API calls. |
 | `consumer.processDetectionRegex` | Recommended | Used to discover an existing foreground `elastic-agent run` process when needed. |
-| `consumer.agent_capabilities` | No | Supports `ReportsHeartbeat` in addition to mandatory capabilities. Remote config is not advertised by this plugin. |
+| `consumer.agent_capabilities` | No | Supports `AcceptsRemoteConfig`, `ReportsEffectiveConfig`, and `ReportsHeartbeat` in addition to mandatory capabilities. |
 
 ## Required Elastic Agent Monitoring Config
 

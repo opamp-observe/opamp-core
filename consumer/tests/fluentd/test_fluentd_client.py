@@ -103,6 +103,9 @@ def test_load_fluentd_config_parses_monitor_agent_settings(tmp_path: Path) -> No
   bind 127.0.0.1
   port 24220
 </source>
+<system>
+  rpc_endpoint 127.0.0.1:24444
+</system>
 # service_instance_id: fluentd-instance
 # config_version: fd-1.2.3
         """.strip()
@@ -117,7 +120,9 @@ def test_load_fluentd_config_parses_monitor_agent_settings(tmp_path: Path) -> No
     assert loaded.agent_http_port == 24220
     assert loaded.agent_http_listen == "127.0.0.1"
     assert loaded.agent_http_server == "on"
-    assert loaded.server_url == "http://127.0.0.1"
+    assert loaded.server_url == "http://localhost"
+    assert loaded.fluentd_rpc_host == "127.0.0.1"
+    assert loaded.fluentd_rpc_port == 24444
     assert loaded.service_instance_id == "fluentd-instance"
     assert loaded.config_version == "fd-1.2.3"
     assert loaded.agent_config_text is not None
@@ -179,7 +184,7 @@ def test_load_fluentd_config_does_not_use_non_monitor_agent_port(
     assert loaded.client_status_port == 24220
     assert loaded.agent_http_port == 24220
     assert loaded.agent_http_listen == "127.0.0.1"
-    assert loaded.server_url == "http://127.0.0.1"
+    assert loaded.server_url == "http://localhost"
 
 
 def test_find_monitor_agent_source_bind_and_port_yaml(
@@ -219,6 +224,8 @@ sources:
   - "@type": monitor_agent
     bind: 127.0.0.1
     port: 24220
+system:
+  rpc_endpoint: 127.0.0.1:24444
         """.strip()
         + "\n",
         encoding="utf-8",
@@ -231,7 +238,9 @@ sources:
     assert loaded.agent_http_port == 24220
     assert loaded.agent_http_listen == "127.0.0.1"
     assert loaded.agent_http_server == "on"
-    assert loaded.server_url == "http://127.0.0.1"
+    assert loaded.server_url == "http://localhost"
+    assert loaded.fluentd_rpc_host == "127.0.0.1"
+    assert loaded.fluentd_rpc_port == 24444
     assert loaded.service_instance_id == "fluentd-yaml-instance"
 
 
@@ -272,8 +281,8 @@ def test_fluentd_client_get_config_metadata_reads_supported_comment_fields(
     )
 
 
-def test_load_fluentd_config_overrides_server_url_host_with_bind(tmp_path: Path) -> None:
-    """Bind value should replace server_url hostname for monitor_agent configs."""
+def test_load_fluentd_config_preserves_provider_url_with_monitor_bind(tmp_path: Path) -> None:
+    """The local monitor bind must not replace the remote provider hostname."""
     config_path = tmp_path / "fluentd.conf"
     config_path.write_text(
         """
@@ -291,7 +300,8 @@ def test_load_fluentd_config_overrides_server_url_host_with_bind(tmp_path: Path)
 
     loaded = fluentd_client.load_fluentd_config(config)
 
-    assert loaded.server_url == "http://10.2.3.4:8080/ui?x=1"
+    assert loaded.server_url == "http://localhost:8080/ui?x=1"
+    assert loaded.agent_http_listen == "10.2.3.4"
 
 
 def test_load_fluentd_config_port_overrides_client_status_port_from_config(
@@ -377,17 +387,17 @@ def test_launch_agent_process_uses_fluentd_command(monkeypatch) -> None:
     assert captured["command"] == ["/usr/bin/fluentd", "-q", "-c", "/tmp/fluentd.conf"]
 
 
-def test_fluentd_check_hot_deploy_returns_flag_when_remote_config_enabled() -> None:
-    """Fluentd should request hot reload when remote config is enabled."""
+def test_fluentd_check_hot_deploy_returns_empty_when_remote_config_enabled() -> None:
+    """Fluentd should not add Fluent Bit hot-reload flags at launch."""
     config = _test_config(agent_config_path="/tmp/fluentd.conf")
     config.agent_capabilities = ["AcceptsRemoteConfig"]
     instance = fluentd_client.FluentdOpAMPClient("http://localhost", config)
 
-    assert instance.check_hot_deploy() == "--enable-hot-reload"
+    assert instance.check_hot_deploy() == ""
 
 
 def test_fluentd_check_hot_deploy_returns_empty_when_flag_already_present() -> None:
-    """Fluentd should not duplicate hot reload flags already supplied by config."""
+    """Fluentd should not inspect or duplicate hot reload flags."""
     config = _test_config(agent_config_path="/tmp/fluentd.conf")
     config.agent_capabilities = ["AcceptsRemoteConfig"]
     config.agent_additional_params = ["-q", "-Y"]
@@ -400,7 +410,7 @@ def test_fluentd_check_hot_deploy_logs_and_returns_empty_on_error(
     monkeypatch,
     caplog,
 ) -> None:
-    """Fluentd hot deploy checks should fail closed and log exceptions."""
+    """Fluentd hot deploy checks should avoid capability inspection."""
     config = _test_config(agent_config_path="/tmp/fluentd.conf")
     instance = fluentd_client.FluentdOpAMPClient("http://localhost", config)
 
@@ -412,16 +422,47 @@ def test_fluentd_check_hot_deploy_logs_and_returns_empty_on_error(
     caplog.set_level("ERROR")
 
     assert instance.check_hot_deploy() == ""
-    assert "failed to evaluate hot deploy launch flag" in caplog.text
+    assert "failed to evaluate hot deploy launch flag" not in caplog.text
 
 
-def test_fluentd_hot_reload_logs_warning_and_returns_false(caplog) -> None:
-    """Fluentd hot reload should warn because the feature is not implemented yet."""
+def test_fluentd_hot_reload_returns_false_without_rpc_endpoint(caplog) -> None:
+    """Fluentd hot reload should require a configured RPC endpoint."""
     instance = fluentd_client.FluentdOpAMPClient("http://localhost", _test_config())
     caplog.set_level("WARNING")
 
     assert instance.hot_reload() is False
-    assert "Fluentd hot reload is not yet supported by this client" in caplog.text
+    assert "rpc_endpoint is not configured" in caplog.text
+
+
+def test_fluentd_hot_reload_calls_rpc_reload_endpoint(monkeypatch) -> None:
+    """Fluentd hot reload should call the configured RPC reload endpoint."""
+    config = _test_config()
+    config.fluentd_rpc_host = "0.0.0.0"
+    config.fluentd_rpc_port = 24444
+    config.fluentd_rpc_scheme = "http"
+    instance = fluentd_client.FluentdOpAMPClient("http://localhost", config)
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, bool]:
+            return {"ok": True}
+
+    captured: dict[str, object] = {}
+
+    def _fake_get(url: str, timeout: float) -> FakeResponse:
+        captured["url"] = url
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr(fluentd_client.httpx, "get", _fake_get)
+
+    assert instance.hot_reload() is True
+    assert captured["url"] == "http://127.0.0.1:24444/api/config.reload"
+    assert captured["timeout"] == 5.0
 
 
 def test_launch_agent_process_returns_false_when_command_not_found(

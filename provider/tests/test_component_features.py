@@ -20,6 +20,15 @@ from opamp_provider.component_features import (
     ui_menu_items_from_component_entries,
 )
 
+CLIENT_CONFIG_GENERATOR_ENTRY_POINT = (
+    "client_config_generator_service.opamp_integration:register_client_config_generator_feature"
+)
+CLIENT_CONFIG_GENERATOR_LABEL = "Client Config Generator"
+CLIENT_CONFIG_GENERATOR_URL = "/client-config-generator-service/ui"
+COMPONENT_ENTRY_POINTS_KEY = "component-entry-points"
+OPAMP_KEY = "opamp"
+QUART_KEY = "quart"
+
 
 def test_provider_component_entries_and_menu_items_support_labels_and_urls(tmp_path: Path) -> None:
     config_path = tmp_path / "opamp.json"
@@ -92,3 +101,29 @@ def test_provider_component_entries_include_catalog_entry_when_enabled(tmp_path:
     menu_items = ui_menu_items_from_component_entries(entries)
     catalog_item = next(item for item in menu_items if item.label == "Config Catalog")
     assert catalog_item.url == "/catalog"
+
+
+def test_default_provider_config_includes_client_config_generator() -> None:
+    """Verify default opamp-server configuration exposes the generator plugin."""
+    repo_root = Path(__file__).resolve().parents[2]
+    config_path = repo_root / "config" / "opamp.json"
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+
+    entries = resolve_provider_component_entries(config_path=config_path)
+    entry_points = [entry.entry_point for entry in entries]
+    assert CLIENT_CONFIG_GENERATOR_ENTRY_POINT in entry_points
+
+    menu_items = ui_menu_items_from_component_entries(entries)
+    generator_item = next(
+        item for item in menu_items if item.entry_point == CLIENT_CONFIG_GENERATOR_ENTRY_POINT
+    )
+    assert generator_item.label == CLIENT_CONFIG_GENERATOR_LABEL
+    assert generator_item.url == CLIENT_CONFIG_GENERATOR_URL
+
+    configured_entries = payload[COMPONENT_ENTRY_POINTS_KEY][QUART_KEY]
+    assert any(
+        item.get("entry_point") == CLIENT_CONFIG_GENERATOR_ENTRY_POINT
+        and item.get("enabled") is True
+        for item in configured_entries
+    )
+    assert "client_config_generator" in payload[OPAMP_KEY]

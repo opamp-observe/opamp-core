@@ -11,7 +11,7 @@
 # limitations under the License.
 
 [build-system]
-requires = ["hatchling>=1.25"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -20,7 +20,7 @@ version = "0.4.1"
 description = "OpAMP client (as a supervisor) designed primarily for Fluent Bit & Fluentd  using Quart transport semantics"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 authors = [{ name = "Phil Wilkins" }]
 keywords = ["opamp", "observability", "agent", "consumer", "supervisor"]
 dependencies = [
@@ -54,6 +54,7 @@ opamp-consumer = "opamp_consumer.client:main"
 opamp-consumer-elastic-heartbeat = "opamp_consumer.elastic_heartbeat.client:main"
 opamp-consumer-fluentd = "opamp_consumer.fluentd.client:main"
 opamp-consumer-simulator = "opamp_consumer.simulator.client:main"
+opamp-consumer-vector = "opamp_consumer.vector.client:main"
 
 [project.entry-points."opamp_consumer.plugins"]
 fluentbit = "opamp_consumer.fluentbit.client:main"
@@ -61,10 +62,11 @@ fluentd = "opamp_consumer.fluentd.client:main"
 elastic_agent = "opamp_consumer.elastic_agent.client:main"
 elastic_heartbeat = "opamp_consumer.elastic_heartbeat.client:main"
 simulator = "opamp_consumer.simulator.client:main"
+vector = "opamp_consumer.vector.client:main"
 
 [project.urls]
 Repository = "https://github.com/mp3monster/fluent-opamp"
-Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/mp3monster/fluent-opamp/main/github-landingpage/index.html"
+Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html"
 Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
 
 [tool.pytest.ini_options]
@@ -106,6 +108,7 @@ known-first-party = ["opamp_consumer"]
 [tool.hatch.build.targets.wheel]
 packages = ["src/opamp_consumer"]
 include = [
+  "src/opamp_consumer/builtin_consumer_plugins.json",
   "src/opamp_consumer/consumer_logging.json",
   "src/opamp_consumer/version.json",
 ]

@@ -1,0 +1,324 @@
+/*
+ * Copyright 2026 mp3monster.org
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+:root {
+  --page-bg: #f5f7fb;
+  --panel-bg: #ffffff;
+  --text: #1b1f24;
+  --muted: #4c5563;
+  --accent: #425cc7;
+  --border: #d7deee;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--text);
+  background: radial-gradient(circle at top left, #e7eeff 0%, #f5f7fb 55%, #fff4d8 100%);
+  font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+}
+
+.page-shell {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+main.page-shell {
+  padding-top: 0;
+}
+
+header {
+  padding: 28px 36px 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+header p {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.title,
+.title-brand,
+.title-actions,
+.toolbar,
+.row {
+  display: flex;
+  gap: 1rem;
+}
+
+.title {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title-brand,
+.title-actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.title-logo {
+  width: 78px;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.button-link,
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #eef2ff;
+  color: #2f3f8f;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.button-link:hover,
+.button-link:focus-visible,
+button:hover,
+button:focus-visible {
+  border-color: var(--accent);
+  background: #e6ecff;
+  outline: none;
+}
+
+.panel {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-bg);
+  box-shadow: 0 10px 20px rgba(44, 31, 21, 0.06);
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.toolbar,
+.row {
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.footer {
+  padding: 20px 36px 32px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.client-config-generator-shell #selectedConfigurationDisplay {
+  min-width: 24rem;
+}
+
+.client-config-generator-shell #configurationSelect {
+  min-width: 24rem;
+}
+
+.client-config-generator-shell #configurationName {
+  min-width: 18rem;
+}
+
+.client-config-generator-shell #processMode {
+  min-width: 12rem;
+}
+
+#configurationForm {
+  display: grid;
+  gap: 1rem;
+}
+
+#configurationForm fieldset {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(28rem, 1fr));
+  align-items: start;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-bg);
+  box-shadow: 0 10px 20px rgba(44, 31, 21, 0.06);
+}
+
+#configurationForm fieldset fieldset {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(28rem, 1fr));
+  margin-bottom: 0;
+  padding: 0.25rem 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#configurationForm legend {
+  padding: 0 0.45rem;
+  color: var(--accent);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+#configurationForm fieldset fieldset legend {
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.generated-field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.generated-field-label {
+  flex: 0 0 15rem;
+  min-width: 0;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.generated-field-label span:first-child {
+  display: block;
+}
+
+.generated-field-control {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.field-description {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.checkbox-field {
+  align-items: center;
+}
+
+.checkbox-field input {
+  flex: 0 0 auto;
+  min-width: auto;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0;
+}
+
+.generated-field select[multiple] {
+  min-height: 8.5rem;
+}
+
+.status-message.success #statusMessage {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.status-message.error #statusMessage {
+  color: var(--red);
+  font-weight: 700;
+  white-space: pre-wrap;
+}
+
+.preview-panel summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.preview-panel pre {
+  overflow: auto;
+  padding: 1rem;
+  border-radius: 10px;
+  background: #14212a;
+  color: #e9f4f5;
+  font-family: "IBM Plex Mono", "Cascadia Code", "Consolas", monospace;
+}
+
+@media (max-width: 860px) {
+  .client-config-generator-shell #selectedConfigurationDisplay,
+  .client-config-generator-shell #configurationSelect,
+  .client-config-generator-shell #configurationName {
+    min-width: min(100%, 18rem);
+  }
+
+  #configurationForm fieldset,
+  #configurationForm fieldset fieldset {
+    grid-template-columns: 1fr;
+  }
+
+  .generated-field,
+  .checkbox-field {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .generated-field-label {
+    flex-basis: auto;
+  }
+}

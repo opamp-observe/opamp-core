@@ -15,15 +15,26 @@ Add the package under:
 consumer/src/opamp_consumer/my_agent/
 ```
 
-Then add an entry point to `consumer/pyproject.toml`:
+Then add the built-in mapping to:
 
-```toml
-[project.entry-points."opamp_consumer.plugins"]
-my_agent = "opamp_consumer.my_agent.client:main"
+```text
+consumer/src/opamp_consumer/builtin_consumer_plugins.json
+```
+
+Example:
+
+```json
+{
+  "service_type": "my_agent",
+  "entry_point": "opamp_consumer.my_agent.client:main",
+  "enabled": true
+}
 ```
 
 Because the consumer wheel includes `src/opamp_consumer`, the new package will
 be included in the consumer wheel as long as it lives under that package tree.
+The JSON registry file is packaged with the consumer and loaded before external
+entry points and runtime config overlays.
 
 ## External Plugin Package
 

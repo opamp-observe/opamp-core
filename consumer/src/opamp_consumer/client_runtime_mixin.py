@@ -130,7 +130,7 @@ class ClientRuntimeMixin:
     _runtime_agent_command = "agent"
     _runtime_config_flag = "-c"
     _heartbeat_paths = ("/health",)
-    _localhost_base = "http://localhost"
+    _localhost_base = "http://127.0.0.1"
     _http_timeout_seconds = 5.0
     _error_prefix = "error: "
     _error_status = "error"

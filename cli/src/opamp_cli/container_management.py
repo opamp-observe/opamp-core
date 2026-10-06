@@ -50,7 +50,7 @@ CONTAINER_STOP_TIMEOUT_SECONDS = 10
 def container_runtime_executable() -> str | None:
     """Return an available container runtime executable, if one is configured."""
     configured = str(os.environ.get("OPAMP_CONTAINER_RUNTIME") or "").strip()
-    candidates = [configured] if configured else ["podman", "docker"]
+    candidates = [configured] if configured else ["docker", "podman"]
     for candidate in candidates:
         if not candidate:
             continue

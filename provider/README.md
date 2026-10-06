@@ -76,9 +76,10 @@ config file location with the `OPAMP_CONFIG_PATH` environment variable.
 
 Provider configuration variants are also available in `config/`:
 
-- `config/opamp.json`: default development config
+- `config/opamp.json`: default development config with embedded config editor, catalog, and client config generator UI
 - `config/opamp.provider-with-editor-service.json`: provider plus embedded config editor UI
 - `config/opamp.provider-with-editor-and-catalog-services.json`: provider plus embedded config editor and catalog UI
+- `config/opamp.provider-with-client-config-generator-service.json`: provider plus embedded schema-driven client config generator UI
 
 Example alternate launch:
 
@@ -99,7 +100,7 @@ Example `opamp.json`:
     "client_event_history_size": 50,
     "log_level": "INFO",
     "default_heartbeat_frequency": 30,
-    "latest_docs_url": "https://htmlpreview.github.io/?https://raw.githubusercontent.com/mp3monster/fluent-opamp/main/github-landingpage/index.html",
+    "latest_docs_url": "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html",
     "human_in_loop_approval": false,
     "allow-mcp": false,
     "opamp-use-authorization": "none",
@@ -298,8 +299,9 @@ For the shared provider+consumer guide on implementing and deploying custom acti
 - Minification workflow details are documented in `../docs/dev/minification_process.md`.
 - Provider feature dropdown entries are configuration-driven from top-level `component-entry-points.quart` entries that provide `label` and `url` values.
 - Provider can embed additional Quart components at startup via `component-entry-points.quart` entrypoints (for example config-service integration).
+- The Client Config Generator is enabled with the same entry-point mechanism and exposes schema, list, load, validation, save, UI, and static-help routes only when its component entry is enabled.
 - Provider catalog feature is configured under top-level `opamp.config_catalog` and scans configured folders/extensions for metadata columns derived from top comment lines (`config-service: key=value`).
-- Embedded feature pages such as Config Editor and Config Catalog show `Server Console` and `Back` buttons in their headers; standalone deployments hide those buttons.
+- Embedded feature pages such as Config Editor, Config Catalog, and Client Config Generator show provider navigation in their headers; standalone deployments hide provider-only navigation.
 - The main client table renders column filters directly beneath the headings.
 - Text filters update immediately for free-text columns such as service instance ID and host fields.
 - Connection status, health status, config version, host type, and host version use multi-select dropdown filters populated from the currently loaded table data.

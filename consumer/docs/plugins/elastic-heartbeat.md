@@ -3,6 +3,8 @@
 This page covers configuration that is specific to the `elastic_heartbeat`
 consumer plugin. Shared consumer keys are documented in
 [consumer/README.md](../../README.md).
+For the built-in implementation capability matrix, see
+[docs/consumer_implementations.md](../../../docs/consumer_implementations.md).
 
 ## Plugin Identity
 
@@ -40,7 +42,7 @@ opamp-consumer --config-path ./opamp.json --agent-config-path ./heartbeat.yml
 | `consumer.elastic_heartbeat.status_timeout_seconds` | No | Timeout for Heartbeat config tests and monitoring API calls. |
 | `consumer.processTracking` | Recommended | Use `Supervisor` when the consumer should launch Heartbeat. Use `Observer` only when Heartbeat is already running. |
 | `consumer.processDetectionRegex` | Observer only | Regex used to discover an existing Heartbeat process. |
-| `consumer.agent_capabilities` | No | Supports `ReportsHeartbeat` in addition to mandatory capabilities. Remote config is not advertised by this plugin. |
+| `consumer.agent_capabilities` | No | Supports `AcceptsRemoteConfig`, `ReportsEffectiveConfig`, and `ReportsHeartbeat` in addition to mandatory capabilities. |
 
 ## Required Heartbeat Monitoring Config
 

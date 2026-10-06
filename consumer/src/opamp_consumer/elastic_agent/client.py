@@ -63,6 +63,8 @@ from opamp_consumer.config_metadata import ConfigMetadata
 from opamp_consumer.exceptions import AgentException
 from opamp_consumer.plugin_config import (
     ConsumerPluginConfigContext,
+    looks_like_executable_path,
+    resolve_optional_executable_from_config,
     resolve_optional_path_from_config,
 )
 from opamp_consumer.process_utils import ProcessUtils
@@ -116,7 +118,7 @@ ENV_ELASTIC_AGENT_HOME_PATH = "OPAMP_ELASTIC_AGENT_HOME_PATH"
 ENV_ELASTIC_AGENT_API_HOST = "OPAMP_ELASTIC_AGENT_API_HOST"
 ENV_ELASTIC_AGENT_API_PORT = "OPAMP_ELASTIC_AGENT_API_PORT"
 ENV_ELASTIC_AGENT_API_FAILON = "OPAMP_ELASTIC_AGENT_API_FAILON"
-DEFAULT_ELASTIC_AGENT_API_HOST = "localhost"
+DEFAULT_ELASTIC_AGENT_API_HOST = "127.0.0.1"
 DEFAULT_ELASTIC_AGENT_API_PORT = 6791
 DEFAULT_ELASTIC_AGENT_API_FAILON = "degraded"
 DEFAULT_ELASTIC_AGENT_STATUS_TIMEOUT_SECONDS = 5.0
@@ -201,40 +203,6 @@ def _resolve_elastic_env_provider_refs(value: str) -> str:
     return _ELASTIC_ENV_PROVIDER_REF.sub(resolve_match, value)
 
 
-def _resolve_optional_executable_from_config(
-    *,
-    raw_value: Any,
-    config_path: pathlib.Path,
-) -> str | None:
-    """Resolve an executable value that may be a PATH command or a filesystem path."""
-    normalized_value = str(raw_value).strip() if raw_value is not None else ""
-    if not normalized_value:
-        return None
-    if (
-        "/" not in normalized_value
-        and "\\" not in normalized_value
-        and not normalized_value.startswith((".", "~"))
-        and not pathlib.PureWindowsPath(normalized_value).drive
-    ):
-        return normalized_value
-    if pathlib.PureWindowsPath(normalized_value).is_absolute():
-        return normalized_value
-    return resolve_optional_path_from_config(
-        raw_value=normalized_value,
-        config_path=config_path,
-    )
-
-
-def _looks_like_executable_path(value: str) -> bool:
-    """Return whether an executable value is path-like rather than a PATH command."""
-    return (
-        "/" in value
-        or "\\" in value
-        or value.startswith((".", "~"))
-        or bool(pathlib.PureWindowsPath(value).drive)
-    )
-
-
 def process_consumer_config(
     context: ConsumerPluginConfigContext,
 ) -> dict[str, Any]:
@@ -277,7 +245,7 @@ def process_consumer_config(
         DEFAULT_ELASTIC_AGENT_STATUS_TIMEOUT_SECONDS,
     )
     return {
-        "elastic_agent_executable_path": _resolve_optional_executable_from_config(
+        "elastic_agent_executable_path": resolve_optional_executable_from_config(
             raw_value=executable_path,
             config_path=context.config_path,
         ),
@@ -303,7 +271,7 @@ def _host_token(host: str) -> str:
     Returns:
         Host token suitable for embedding in an HTTP URL.
     """
-    normalized_host = str(host or "localhost").strip() or "localhost"
+    normalized_host = str(host or "127.0.0.1").strip() or "127.0.0.1"
     if ":" in normalized_host and not normalized_host.startswith("["):
         return f"[{normalized_host}]"
     return normalized_host
@@ -405,7 +373,7 @@ class ElasticAgentCliLifecycle(_BaseClientProcessLifecycle):
 
     def _resolve_executable_for_subprocess(self, executable_path: str) -> str:
         """Resolve bare executable names before passing them to subprocess."""
-        if _looks_like_executable_path(executable_path):
+        if looks_like_executable_path(executable_path):
             return executable_path
         lookup_path = self._executable_lookup_path()
         resolved_path = shutil.which(executable_path, path=lookup_path)
@@ -759,6 +727,8 @@ class ElasticAgentOpAMPClient(AbstractOpAMPClient):
     _elastic_cli_lifecycle: ElasticAgentCliLifecycle | None = None
     SUPPORTED_AGENT_CAPABILITY_NAMES = (
         *consumer_config.MANDATORY_AGENT_CAPABILITY_NAMES,
+        "AcceptsRemoteConfig",
+        "ReportsEffectiveConfig",
         "ReportsHeartbeat",
     )
 
@@ -1035,7 +1005,10 @@ class ElasticAgentOpAMPClient(AbstractOpAMPClient):
     ) -> opamp_pb2.AgentDescription:
         """Build Elastic Agent description with stable service type."""
         self.data.agent_type_name = VALUE_AGENT_TYPE_ELASTIC_AGENT
-        description = super().get_agent_description(instance_uid)
+        fallback_instance_uid = instance_uid
+        if fallback_instance_uid is None and not self.config.service_instance_id:
+            fallback_instance_uid = self.config.service_name
+        description = super().get_agent_description(fallback_instance_uid)
         for attribute in description.identifying_attributes:
             if attribute.key == KEY_SERVICE_TYPE:
                 attribute.value.string_value = VALUE_AGENT_TYPE_ELASTIC_AGENT

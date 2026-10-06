@@ -12,7 +12,7 @@ name = "opamp-plaintext-keyring"
 version = "0.1.0"
 description = "Plaintext file backend plugin for Python keyring."
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 authors = [{ name = "Phil Wilkins" }]
 keywords = ["keyring", "plaintext", "opamp"]
 dependencies = ["keyring>=25.0"]
@@ -25,7 +25,7 @@ opamp_plaintext = "opamp_plaintext_keyring.backend"
 
 [project.urls]
 Repository = "https://github.com/mp3monster/fluent-opamp"
-Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/mp3monster/fluent-opamp/main/github-landingpage/index.html"
+Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html"
 Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
 
 [tool.setuptools.packages.find]

@@ -154,9 +154,17 @@ def test_process_tail_setting_round_trip(tmp_path: Path, monkeypatch) -> None:
     runtime_dir = tmp_path / "runtime"
     monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
 
-    cli_main._set_process_tail_enabled(True)  # type: ignore[attr-defined]
+    cli_main.process_tail.set_process_tail_enabled(
+        True,
+        load_settings=cli_main._load_cli_settings,  # type: ignore[attr-defined]
+        save_settings=cli_main._save_cli_settings,  # type: ignore[attr-defined]
+        settings_path=cli_main._cli_settings_path,  # type: ignore[attr-defined]
+        logger=cli_main._get_logger(),  # type: ignore[attr-defined]
+    )
 
-    assert cli_main._process_tail_enabled() is True  # type: ignore[attr-defined]
+    assert cli_main.process_tail.process_tail_enabled(
+        load_settings=cli_main._load_cli_settings,  # type: ignore[attr-defined]
+    ) is True
     payload = json.loads((runtime_dir / "settings.json").read_text(encoding="utf-8"))
     assert payload["enable_process_tail"] is True
 
@@ -165,11 +173,189 @@ def test_disable_enable_process_tail_alias_disables_setting(tmp_path: Path, monk
     runtime_dir = tmp_path / "runtime"
     monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
 
-    cli_main._set_process_tail_enabled(True)  # type: ignore[attr-defined]
+    cli_main.process_tail.set_process_tail_enabled(
+        True,
+        load_settings=cli_main._load_cli_settings,  # type: ignore[attr-defined]
+        save_settings=cli_main._save_cli_settings,  # type: ignore[attr-defined]
+        settings_path=cli_main._cli_settings_path,  # type: ignore[attr-defined]
+        logger=cli_main._get_logger(),  # type: ignore[attr-defined]
+    )
     exit_code = cli_main._handle_command("disable enable-process-tail")  # type: ignore[attr-defined]
 
     assert exit_code == 0
-    assert cli_main._process_tail_enabled() is False  # type: ignore[attr-defined]
+    assert cli_main.process_tail.process_tail_enabled(
+        load_settings=cli_main._load_cli_settings,  # type: ignore[attr-defined]
+    ) is False
+
+
+def test_demo_config_explicit_agent_log_files_are_discovered(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    repo_root = tmp_path / "repo"
+    runtime_dir = tmp_path / "runtime"
+    log_path = repo_root / "agent-logs" / "heartbeat.ndjson"
+    demo_config = repo_root / "cli" / "config" / "demo_consumer_profiles.json"
+    log_path.parent.mkdir(parents=True)
+    demo_config.parent.mkdir(parents=True)
+    demo_config.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "name": "demo",
+                        "elastic_heartbeat": {
+                            "agent_log_files": [
+                                {
+                                    "path": "agent-logs/heartbeat.ndjson",
+                                    "tagName": "heartbeat",
+                                }
+                            ]
+                        },
+                    }
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cli_main, "_repo_root", lambda: repo_root)
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+
+    _dirs, files = cli_main._log_locations_from_demo_config()  # type: ignore[attr-defined]
+
+    assert log_path.resolve() in files
+
+
+def test_smart_log_viewer_writes_config_and_launches_when_tail_enabled(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    repo_root = tmp_path / "repo"
+    process_log = runtime_dir / "logs" / "client.log"
+    agent_log = repo_root / "agent-logs" / "heartbeat.ndjson"
+    process_log.parent.mkdir(parents=True)
+    agent_log.parent.mkdir(parents=True)
+    process_log.write_text("process\n", encoding="utf-8")
+    agent_log.write_text("{}\n", encoding="utf-8")
+    launched: list[Path] = []
+    monkeypatch.setattr(cli_main, "_repo_root", lambda: repo_root)
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(
+        cli_main,
+        "_discover_log_locations",
+        lambda: ({agent_log.parent}, {process_log}),
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "_smart_log_viewer_overrides_from_demo_config",
+        lambda: {agent_log.resolve(): {"tagName": "heartbeat", "color": "#123456"}},
+    )
+    for name in cli_main.process_tail.SMART_LOG_VIEWER_ENV_NAMES:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("SMART_LOG_VIEWER", "true")
+    cli_main.process_tail.set_process_tail_enabled(
+        True,
+        load_settings=cli_main._load_cli_settings,  # type: ignore[attr-defined]
+        save_settings=cli_main._save_cli_settings,  # type: ignore[attr-defined]
+        settings_path=cli_main._cli_settings_path,  # type: ignore[attr-defined]
+        logger=cli_main._get_logger(),  # type: ignore[attr-defined]
+    )
+    monkeypatch.setattr(
+        cli_main.process_tail,
+        "launch_smart_log_viewer",
+        lambda *, config_dir, repo_root, logger: launched.append(config_dir) or True,
+    )
+
+    cli_main._open_log_viewer_for_process_if_enabled(  # type: ignore[attr-defined]
+        label="Elastic Heartbeat client",
+        log_file=process_log,
+        logger=SimpleNamespace(info=lambda *_args, **_kwargs: None),
+    )
+
+    config_path = runtime_dir / "smart-log-viewer" / "config.json"
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+    paths = {source["path"] for source in payload["sources"]}
+    tags = {source["tagName"] for source in payload["sources"]}
+    agent_source = next(
+        source
+        for source in payload["sources"]
+        if source["path"] == str(agent_log.resolve())
+    )
+    assert str(process_log.resolve()) in paths
+    assert str(agent_log.resolve()) in paths
+    assert "Elastic Heartbeat client" in tags
+    assert agent_source["tagName"] == "heartbeat"
+    assert agent_source["color"] == "#123456"
+    assert launched == [config_path.parent.resolve()]
+
+
+def test_launch_smart_log_viewer_prints_url_and_config(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    repo_root = tmp_path / "repo"
+    config_dir = tmp_path / "smart-log-viewer"
+    executable = tmp_path / "smart-log-viewer.cmd"
+    launched: dict[str, Any] = {}
+    executable.write_text("@echo off\n", encoding="utf-8")
+    monkeypatch.setenv("PORT", "4100")
+    monkeypatch.setattr(
+        cli_main.process_tail.shutil,
+        "which",
+        lambda value: str(executable) if value == "smart-log-viewer" else None,
+    )
+
+    def fake_popen(argv: list[str], **kwargs: Any) -> SimpleNamespace:
+        launched["argv"] = argv
+        launched["kwargs"] = kwargs
+        return SimpleNamespace()
+
+    monkeypatch.setattr(cli_main.process_tail.subprocess, "Popen", fake_popen)
+
+    result = cli_main.process_tail.launch_smart_log_viewer(
+        config_dir=config_dir,
+        repo_root=repo_root,
+        logger=SimpleNamespace(
+            info=lambda *_args, **_kwargs: None,
+            warning=lambda *_args, **_kwargs: None,
+            exception=lambda *_args, **_kwargs: None,
+        ),
+    )
+
+    output = capsys.readouterr().out
+    assert result is True
+    assert launched["argv"] == [
+        str(executable),
+        "--config",
+        str(config_dir.resolve()),
+    ]
+    assert "Opened Smart Log Viewer at http://localhost:4100" in output
+    assert "try ports 4101-4104" in output
+    assert f"with config: {config_dir.resolve()}" in output
+
+
+def test_smart_log_viewer_process_env_merges_persisted_path(monkeypatch) -> None:
+    monkeypatch.setattr(
+        cli_main.process_tail.os,
+        "environ",
+        {"PATH": r"C:\Windows\System32;C:\Tools"},
+    )
+    monkeypatch.setattr(
+        cli_main.process_tail,
+        "_windows_persisted_path_entries",
+        lambda: [r"C:\Program Files\coreutils\bin", r"C:\Tools"],
+    )
+
+    env = cli_main.process_tail.smart_log_viewer_process_env()
+
+    assert env["PATH"].split(cli_main.process_tail.os.pathsep) == [
+        r"C:\Windows\System32",
+        r"C:\Tools",
+        r"C:\Program Files\coreutils\bin",
+    ]
 
 
 def test_windows_no_console_kwargs_returns_create_no_window(monkeypatch) -> None:
@@ -227,6 +413,54 @@ def test_background_start_suppresses_windows_console(tmp_path: Path, monkeypatch
     assert exit_code == 0
     assert captured["argv"] == ["python", "-m", "opamp_consumer.client"]
     assert captured["kwargs"]["creationflags"] & 0x08000000
+
+
+def test_background_start_early_exit_reports_log_detail(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    class FakeProcess:
+        pid = 789
+
+        def poll(self) -> int:
+            return 1
+
+    def fake_popen(_argv: list[str], **kwargs: Any) -> FakeProcess:
+        log_handle = kwargs["stdout"]
+        log_handle.write("Traceback (most recent call last):\n")
+        log_handle.write("ModuleNotFoundError: No module named 'shared'\n")
+        log_handle.flush()
+        return FakeProcess()
+
+    monkeypatch.setattr(cli_main, "_is_windows", lambda: False)
+    monkeypatch.setattr(cli_main.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(cli_main.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_get_logger",
+        lambda: SimpleNamespace(
+            info=lambda *_args, **_kwargs: None,
+            warning=lambda *_args, **_kwargs: None,
+            exception=lambda *_args, **_kwargs: None,
+        ),
+    )
+    monkeypatch.setattr(cli_main, "_cli_log_dir", lambda: tmp_path / "logs")
+
+    exit_code = cli_main._launch_background_process(  # type: ignore[attr-defined]
+        {
+            "label": "Broker",
+            "argv": ["python", "-m", "opamp_broker.broker_app"],
+            "cwd": str(tmp_path),
+            "env": {},
+        }
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Broker exited before it was considered started (exit_code=1)" in captured.err
+    assert "detail=ModuleNotFoundError: No module named 'shared'" in captured.err
+    assert "log=" in captured.err
 
 
 def test_main_writes_component_lifecycle_log(tmp_path: Path, monkeypatch) -> None:
@@ -429,10 +663,165 @@ def test_list_command_reports_config_options_when_available(capsys) -> None:
 
     assert exit_code == 0
     assert "clear-logs" in output
+    assert "CLI config commands:" in output
+    assert "  cli-config:" in output
+    assert "    - view" in output
+    assert "    - summary" in output
+    assert "    - change-config" in output
     assert "Config commands:" in output
     assert "  config:" in output
     assert "    - validate <path>" in output
     assert "    - metadata <path>" in output
+
+
+def test_cli_config_view_prints_active_config_and_path(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    demo_config = tmp_path / "small-demo-config.json"
+    demo_config.write_text(
+        json.dumps({"profiles": [{"name": "tiny-demo"}]}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(cli_main, "_demo_consumer_config_path", lambda: demo_config)
+
+    exit_code = cli_main.main(["cli-config", "view"])
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert '"name": "tiny-demo"' in output
+    assert f"CLI config file: {demo_config.resolve()}" in output
+
+
+def test_cli_config_summary_reports_key_counts(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    demo_config = tmp_path / "small-demo-config.json"
+    demo_config.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "name": "tiny-demo",
+                        "simulator": {"instances_path": "instances.json"},
+                        "fluentbit": {"config_path": "opamp-fluent-bit.json"},
+                        "containers": [{"id": "logstash"}],
+                    },
+                    {
+                        "name": "vector-only",
+                        "vector": {"config_path": "opamp-vector.json"},
+                    },
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(cli_main, "_demo_consumer_config_path", lambda: demo_config)
+
+    exit_code = cli_main.main(["cli-config", "summary"])
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "- Demo configs: 2" in output
+    assert "- Profiles: tiny-demo, vector-only" in output
+    assert "- Simulators: 1" in output
+    assert "- Fluent Bit configs: 1" in output
+    assert "- Vector configs: 1" in output
+    assert "- Container starts: 1" in output
+    assert f"- CLI config file: {demo_config.resolve()}" in output
+
+
+def test_cli_config_change_config_replaces_active_config(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    repo_root = tmp_path / "repo"
+    replacement_config = tmp_path / "replacement-demo-config.json"
+    replacement_config.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "name": "replacement-demo",
+                        "fluentd": {"config_path": "opamp-fluentd.json"},
+                    }
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(cli_main, "_repo_root", lambda: repo_root)
+
+    exit_code = cli_main._handle_command(  # type: ignore[attr-defined]
+        "cli-config change-config",
+        input_reader=lambda _prompt: str(replacement_config),
+    )
+    output = capsys.readouterr().out
+    settings = json.loads((runtime_dir / "settings.json").read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert settings["demo_config_path"] == str(replacement_config.resolve())
+    assert "CLI config changed:" in output
+    assert "- Demo configs: 1" in output
+    assert "- Profiles: replacement-demo" in output
+    assert "- Fluentd configs: 1" in output
+
+
+def test_cli_config_change_config_rejects_malformed_json_without_changing_settings(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    current_config = tmp_path / "current-demo-config.json"
+    bad_config = tmp_path / "bad-demo-config.json"
+    current_config.write_text('{"profiles": [{"name": "current"}]}\n', encoding="utf-8")
+    bad_config.write_text("{not-json", encoding="utf-8")
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(cli_main, "_demo_consumer_config_path", lambda: current_config)
+
+    exit_code = cli_main.main(["cli-config", "change-config", str(bad_config)])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "ERROR: CLI config was NOT changed." in captured.err
+    assert "Cause: invalid JSON:" in captured.err
+    assert f"Current CLI config remains: {current_config.resolve()}" in captured.err
+    assert (runtime_dir / "settings.json").exists() is False
+
+
+def test_cli_config_change_config_rejects_missing_path_without_changing_settings(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    current_config = tmp_path / "current-demo-config.json"
+    missing_config = tmp_path / "missing-demo-config.json"
+    current_config.write_text('{"profiles": [{"name": "current"}]}\n', encoding="utf-8")
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: runtime_dir)
+    monkeypatch.setattr(cli_main, "_demo_consumer_config_path", lambda: current_config)
+
+    exit_code = cli_main.main(["cli-config", "change-config", str(missing_config)])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "ERROR: CLI config was NOT changed." in captured.err
+    assert "Cause: file not found:" in captured.err
+    assert f"Current CLI config remains: {current_config.resolve()}" in captured.err
+    assert (runtime_dir / "settings.json").exists() is False
 
 
 def test_interactive_startup_notes_include_list_command_without_running_list(
@@ -466,6 +855,77 @@ def test_interactive_startup_notes_include_list_command_without_running_list(
     assert "Current command hierarchy" not in output
 
 
+def test_interactive_cli_config_unknown_subcommand_uses_human_message(
+    monkeypatch,
+    capsys,
+) -> None:
+    prompts = iter(["cli-config nope"])
+
+    def fake_input(_prompt: str) -> str:
+        try:
+            return next(prompts)
+        except StopIteration as exc:
+            raise EOFError from exc
+
+    monkeypatch.setattr(cli_main, "_top_level_commands", lambda: ["cli-config", "exit"])
+    monkeypatch.setattr(cli_main, "_prompt_toolkit_input_reader", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_builtin_tty_input_reader", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_setup_readline_completion", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_is_windows", lambda: False)
+    monkeypatch.setattr(cli_main, "_fluentbit_dev_tool_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_mcp_dev_tool_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_dev_pid_lookup_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_dev_version_bump_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_detected_behavior_flags", lambda: [])
+    monkeypatch.setattr("builtins.input", fake_input)
+
+    exit_code = cli_main._interactive_loop()  # type: ignore[attr-defined]
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "CLI config command was not understood." in captured.out
+    assert "`cli-config summary`" in captured.out
+    assert "Command exited with code 2" not in captured.out
+    assert "unknown cli-config command: nope" in captured.err
+
+
+def test_interactive_cli_config_change_failure_uses_human_message(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    missing_config = tmp_path / "missing-demo-config.json"
+    prompts = iter([f"cli-config change-config {missing_config}"])
+
+    def fake_input(_prompt: str) -> str:
+        try:
+            return next(prompts)
+        except StopIteration as exc:
+            raise EOFError from exc
+
+    monkeypatch.setattr(cli_main, "_cli_runtime_dir", lambda: tmp_path / "runtime")
+    monkeypatch.setattr(cli_main, "_top_level_commands", lambda: ["cli-config", "exit"])
+    monkeypatch.setattr(cli_main, "_prompt_toolkit_input_reader", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_builtin_tty_input_reader", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_setup_readline_completion", lambda _words: None)
+    monkeypatch.setattr(cli_main, "_is_windows", lambda: False)
+    monkeypatch.setattr(cli_main, "_fluentbit_dev_tool_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_mcp_dev_tool_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_dev_pid_lookup_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_dev_version_bump_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_detected_behavior_flags", lambda: [])
+    monkeypatch.setattr("builtins.input", fake_input)
+
+    exit_code = cli_main._interactive_loop()  # type: ignore[attr-defined]
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "CLI config command did not complete." in captured.out
+    assert "Command exited with code 1" not in captured.out
+    assert "ERROR: CLI config was NOT changed." in captured.err
+    assert "Cause: file not found:" in captured.err
+
+
 def test_help_includes_process_tail_commands(capsys) -> None:
     exit_code = cli_main.main(["help"])
     output = capsys.readouterr().out
@@ -496,6 +956,7 @@ def test_top_level_commands_include_setup_venv(monkeypatch) -> None:
     commands = cli_main._top_level_commands()  # type: ignore[attr-defined]
 
     assert "setup-venv" in commands
+    assert "cli-config" in commands
 
 
 def test_parse_setup_venv_args_supports_options(tmp_path: Path, monkeypatch) -> None:
@@ -891,6 +1352,7 @@ def test_start_and_stop_action_orders_are_stable(monkeypatch) -> None:
         "Simulator",
         "Fluent Bit client",
         "Fluentd client",
+        "Vector client",
     ]
     assert stop_labels == [
         "Server",
@@ -900,6 +1362,7 @@ def test_start_and_stop_action_orders_are_stable(monkeypatch) -> None:
         "Config Editor",
         "Fluent Bit client",
         "Fluentd client",
+        "Vector client",
         "All clients",
         "All managed processes",
     ]
@@ -921,6 +1384,18 @@ def test_broker_stop_action_uses_cli_managed_process_records() -> None:
     assert stop_action is not None
     assert stop_action["kind"] == "stop_recorded"
     assert stop_action["record_names"] == ["Broker"]
+
+
+def test_broker_start_action_includes_repo_root_for_shared_imports() -> None:
+    start_action = cli_main._resolve_guided_action("start", "broker")  # type: ignore[attr-defined]
+    repo_root = cli_main._repo_root()  # type: ignore[attr-defined]
+
+    assert start_action is not None
+    python_path = str(start_action["env"][cli_main.PYTHONPATH_ENV])
+    python_paths = python_path.split(cli_main.os.pathsep)
+    assert str((repo_root / "agent_broker").resolve()) in python_paths
+    assert str(repo_root.resolve()) in python_paths
+    assert str(repo_root.resolve()) in str(start_action["command_text"])
 
 
 def test_script_mode_generates_broker_launcher_script(tmp_path: Path, monkeypatch) -> None:
@@ -1136,6 +1611,34 @@ def test_demo_profile_loader_carries_elastic_agent_and_container_config(
 
     assert profiles[0]["containers"][0]["id"] == "logstash-local"
     assert profiles[0]["elastic_agent"]["config_path"].endswith("logstash-plugin.json")
+
+
+def test_checked_in_full_demo_profile_covers_all_agent_types() -> None:
+    profiles = cli_main._load_demo_consumer_profiles()  # type: ignore[attr-defined]
+    profile = next(
+        item for item in profiles if item["name"] == "Demo setup (Full multi-agent remote config)"
+    )
+
+    assert profile["containers"][0]["id"] == "logstash-full-demo"
+    assert set(profile) >= {
+        "fluentbit",
+        "fluentd",
+        "vector",
+        "elastic_agent",
+        "elastic_heartbeat",
+    }
+    assert profile["elastic_heartbeat"]["config_path"].endswith("opamp-heartbeat.json")
+    assert json.loads(
+        (cli_main._repo_root() / profile["fluentbit"]["config_path"]).read_text(encoding="utf-8")
+    )["consumer"]["agent_config_path"] == "docs/full-demo/active/fluent-bit.yaml"
+    assert json.loads(
+        (cli_main._repo_root() / profile["vector"]["config_path"]).read_text(encoding="utf-8")
+    )["consumer"]["agent_config_path"] == "docs/full-demo/active/vector.yaml"
+    for component in ("fluentd", "elastic_agent", "elastic_heartbeat"):
+        config = json.loads(
+            (cli_main._repo_root() / profile[component]["config_path"]).read_text(encoding="utf-8")
+        )
+        assert config["consumer"]["agent_config_path"].startswith("docs/full-demo/active/")
 
 
 def test_demo_consumer_action_carries_scenario_description() -> None:
@@ -1402,6 +1905,57 @@ def test_start_demo_consumers_allows_partial_observer_profile(monkeypatch, tmp_p
     assert code == 0
 
 
+def test_start_demo_consumers_uses_configured_agent_path_without_profile_override(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    profile_name = "config-driven-vector"
+    repo_root = tmp_path
+    config_path = repo_root / "consumer" / "opamp-vector.json"
+    agent_path = repo_root / "docs" / "vector-self-monitor" / "vector-self-monitor.yaml"
+    config_path.parent.mkdir(parents=True)
+    agent_path.parent.mkdir(parents=True)
+    config_path.write_text(
+        json.dumps(
+            {
+                "consumer": {
+                    "server_url": "http://localhost:8080",
+                    "agent_config_path": str(agent_path),
+                    "agent_additional_params": [],
+                    "service_type": "vector",
+                }
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    agent_path.write_text("api:\n  enabled: true\n", encoding="utf-8")
+    monkeypatch.setattr(cli_main, "_repo_root", lambda: repo_root)
+    monkeypatch.setattr(
+        cli_main,
+        "_demo_profile_by_name",
+        lambda _name: {
+            "name": profile_name,
+            "vector": {
+                "config_path": "consumer/opamp-vector.json",
+            },
+        },
+    )
+    launched: list[dict[str, Any]] = []
+    monkeypatch.setattr(cli_main, "_launch_background_process", lambda action: launched.append(action) or 0)
+
+    code = cli_main._start_demo_consumers(  # type: ignore[attr-defined]
+        {"profile_name": profile_name}
+    )
+
+    assert code == 0
+    assert len(launched) == 1
+    assert launched[0]["label"] == f"Vector client ({profile_name})"
+    assert "--config-path" in launched[0]["argv"]
+    assert "--agent-config-path" not in launched[0]["argv"]
+    assert launched[0]["record_name"] == f"Demo:{profile_name}:Vector client"
+
+
 def test_container_start_action_uses_configured_runtime_command(
     monkeypatch,
     tmp_path: Path,
@@ -1456,6 +2010,20 @@ def test_container_start_action_uses_configured_runtime_command(
     assert action["ensure_dirs"] == [str(repo_root / "tests" / "logstash" / "out")]
     assert action["metadata"]["container_name"] == "opamp-logstash"
     assert action["readiness_tcp"] == "127.0.0.1:5044"
+
+
+def test_container_runtime_executable_prefers_docker_by_default(monkeypatch) -> None:
+    candidates: list[str] = []
+
+    def fake_which(candidate: str) -> str | None:
+        candidates.append(candidate)
+        return f"/usr/bin/{candidate}"
+
+    monkeypatch.delenv("OPAMP_CONTAINER_RUNTIME", raising=False)
+    monkeypatch.setattr(container_management.shutil, "which", fake_which)
+
+    assert container_management.container_runtime_executable() == "/usr/bin/docker"
+    assert candidates == ["docker"]
 
 
 def test_container_start_action_omits_replace_for_docker(
@@ -1750,7 +2318,7 @@ def test_start_demo_consumers_rejects_incomplete_fluentd_configuration(
         lambda _name: {
             "name": "broken-profile",
             "fluentd": {
-                "config_path": "consumer/opamp-fluentd.json",
+                "agent_config_path": "consumer/fluentd.conf",
             },
         },
     )
@@ -1983,7 +2551,11 @@ def test_record_simulator_batch_short_circuits_when_already_running(
 def test_detected_behavior_flags_returns_empty_when_none_set(monkeypatch) -> None:
     monkeypatch.delenv("OPAMP_DEMO", raising=False)
     monkeypatch.delenv("APP_ENABLE_DEV_FEATURES", raising=False)
-    monkeypatch.setattr(cli_main, "_process_tail_enabled", lambda: False)
+    monkeypatch.setattr(
+        cli_main.process_tail,
+        "process_tail_enabled",
+        lambda *, load_settings: False,
+    )
 
     detected = cli_main._detected_behavior_flags()  # type: ignore[attr-defined]
 
@@ -1993,7 +2565,11 @@ def test_detected_behavior_flags_returns_empty_when_none_set(monkeypatch) -> Non
 def test_detected_behavior_flags_returns_only_enabled_flags(monkeypatch) -> None:
     monkeypatch.setenv("OPAMP_DEMO", "true")
     monkeypatch.setenv("APP_ENABLE_DEV_FEATURES", "true")
-    monkeypatch.setattr(cli_main, "_process_tail_enabled", lambda: True)
+    monkeypatch.setattr(
+        cli_main.process_tail,
+        "process_tail_enabled",
+        lambda *, load_settings: True,
+    )
 
     detected = cli_main._detected_behavior_flags()  # type: ignore[attr-defined]
 
@@ -2512,6 +3088,17 @@ def test_completion_candidates_keep_config_base_separate_from_subcommand() -> No
     assert matches == ["validate"]
 
 
+def test_completion_candidates_offer_cli_config_subcommands() -> None:
+    base, prefix, matches = cli_main._completion_candidates(  # type: ignore[attr-defined]
+        "cli-config s",
+        entries=["cli-config", "status"],
+    )
+
+    assert base == "cli-config "
+    assert prefix == "s"
+    assert matches == ["summary"]
+
+
 def test_prompt_toolkit_reader_offers_config_subcommands_and_paths(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
@@ -2564,6 +3151,18 @@ def test_prompt_toolkit_reader_offers_config_subcommands_and_paths(monkeypatch) 
     )
     assert [item.text for item in completions] == ["validate", "metadata"]
 
+    cli_config_completions = list(
+        completer.get_completions(  # type: ignore[union-attr]
+            SimpleNamespace(text_before_cursor="cli-config "),
+            None,
+        )
+    )
+    assert [item.text for item in cli_config_completions] == [
+        "view",
+        "summary",
+        "change-config",
+    ]
+
     path_completions = list(
         completer.get_completions(  # type: ignore[union-attr]
             SimpleNamespace(text_before_cursor="config validate "),
@@ -2572,6 +3171,15 @@ def test_prompt_toolkit_reader_offers_config_subcommands_and_paths(monkeypatch) 
     )
     assert [item.text for item in path_completions] == ["./config.yaml"]
     assert captured["path_document"] == "config validate "
+
+    cli_config_path_completions = list(
+        completer.get_completions(  # type: ignore[union-attr]
+            SimpleNamespace(text_before_cursor="cli-config change-config "),
+            None,
+        )
+    )
+    assert [item.text for item in cli_config_path_completions] == ["./config.yaml"]
+    assert captured["path_document"] == "cli-config change-config "
 
 
 def test_execute_dev_pid_lookup_workflow_reports_matches(monkeypatch, capsys) -> None:

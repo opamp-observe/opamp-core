@@ -98,6 +98,71 @@
               ]
             }
           ]
+        },
+        {
+          "name": "Demo setup (Vector self-monitor)",
+          "scenario_description": "Runs Vector as a supervisor-managed consumer using the self-monitoring configuration under docs/vector-self-monitor.",
+          "vector": {
+            "config_path": "consumer/opamp-vector.json",
+            "agent_config_path": "docs/vector-self-monitor/vector-self-monitor.yaml"
+          }
+        },
+        {
+          "name": "Demo setup (Full multi-agent remote config)",
+          "scenario_description": "Runs Fluent Bit and Fluentd in supervisor mode, attaches Vector, Elastic Agent, and Elastic Heartbeat in observer mode, and starts a Logstash container for Elastic output.",
+          "fluentbit": {
+            "config_path": "docs/full-demo/consumers/opamp-fluent-bit.json"
+          },
+          "fluentd": {
+            "config_path": "docs/full-demo/consumers/opamp-fluentd.json"
+          },
+          "vector": {
+            "config_path": "docs/full-demo/consumers/opamp-vector.json"
+          },
+          "elastic_agent": {
+            "config_path": "docs/full-demo/consumers/opamp-elastic-agent.json"
+          },
+          "elastic_heartbeat": {
+            "config_path": "docs/full-demo/consumers/opamp-heartbeat.json"
+          },
+          "containers": [
+            {
+              "id": "logstash-full-demo",
+              "label": "Logstash full demo pipeline",
+              "container_name": "opamp-logstash-full-demo",
+              "replace_existing": true,
+              "image_candidates": [
+                "docker.elastic.co/logstash/logstash:9.5.1",
+                "logstash:9.5.1"
+              ],
+              "ports": [
+                "127.0.0.1:5044:5044"
+              ],
+              "volumes": [
+                {
+                  "host_path": "docs/full-demo/logstash/logstash.container.conf",
+                  "container_path": "/usr/share/logstash/pipeline/logstash.conf",
+                  "read_only": true
+                },
+                {
+                  "host_path": "docs/full-demo/out/logstash",
+                  "container_path": "/usr/share/logstash/out"
+                }
+              ],
+              "ensure_dirs": [
+                "docs/full-demo/out/logstash"
+              ],
+              "command": [
+                "logstash",
+                "-f",
+                "/usr/share/logstash/pipeline/logstash.conf"
+              ],
+              "aliases": [
+                "logstash-full-demo",
+                "full demo logstash"
+              ]
+            }
+          ]
         }
   ]
 }
