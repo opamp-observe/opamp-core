@@ -11,7 +11,7 @@
 # limitations under the License.
 
 [build-system]
-requires = ["hatchling>=1.25"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -20,7 +20,7 @@ version = "0.4.1"
 description = "OpAMP Server - upstream source https://github.com/mp3monster/fluent-opamp "
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 authors = [{ name = "Phil Wilkins" }]
 keywords = ["opamp", "observability", "otel", "server", "control-plane"]
 dependencies = [
