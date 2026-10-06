@@ -168,6 +168,29 @@ its default storage account from
 set and stores evidence below `<result-set>/test-reports/`, including a manifest
 that records the destination and regression exit status.
 
+## Main workflow cloud control
+
+`.github/workflows/main_fluent-opamp.yml` always performs its build and uses
+the `CLOUD_PROVIDER` GitHub repository variable to select deployment behavior
+for pushes to `main`:
+
+| `CLOUD_PROVIDER` | Behavior |
+|---|---|
+| `azure` | Deploy the existing `fluent-opamp` Azure Web App |
+| `aws` | Deploy the AWS CloudFormation regression environment |
+| `none` or unset | Complete the build without requesting cloud credentials |
+
+A manual workflow run can select `azure`, `aws`, or `none` directly. Selecting
+`configured` applies the repository variable in the same way as a push.
+
+Azure mode uses the existing `AZUREAPPSERVICE_CLIENTID_*`,
+`AZUREAPPSERVICE_TENANTID_*`, and `AZUREAPPSERVICE_SUBSCRIPTIONID_*` secrets.
+AWS mode requires the `AWS_ROLE_TO_ASSUME` secret and the `AWS_KEY_NAME` and
+`AWS_ADMIN_SOURCE_CIDR` repository variables. `AWS_REGION`, `AWS_STACK_NAME`,
+`AWS_INSTANCE_TYPE`, `AWS_NAME_PREFIX`, and `AWS_ARTIFACT_BUCKET` are optional
+AWS repository variables. The CloudFormation execution-role secret remains
+optional.
+
 ## Generated local files
 
 | Path | Purpose |

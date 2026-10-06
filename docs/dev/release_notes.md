@@ -43,6 +43,7 @@ limitations under the License.
 * Added timestamped retained S3 and Azure Blob storage outside the ordinary infrastructure teardown boundary, with private regression-result retention and separate explicit storage-destruction commands.
 * Added generated Markdown connection guides containing service URLs and ready-to-run SSH commands, retained locally and in cloud storage alongside provider deployment outputs.
 * Added a provider-neutral regression command that runs selected test sets and uploads complete local evidence, including failed-run status manifests, to retained AWS or Azure storage.
+* Added an Azure, AWS, or build-only deployment selector to the main GitHub Actions workflow, controlled by the `CLOUD_PROVIDER` repository variable or a manual-run override.
 * Added application-aware deployment completion and diagnostics: AWS wait conditions report VM bootstrap failures, server installer and startup logs are retained, and Keycloak readiness is checked before realm configuration.
 * Added deployment cost guidance, cleanup instructions, safe-rerun behavior, provider terminology, resource ownership, and failure recovery documentation in the [cloud operator guide](../../cloud/operator_guide.md), [AWS guide](../../cloud/aws/readme.md), and [Azure guide](../../cloud/azure/README.md).
 
