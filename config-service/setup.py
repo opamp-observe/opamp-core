@@ -22,6 +22,7 @@ from setuptools import find_packages, setup
 
 ROOT = Path(__file__).resolve().parent
 REPO_ROOT = ROOT.parent
+SHARED_PACKAGE_NAME = "shared"
 for candidate in (ROOT, ROOT / "src", REPO_ROOT):
     if str(candidate) not in sys.path:
         sys.path.insert(0, str(candidate))
@@ -64,8 +65,9 @@ setup(
     packages=find_packages(
         where="src",
         include=["config_service", "config_service.*", "opamp_tools", "opamp_tools.*"],
-    ),
-    package_dir={"": "src"},
+    )
+    + [SHARED_PACKAGE_NAME],
+    package_dir={"": "src", SHARED_PACKAGE_NAME: "../shared"},
     include_package_data=True,
     package_data={
         "config_service": [
