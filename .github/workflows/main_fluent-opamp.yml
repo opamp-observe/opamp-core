@@ -71,12 +71,17 @@ jobs:
       contents: read
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init "$GITHUB_WORKSPACE"
+          git -C "$GITHUB_WORKSPACE" remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          git -C "$GITHUB_WORKSPACE" \
+            -c http.extraheader="AUTHORIZATION: bearer $GITHUB_TOKEN" \
+            fetch --depth=1 origin "$GITHUB_SHA"
+          git -C "$GITHUB_WORKSPACE" checkout --force FETCH_HEAD
 
       # Keep the build active for all modes, including none, so disabling cloud
       # deployment does not disable basic dependency and packaging validation.
@@ -84,19 +89,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m venv antenv
+          python3 -m venv antenv
           source antenv/bin/activate
-          python -m pip install --upgrade pip
+          python3 -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Upload Azure deployment artifact
-        if: needs.select_cloud_provider.outputs.cloud_provider == 'azure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-app
-          path: |
-            .
-            !antenv/
 
   deploy_azure:
     runs-on: ubuntu-latest
@@ -108,23 +104,67 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: python-app
+      - name: Check out repository
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init "$GITHUB_WORKSPACE"
+          git -C "$GITHUB_WORKSPACE" remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          git -C "$GITHUB_WORKSPACE" \
+            -c http.extraheader="AUTHORIZATION: bearer $GITHUB_TOKEN" \
+            fetch --depth=1 origin "$GITHUB_SHA"
+          git -C "$GITHUB_WORKSPACE" checkout --force FETCH_HEAD
 
-      - name: Log in to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_195EE0A2DA3947CAA0427043CC5FEEFF }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_40CBF888FD894E9EA2D20C44941831DC }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F23BE392CBB5496182D244751F520677 }}
+      - name: Log in to Azure through OIDC
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZUREAPPSERVICE_CLIENTID_195EE0A2DA3947CAA0427043CC5FEEFF }}
+          AZURE_TENANT_ID: ${{ secrets.AZUREAPPSERVICE_TENANTID_40CBF888FD894E9EA2D20C44941831DC }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F23BE392CBB5496182D244751F520677 }}
+        run: |
+          set -euo pipefail
+          [[ -n "$AZURE_CLIENT_ID" ]] || { echo "Azure client id secret is required" >&2; exit 1; }
+          [[ -n "$AZURE_TENANT_ID" ]] || { echo "Azure tenant id secret is required" >&2; exit 1; }
+          [[ -n "$AZURE_SUBSCRIPTION_ID" ]] || { echo "Azure subscription id secret is required" >&2; exit 1; }
+          azure_oidc_token="$(
+            curl -fsS \
+              -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" \
+              | python3 -c 'import json, sys; print(json.load(sys.stdin)["value"])'
+          )"
+          az login \
+            --service-principal \
+            --username "$AZURE_CLIENT_ID" \
+            --tenant "$AZURE_TENANT_ID" \
+            --federated-token "$azure_oidc_token" \
+            --allow-no-subscriptions
+          az account set --subscription "$AZURE_SUBSCRIPTION_ID"
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: fluent-opamp
-          slot-name: Production
+        shell: bash
+        env:
+          AZURE_APP_NAME: ${{ vars.AZURE_APP_NAME || 'fluent-opamp' }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          git archive --format=zip --output=dist/python-app.zip HEAD
+          resource_group="$AZURE_RESOURCE_GROUP"
+          if [[ -z "$resource_group" ]]; then
+            resource_group="$(
+              az webapp list \
+                --query "[?name=='$AZURE_APP_NAME'].resourceGroup | [0]" \
+                --output tsv
+            )"
+          fi
+          [[ -n "$resource_group" ]] || { echo "Azure resource group could not be resolved" >&2; exit 1; }
+          az webapp deploy \
+            --resource-group "$resource_group" \
+            --name "$AZURE_APP_NAME" \
+            --src-path dist/python-app.zip \
+            --type zip
 
   deploy_aws:
     runs-on: ubuntu-latest
@@ -141,19 +181,46 @@ jobs:
       STACK_NAME: ${{ vars.AWS_STACK_NAME || 'opamp-regression' }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init "$GITHUB_WORKSPACE"
+          git -C "$GITHUB_WORKSPACE" remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          git -C "$GITHUB_WORKSPACE" \
+            -c http.extraheader="AUTHORIZATION: bearer $GITHUB_TOKEN" \
+            fetch --depth=1 origin "$GITHUB_SHA"
+          git -C "$GITHUB_WORKSPACE" checkout --force FETCH_HEAD
 
       - name: Configure AWS credentials through OIDC
-        uses: aws-actions/configure-aws-credentials@v6.3.0
-        with:
-          aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          role-session-name: opamp-${{ github.run_id }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+        shell: bash
+        env:
+          AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+        run: |
+          set -euo pipefail
+          [[ -n "$AWS_ROLE_TO_ASSUME" ]] || { echo "AWS_ROLE_TO_ASSUME secret is required" >&2; exit 1; }
+          aws_oidc_token="$(
+            curl -fsS \
+              -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+              | python3 -c 'import json, sys; print(json.load(sys.stdin)["value"])'
+          )"
+          read -r aws_access_key_id aws_secret_access_key aws_session_token < <(
+            aws sts assume-role-with-web-identity \
+              --role-arn "$AWS_ROLE_TO_ASSUME" \
+              --role-session-name "opamp-$GITHUB_RUN_ID" \
+              --web-identity-token "$aws_oidc_token" \
+              --duration-seconds 3600 \
+              --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
+              --output text
+          )
+          {
+            echo "AWS_ACCESS_KEY_ID=$aws_access_key_id"
+            echo "AWS_SECRET_ACCESS_KEY=$aws_secret_access_key"
+            echo "AWS_SESSION_TOKEN=$aws_session_token"
+            echo "AWS_DEFAULT_REGION=$AWS_REGION"
+          } >> "$GITHUB_ENV"
 
       - name: Validate AWS deployment controls
         shell: bash
@@ -213,7 +280,7 @@ jobs:
           if [[ "${AWS_REGRESSION_CONTINUE_ON_FAILURE,,}" == "true" ]]; then
             regression_arguments+=(--continue-on-failure)
           fi
-          python cloud/run_regression.py "${regression_arguments[@]}"
+          python3 cloud/run_regression.py "${regression_arguments[@]}"
           regression_exit_code=$?
           echo "exit_code=$regression_exit_code" >> "$GITHUB_OUTPUT"
           exit 0
