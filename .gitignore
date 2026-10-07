@@ -52,6 +52,7 @@ stopclaude.bat
 svr-credentials-mgr/*.jsonl
 svr-credentials-mgr/test-results/
 agent_broker/.env
+cloud/aws/*.local.env
 
 
 # Documentation
@@ -63,3 +64,7 @@ dev-notes/
 proto/anyvalue.proto
 proto/opamp.proto
 cli/runtime/
+
+*.meta
+
+agents.md

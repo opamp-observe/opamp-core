@@ -28,8 +28,10 @@ def test_workflow_accepts_azure_aws_or_no_cloud_provider() -> None:
     """Expose the supported deployment modes through one validated control."""
     workflow = _workflow_text()
 
-    assert "CONFIGURED_CLOUD_PROVIDER: ${{ vars.CLOUD_PROVIDER || 'none' }}" in workflow
+    assert "CONFIGURED_CLOUD_PROVIDER: ${{ vars.CLOUD_PROVIDER || '' }}" in workflow
+    assert "DEFAULT_CLOUD_PROVIDER: ${{ github.event_name == 'push' && 'aws' || 'none' }}" in workflow
     assert "REQUESTED_CLOUD_PROVIDER: ${{ inputs.cloud_provider || 'configured' }}" in workflow
+    assert 'cloud_provider="$DEFAULT_CLOUD_PROVIDER"' in workflow
     assert "azure|aws|none" in workflow
     assert "CLOUD_PROVIDER must be azure, aws, or none" in workflow
 
@@ -70,6 +72,22 @@ def test_aws_mode_uses_the_existing_cloudformation_deployment() -> None:
     assert "run: bash cloud/aws/deploy.sh" in workflow
 
 
+def test_aws_mode_runs_and_retains_regression_evidence() -> None:
+    """Run the regression pack after deployment and publish evidence before failing."""
+    workflow = _workflow_text()
+
+    assert "timeout-minutes: 180" in workflow
+    assert "id: aws_regression" in workflow
+    assert "AWS_REGRESSION_ONLY: ${{ vars.AWS_REGRESSION_ONLY }}" in workflow
+    assert "AWS_REGRESSION_SKIP: ${{ vars.AWS_REGRESSION_SKIP }}" in workflow
+    assert "python cloud/run_regression.py" in workflow
+    assert "--provider aws --aws-region" in workflow
+    assert "regression_arguments+=(--only \"$test_id\")" in workflow
+    assert "regression_arguments+=(--skip \"$test_id\")" in workflow
+    assert "regression-pack-results.md" in workflow
+    assert "Fail when AWS regression failed" in workflow
+
+
 def test_operator_guide_documents_cloud_provider_control() -> None:
     """Document provider values and required repository configuration."""
     operator_guide = OPERATOR_GUIDE_PATH.read_text(encoding="utf-8")
@@ -78,5 +96,6 @@ def test_operator_guide_documents_cloud_provider_control() -> None:
     assert "`CLOUD_PROVIDER`" in operator_guide
     assert "`azure`" in operator_guide
     assert "`aws`" in operator_guide
-    assert "`none` or unset" in operator_guide
+    assert "Use `aws` for pushes to `main`" in operator_guide
     assert "`AWS_ROLE_TO_ASSUME`" in operator_guide
+    assert "`AWS_REGRESSION_ONLY`" in operator_guide

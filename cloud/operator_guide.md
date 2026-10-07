@@ -177,19 +177,24 @@ for pushes to `main`:
 | `CLOUD_PROVIDER` | Behavior |
 |---|---|
 | `azure` | Deploy the existing `fluent-opamp` Azure Web App |
-| `aws` | Deploy the AWS CloudFormation regression environment |
-| `none` or unset | Complete the build without requesting cloud credentials |
+| `aws` | Deploy the AWS CloudFormation regression environment and run the retained regression flow |
+| `none` | Complete the build without requesting cloud credentials |
+| unset | Use `aws` for pushes to `main`; use `none` for manual `configured` runs |
 
 A manual workflow run can select `azure`, `aws`, or `none` directly. Selecting
-`configured` applies the repository variable in the same way as a push.
+`configured` applies the repository variable when it exists and otherwise
+performs the build-only `none` flow.
 
 Azure mode uses the existing `AZUREAPPSERVICE_CLIENTID_*`,
 `AZUREAPPSERVICE_TENANTID_*`, and `AZUREAPPSERVICE_SUBSCRIPTIONID_*` secrets.
 AWS mode requires the `AWS_ROLE_TO_ASSUME` secret and the `AWS_KEY_NAME` and
 `AWS_ADMIN_SOURCE_CIDR` repository variables. `AWS_REGION`, `AWS_STACK_NAME`,
 `AWS_INSTANCE_TYPE`, `AWS_NAME_PREFIX`, and `AWS_ARTIFACT_BUCKET` are optional
-AWS repository variables. The CloudFormation execution-role secret remains
-optional.
+AWS repository variables. `AWS_REGRESSION_ONLY` and `AWS_REGRESSION_SKIP` can
+contain space-separated regression test ids when the merge flow should run a
+focused subset instead of the full pack. `AWS_REGRESSION_CONTINUE_ON_FAILURE`
+can be set to `true` to keep collecting later test evidence after an earlier
+test fails. The CloudFormation execution-role secret remains optional.
 
 ## Generated local files
 
