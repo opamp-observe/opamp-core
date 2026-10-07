@@ -41,13 +41,17 @@ jobs:
         id: select_provider
         shell: bash
         env:
-          CONFIGURED_CLOUD_PROVIDER: ${{ vars.CLOUD_PROVIDER || 'none' }}
+          CONFIGURED_CLOUD_PROVIDER: ${{ vars.CLOUD_PROVIDER || '' }}
+          DEFAULT_CLOUD_PROVIDER: ${{ github.event_name == 'push' && 'aws' || 'none' }}
           REQUESTED_CLOUD_PROVIDER: ${{ inputs.cloud_provider || 'configured' }}
         run: |
           set -euo pipefail
           cloud_provider="$REQUESTED_CLOUD_PROVIDER"
           if [[ "$cloud_provider" == "configured" ]]; then
             cloud_provider="$CONFIGURED_CLOUD_PROVIDER"
+          fi
+          if [[ -z "$cloud_provider" ]]; then
+            cloud_provider="$DEFAULT_CLOUD_PROVIDER"
           fi
           cloud_provider="${cloud_provider,,}"
           case "$cloud_provider" in
@@ -124,7 +128,7 @@ jobs:
 
   deploy_aws:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     needs:
       - select_cloud_provider
       - build
@@ -190,19 +194,56 @@ jobs:
           PARAMETERS_FILE: cloud/aws/parameters.workflow.env
         run: bash cloud/aws/deploy.sh
 
+      - name: Run and retain AWS regression
+        id: aws_regression
+        shell: bash
+        env:
+          AWS_REGRESSION_CONTINUE_ON_FAILURE: ${{ vars.AWS_REGRESSION_CONTINUE_ON_FAILURE || 'false' }}
+          AWS_REGRESSION_ONLY: ${{ vars.AWS_REGRESSION_ONLY }}
+          AWS_REGRESSION_SKIP: ${{ vars.AWS_REGRESSION_SKIP }}
+        run: |
+          set -uo pipefail
+          regression_arguments=(--provider aws --aws-region "$AWS_REGION")
+          for test_id in $AWS_REGRESSION_ONLY; do
+            regression_arguments+=(--only "$test_id")
+          done
+          for test_id in $AWS_REGRESSION_SKIP; do
+            regression_arguments+=(--skip "$test_id")
+          done
+          if [[ "${AWS_REGRESSION_CONTINUE_ON_FAILURE,,}" == "true" ]]; then
+            regression_arguments+=(--continue-on-failure)
+          fi
+          python cloud/run_regression.py "${regression_arguments[@]}"
+          regression_exit_code=$?
+          echo "exit_code=$regression_exit_code" >> "$GITHUB_OUTPUT"
+          exit 0
+
       - name: Summarize retained AWS storage
+        if: always() && steps.aws_regression.outputs.exit_code != ''
         shell: bash
         run: |
           set -euo pipefail
           retained_bucket="$(cat dist/aws-artifact-bucket.txt)"
           connection_guide="$(find dist/aws-regression-results -name connection_details.md -type f | sort | tail -n 1)"
+          regression_report="$(find dist/test-reports -name regression-pack-results.md -type f | sort | tail -n 1)"
           {
             cat "$connection_guide"
             echo ""
             echo "## Retained AWS storage"
             echo ""
             echo "Bucket: \`$retained_bucket\`"
+            if [[ -n "$regression_report" ]]; then
+              echo ""
+              cat "$regression_report"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail when AWS regression failed
+        if: steps.aws_regression.outputs.exit_code != '0'
+        shell: bash
+        run: |
+          echo "AWS regression failed with exit code ${{ steps.aws_regression.outputs.exit_code }}" >&2
+          exit "${{ steps.aws_regression.outputs.exit_code }}"
 
   no_cloud_deployment:
     runs-on: ubuntu-latest
