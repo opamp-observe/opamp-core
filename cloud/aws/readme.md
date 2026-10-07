@@ -292,15 +292,28 @@ logs remain available on the affected instance at
 instance exists.
 
 Each successful deployment uploads its CloudFormation outputs and connection
-guide under `regression-results/<UTC timestamp>/`. Upload additional reports
-under the same retained prefix, for example:
+guide under `regression-results/<UTC timestamp>/`. Deployment does not itself
+run a test set. Use the provider-neutral regression command to run selected
+tests and upload the complete `dist/test-reports/` tree to
+`regression-results/<UTC timestamp>/test-reports/`:
 
 ```bash
-ARTIFACT_BUCKET="$(cat dist/aws-artifact-bucket.txt)"
-RESULT_SET="$(date -u +%Y%m%d%H%M%S)"
-aws s3 cp test-results/ \
-  "s3://$ARTIFACT_BUCKET/regression-results/$RESULT_SET/" \
-  --recursive
+python cloud/run_regression.py --provider aws --only st001
+```
+
+On Windows PowerShell, the equivalent command is:
+
+```powershell
+py -3 cloud/run_regression.py --provider aws --only st001
+```
+
+The command reads the bucket from `dist/aws-artifact-bucket.txt`, returns the
+regression pack's failure status after attempting the upload, and writes a
+`cloud_upload_manifest.json` into the uploaded reports. To publish reports from
+an already completed run without rerunning it, use:
+
+```powershell
+py -3 cloud/run_regression.py --provider aws --upload-only
 ```
 
 ## Deploy From GitHub

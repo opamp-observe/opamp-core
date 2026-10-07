@@ -1,39 +1,92 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-name: Build and deploy Python app to Azure Web App - fluent-opamp
+name: Build and optionally deploy Fluent OpAMP
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      cloud_provider:
+        description: Cloud deployment target; configured uses the CLOUD_PROVIDER repository variable
+        required: true
+        default: configured
+        type: choice
+        options:
+          - configured
+          - azure
+          - aws
+          - none
 
 jobs:
-  build:
+  select_cloud_provider:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
-
+      contents: read
+    outputs:
+      cloud_provider: ${{ steps.select_provider.outputs.cloud_provider }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Select and validate cloud provider
+        id: select_provider
+        shell: bash
+        env:
+          CONFIGURED_CLOUD_PROVIDER: ${{ vars.CLOUD_PROVIDER || 'none' }}
+          REQUESTED_CLOUD_PROVIDER: ${{ inputs.cloud_provider || 'configured' }}
+        run: |
+          set -euo pipefail
+          cloud_provider="$REQUESTED_CLOUD_PROVIDER"
+          if [[ "$cloud_provider" == "configured" ]]; then
+            cloud_provider="$CONFIGURED_CLOUD_PROVIDER"
+          fi
+          cloud_provider="${cloud_provider,,}"
+          case "$cloud_provider" in
+            azure|aws|none) ;;
+            *)
+              echo "CLOUD_PROVIDER must be azure, aws, or none; received: $cloud_provider" >&2
+              exit 1
+              ;;
+          esac
+          echo "cloud_provider=$cloud_provider" >> "$GITHUB_OUTPUT"
+          echo "Selected cloud provider: $cloud_provider" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Set up Python version
+  build:
+    runs-on: ubuntu-latest
+    needs: select_cloud_provider
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: "3.11"
 
-      # 🛠️ Local Build Section (Optional)
-      # The following section in your workflow is designed to catch build issues early on the client side, before deployment. This can be helpful for debugging and validation. However, if this step significantly increases deployment time and early detection is not critical for your workflow, you may remove this section to streamline the deployment process.
-      - name: Create and Start virtual environment and Install dependencies
+      # Keep the build active for all modes, including none, so disabling cloud
+      # deployment does not disable basic dependency and packaging validation.
+      - name: Create virtual environment and install dependencies
+        shell: bash
         run: |
+          set -euo pipefail
           python -m venv antenv
           source antenv/bin/activate
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-                
-      # By default, when you enable GitHub CI/CD integration through the Azure portal, the platform automatically sets the SCM_DO_BUILD_DURING_DEPLOYMENT application setting to true. This triggers the use of Oryx, a build engine that handles application compilation and dependency installation (e.g., pip install) directly on the platform during deployment. Hence, we exclude the antenv virtual environment directory from the deployment artifact to reduce the payload size. 
-      - name: Upload artifact for deployment jobs
+
+      - name: Upload Azure deployment artifact
+        if: needs.select_cloud_provider.outputs.cloud_provider == 'azure'
         uses: actions/upload-artifact@v4
         with:
           name: python-app
@@ -41,36 +94,125 @@ jobs:
             .
             !antenv/
 
-      # 🚫 Opting Out of Oryx Build
-      # If you prefer to disable the Oryx build process during deployment, follow these steps:
-      # 1. Remove the SCM_DO_BUILD_DURING_DEPLOYMENT app setting from your Azure App Service Environment variables.
-      # 2. Refer to sample workflows for alternative deployment strategies: https://github.com/Azure/actions-workflow-samples/tree/master/AppService
-      
-
-  deploy:
+  deploy_azure:
     runs-on: ubuntu-latest
-    needs: build
+    needs:
+      - select_cloud_provider
+      - build
+    if: needs.select_cloud_provider.outputs.cloud_provider == 'azure'
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
-
+      id-token: write
+      contents: read
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: python-app
-      
-      - name: Login to Azure
+
+      - name: Log in to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_195EE0A2DA3947CAA0427043CC5FEEFF }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_40CBF888FD894E9EA2D20C44941831DC }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F23BE392CBB5496182D244751F520677 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
-          app-name: 'fluent-opamp'
-          slot-name: 'Production'
-          
+          app-name: fluent-opamp
+          slot-name: Production
+
+  deploy_aws:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    needs:
+      - select_cloud_provider
+      - build
+    if: needs.select_cloud_provider.outputs.cloud_provider == 'aws'
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-2' }}
+      STACK_NAME: ${{ vars.AWS_STACK_NAME || 'opamp-regression' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: opamp-${{ github.run_id }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate AWS deployment controls
+        shell: bash
+        env:
+          ADMIN_SOURCE_CIDR: ${{ vars.AWS_ADMIN_SOURCE_CIDR }}
+          KEY_NAME: ${{ vars.AWS_KEY_NAME }}
+        run: |
+          set -euo pipefail
+          [[ -n "$KEY_NAME" ]] || { echo "AWS_KEY_NAME repository variable is required" >&2; exit 1; }
+          [[ -n "$ADMIN_SOURCE_CIDR" ]] || { echo "AWS_ADMIN_SOURCE_CIDR repository variable is required" >&2; exit 1; }
+
+      - name: Create AWS parameter file
+        shell: bash
+        env:
+          ADMIN_SOURCE_CIDR: ${{ vars.AWS_ADMIN_SOURCE_CIDR }}
+          INSTANCE_TYPE: ${{ vars.AWS_INSTANCE_TYPE || 't3.small' }}
+          KEY_NAME: ${{ vars.AWS_KEY_NAME }}
+          NAME_PREFIX: ${{ vars.AWS_NAME_PREFIX || 'opamp' }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' \
+            "NamePrefix=$NAME_PREFIX" \
+            "KeyName=$KEY_NAME" \
+            "AdminSourceCidr=$ADMIN_SOURCE_CIDR" \
+            "InstanceType=$INSTANCE_TYPE" \
+            "VpcCidr=10.42.0.0/16" \
+            "PublicSubnetCidr=10.42.0.0/24" \
+            "ServerPrivateIp=10.42.0.10" \
+            "ConsumerPrivateIp=10.42.0.20" \
+            "KeycloakAdminUser=admin" \
+            > cloud/aws/parameters.workflow.env
+
+      - name: Package and deploy AWS stack
+        shell: bash
+        env:
+          ARTIFACT_BUCKET: ${{ vars.AWS_ARTIFACT_BUCKET }}
+          CLOUDFORMATION_ROLE_ARN: ${{ secrets.AWS_CLOUDFORMATION_ROLE_ARN }}
+          PARAMETERS_FILE: cloud/aws/parameters.workflow.env
+        run: bash cloud/aws/deploy.sh
+
+      - name: Summarize retained AWS storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          retained_bucket="$(cat dist/aws-artifact-bucket.txt)"
+          connection_guide="$(find dist/aws-regression-results -name connection_details.md -type f | sort | tail -n 1)"
+          {
+            cat "$connection_guide"
+            echo ""
+            echo "## Retained AWS storage"
+            echo ""
+            echo "Bucket: \`$retained_bucket\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  no_cloud_deployment:
+    runs-on: ubuntu-latest
+    needs:
+      - select_cloud_provider
+      - build
+    if: needs.select_cloud_provider.outputs.cloud_provider == 'none'
+    permissions:
+      contents: read
+    steps:
+      - name: Record skipped cloud deployment
+        shell: bash
+        run: echo "Build completed without a cloud deployment." >> "$GITHUB_STEP_SUMMARY"

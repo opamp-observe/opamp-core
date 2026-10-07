@@ -222,19 +222,29 @@ reuse an existing account. Use `SKIP_PACKAGE=true` or `-SkipPackage` to reuse
 the existing local artifact directory.
 
 Each successful deployment uploads its ARM outputs and `connection_details.md`
-under the private `opamp-regression-results/<UTC timestamp>/` prefix. Upload
-additional reports to that private container, for example:
+under the private `opamp-regression-results/<UTC timestamp>/` prefix.
+Deployment does not itself run a test set. Use the provider-neutral regression
+command to run selected tests and upload the complete `dist/test-reports/`
+tree beneath `<UTC timestamp>/test-reports/`:
 
 ```bash
-STORAGE_ACCOUNT="$(cat dist/azure-retention-storage-account.txt)"
-RESULT_SET="$(date -u +%Y%m%d%H%M%S)"
-az storage blob upload-batch \
-  --account-name "$STORAGE_ACCOUNT" \
-  --destination opamp-regression-results \
-  --destination-path "$RESULT_SET" \
-  --source test-results \
-  --auth-mode key \
-  --overwrite
+python cloud/run_regression.py --provider azure --only st001
+```
+
+On Windows PowerShell, the equivalent command is:
+
+```powershell
+py -3 cloud/run_regression.py --provider azure --only st001
+```
+
+The command reads the storage account from
+`dist/azure-retention-storage-account.txt`, returns the regression pack's
+failure status after attempting the upload, and writes a
+`cloud_upload_manifest.json` into the uploaded reports. To publish reports from
+an already completed run without rerunning it, use:
+
+```powershell
+py -3 cloud/run_regression.py --provider azure --upload-only
 ```
 
 Open `opampUiUrl` in a browser. Because the certificate is self-signed, the

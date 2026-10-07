@@ -19,6 +19,7 @@ AWS_DIRECTORY = REPOSITORY_ROOT / "cloud" / "aws"
 AZURE_DIRECTORY = REPOSITORY_ROOT / "cloud" / "azure"
 WORKFLOW_PATH = REPOSITORY_ROOT / ".github" / "workflows" / "deploy_aws.yml"
 OPERATOR_GUIDE_PATH = REPOSITORY_ROOT / "cloud" / "operator_guide.md"
+REGRESSION_COMMAND_PATH = REPOSITORY_ROOT / "cloud" / "run_regression.py"
 
 LICENSE_COPYRIGHT = "Copyright 2026 mp3monster.org"
 LICENSE_GRANT = "Licensed under the Apache License, Version 2.0"
@@ -342,6 +343,23 @@ def test_cloud_deployments_generate_and_retain_connection_guides() -> None:
     assert "$PrivateKeyFile" in aws_powershell
     assert "SSH_PRIVATE_KEY_FILE" in azure_bash
     assert "$SshPrivateKeyFile" in azure_powershell
+
+
+def test_cloud_regression_command_runs_and_uploads_reports_for_both_providers() -> None:
+    """Ensure regression reports have an executable path into retained cloud storage."""
+    regression_command = _read(REGRESSION_COMMAND_PATH)
+    aws_readme = _read(AWS_DIRECTORY / "readme.md")
+    azure_readme = _read(AZURE_DIRECTORY / "README.md")
+
+    assert LICENSE_COPYRIGHT in regression_command
+    assert LICENSE_GRANT in regression_command
+    assert "run_regression_pack.py" in regression_command
+    assert '"aws",' in regression_command
+    assert '"az",' in regression_command
+    assert '"--upload-only"' in regression_command
+    assert "cloud_upload_manifest.json" in regression_command
+    assert "cloud/run_regression.py --provider aws" in aws_readme
+    assert "cloud/run_regression.py --provider azure" in azure_readme
 
 
 def test_cloud_powershell_deploys_use_one_native_python_argument_array() -> None:

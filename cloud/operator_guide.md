@@ -154,6 +154,43 @@ then both files can be uploaded to the existing retained location.
   artifact was built from the intended source and has already been validated.
 - Never delete retained storage merely to reset compute infrastructure.
 
+## Regression evidence
+
+Infrastructure deployment proves that the environment bootstrapped; it does
+not run the local container regression pack. Run and retain a selected test
+with `python cloud/run_regression.py --provider <aws|azure> --only <test-id>`.
+The command uploads `dist/test-reports/` even when a test fails, then returns
+the test process exit code. Use `--upload-only` after a test was run separately.
+
+AWS reads its default bucket from `dist/aws-artifact-bucket.txt`. Azure reads
+its default storage account from
+`dist/azure-retention-storage-account.txt`. Each upload uses a new UTC result
+set and stores evidence below `<result-set>/test-reports/`, including a manifest
+that records the destination and regression exit status.
+
+## Main workflow cloud control
+
+`.github/workflows/main_fluent-opamp.yml` always performs its build and uses
+the `CLOUD_PROVIDER` GitHub repository variable to select deployment behavior
+for pushes to `main`:
+
+| `CLOUD_PROVIDER` | Behavior |
+|---|---|
+| `azure` | Deploy the existing `fluent-opamp` Azure Web App |
+| `aws` | Deploy the AWS CloudFormation regression environment |
+| `none` or unset | Complete the build without requesting cloud credentials |
+
+A manual workflow run can select `azure`, `aws`, or `none` directly. Selecting
+`configured` applies the repository variable in the same way as a push.
+
+Azure mode uses the existing `AZUREAPPSERVICE_CLIENTID_*`,
+`AZUREAPPSERVICE_TENANTID_*`, and `AZUREAPPSERVICE_SUBSCRIPTIONID_*` secrets.
+AWS mode requires the `AWS_ROLE_TO_ASSUME` secret and the `AWS_KEY_NAME` and
+`AWS_ADMIN_SOURCE_CIDR` repository variables. `AWS_REGION`, `AWS_STACK_NAME`,
+`AWS_INSTANCE_TYPE`, `AWS_NAME_PREFIX`, and `AWS_ARTIFACT_BUCKET` are optional
+AWS repository variables. The CloudFormation execution-role secret remains
+optional.
+
 ## Generated local files
 
 | Path | Purpose |
@@ -164,6 +201,7 @@ then both files can be uploaded to the existing retained location.
 | `dist/azure-retention-storage-account.txt` | Latest Azure retained account name |
 | `dist/aws-key-pairs/` | Private keys created by the AWS deploy script |
 | `dist/*-regression-results/<timestamp>/` | Output JSON and connection guide |
+| `dist/test-reports/` | Local regression evidence uploaded by `cloud/run_regression.py` |
 
 Treat private keys and deployment outputs as operational data. They are ignored
 by source control and should be protected according to the environment's access
