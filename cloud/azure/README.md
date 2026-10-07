@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # OpAMP Azure Deployment
 
 This folder contains an Azure Resource Manager deployment for a two-VM OpAMP
@@ -130,6 +144,67 @@ curl https://api.ipify.org
 ```
 
 Use that value with `/32` for `adminSourceCidr`.
+
+## Configure GitHub OIDC
+
+The main GitHub workflow can deploy the existing Azure Web App path when the
+`CLOUD_PROVIDER` repository variable is set to `azure`. It authenticates with
+GitHub OIDC, so the repository needs a Microsoft Entra application with
+federated credentials for the `main` branch rather than a long-lived client
+secret.
+
+From an Azure CLI session that is already logged in to the target subscription,
+run the shared helper. Pass `--configure-github` with a GitHub token that can
+write repository Actions secrets and variables. GitHub secret encryption
+requires PyNaCl, which is installed by
+`python -m pip install -r requirements.txt` or directly with
+`python -m pip install PyNaCl`.
+
+Bash:
+
+```bash
+export GITHUB_TOKEN=REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS
+python cloud/aws/scripts/configure_github_oidc_role.py \
+  --cloud-provider azure \
+  --configure-github \
+  --assign-azure-role \
+  --azure-webapp-name fluent-opamp \
+  --azure-resource-group opamp-regression-rg
+```
+
+Windows PowerShell:
+
+```powershell
+$env:GITHUB_TOKEN = "REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS"
+py -3 cloud\aws\scripts\configure_github_oidc_role.py `
+  --cloud-provider azure `
+  --configure-github `
+  --assign-azure-role `
+  --azure-webapp-name fluent-opamp `
+  --azure-resource-group opamp-regression-rg
+```
+
+Windows `cmd.exe`:
+
+```bat
+set GITHUB_TOKEN=REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS
+py -3 cloud\aws\scripts\configure_github_oidc_role.py ^
+  --cloud-provider azure ^
+  --configure-github ^
+  --assign-azure-role ^
+  --azure-webapp-name fluent-opamp ^
+  --azure-resource-group opamp-regression-rg
+```
+
+The helper creates or reuses the `opamp-github-deploy` application, ensures a
+service principal exists, creates GitHub branch federated credentials with
+audience `api://AzureADTokenExchange`, and writes the
+`AZUREAPPSERVICE_CLIENTID_*`, `AZUREAPPSERVICE_TENANTID_*`, and
+`AZUREAPPSERVICE_SUBSCRIPTIONID_*` secrets expected by the workflow. It also
+upserts `CLOUD_PROVIDER=azure`, `AZURE_APP_NAME`, and `AZURE_RESOURCE_GROUP`
+when those values are supplied. Use `--azure-role-scope` to assign the role at
+a narrower scope than the subscription, or omit `--assign-azure-role` and grant
+least-privilege access manually.
 
 ## Package The Artifacts
 
@@ -384,6 +459,19 @@ bash cloud/azure/destroy-bucket.sh <storage-account-name>
 
 ```powershell
 .\cloud\azure\destroy-bucket.ps1 -StorageAccount <storage-account-name>
+```
+
+Pass `--all` to delete every generated OpAMP regression retention storage
+account in the selected subscription. The scripts match the tags added by the
+deploy scripts, `Project=opamp` and `Purpose=regression-retention`; they do not
+delete arbitrary storage accounts.
+
+```bash
+bash cloud/azure/destroy-bucket.sh --all
+```
+
+```powershell
+.\cloud\azure\destroy-bucket.ps1 -All
 ```
 
 The cleanup script discovers the account's retained resource group and deletes

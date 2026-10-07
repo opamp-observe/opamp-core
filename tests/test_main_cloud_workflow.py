@@ -77,8 +77,11 @@ def test_aws_mode_uses_the_existing_cloudformation_deployment() -> None:
     """Route AWS mode through the tested repository deployment script."""
     workflow = _workflow_text()
 
-    assert "AWS_KEY_NAME repository variable is required" in workflow
-    assert "AWS_ADMIN_SOURCE_CIDR repository variable is required" in workflow
+    assert "Validate AWS repository configuration" in workflow
+    assert "AWS_ROLE_TO_ASSUME repository secret is required for AWS mode" in workflow
+    assert "AWS_KEY_NAME repository variable is required for AWS mode" in workflow
+    assert "AWS_ADMIN_SOURCE_CIDR repository variable is required for AWS mode" in workflow
+    assert "Set CLOUD_PROVIDER to none" in workflow
     assert "PARAMETERS_FILE: cloud/aws/parameters.workflow.env" in workflow
     assert "run: bash cloud/aws/deploy.sh" in workflow
 

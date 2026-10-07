@@ -127,6 +127,12 @@ service URLs and SSH commands. Both files are uploaded to retained storage.
 
 Storage cleanup scripts are intentionally separate and destructive: deleting a
 bucket or storage account also deletes every retained artifact and result in it.
+Passing `--all` to a cleanup script removes only generated OpAMP regression
+retention storage for the selected provider. AWS matches the generated
+`opamp-regression-<account-id>-<timestamp>` bucket prefix in the current
+account, while Azure matches the `Project=opamp` and
+`Purpose=regression-retention` storage account tags in the selected
+subscription.
 
 ## Reading failures
 
@@ -185,16 +191,24 @@ A manual workflow run can select `azure`, `aws`, or `none` directly. Selecting
 `configured` applies the repository variable when it exists and otherwise
 performs the build-only `none` flow.
 
-Azure mode uses the existing `AZUREAPPSERVICE_CLIENTID_*`,
-`AZUREAPPSERVICE_TENANTID_*`, and `AZUREAPPSERVICE_SUBSCRIPTIONID_*` secrets.
-AWS mode requires the `AWS_ROLE_TO_ASSUME` secret and the `AWS_KEY_NAME` and
-`AWS_ADMIN_SOURCE_CIDR` repository variables. `AWS_REGION`, `AWS_STACK_NAME`,
-`AWS_INSTANCE_TYPE`, `AWS_NAME_PREFIX`, and `AWS_ARTIFACT_BUCKET` are optional
-AWS repository variables. `AWS_REGRESSION_ONLY` and `AWS_REGRESSION_SKIP` can
-contain space-separated regression test ids when the merge flow should run a
-focused subset instead of the full pack. `AWS_REGRESSION_CONTINUE_ON_FAILURE`
-can be set to `true` to keep collecting later test evidence after an earlier
-test fails. The CloudFormation execution-role secret remains optional.
+The shared GitHub OIDC helper at
+`cloud/aws/scripts/configure_github_oidc_role.py` can configure either provider
+by passing `--cloud-provider aws` or `--cloud-provider azure`. With
+`--configure-github`, it writes the provider-specific repository secrets and
+variables through GitHub's REST API. Azure mode uses the existing
+`AZUREAPPSERVICE_CLIENTID_*`, `AZUREAPPSERVICE_TENANTID_*`, and
+`AZUREAPPSERVICE_SUBSCRIPTIONID_*` secrets, plus optional `AZURE_APP_NAME` and
+`AZURE_RESOURCE_GROUP` variables. AWS mode requires the `AWS_ROLE_TO_ASSUME`
+secret and the `AWS_KEY_NAME` and `AWS_ADMIN_SOURCE_CIDR` repository variables.
+`AWS_REGION`, `AWS_STACK_NAME`, `AWS_INSTANCE_TYPE`, `AWS_NAME_PREFIX`, and
+`AWS_ARTIFACT_BUCKET` are optional AWS repository variables.
+`AWS_REGRESSION_ONLY` and `AWS_REGRESSION_SKIP` can contain space-separated
+regression test ids when the merge flow should run a focused subset instead of
+the full pack. `AWS_REGRESSION_CONTINUE_ON_FAILURE` can be set to `true` to
+keep collecting later test evidence after an earlier test fails. Set
+`CLOUD_PROVIDER` to `none` if pushes to `main` should stay build-only while the
+selected provider's OIDC resources or required repository variables are not
+ready. The CloudFormation execution-role secret remains optional.
 
 ## Generated local files
 

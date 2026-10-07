@@ -12,25 +12,67 @@
 
 param(
     [Alias("BucketName")]
-    [Parameter(Mandatory = $true)][string]$StorageAccount
+    [string]$StorageAccount = "",
+    [switch]$All
 )
 
 $ErrorActionPreference = "Stop"
 
-# Resolve the owning resource group before deletion because Azure storage account
-# names are globally unique but deletion is scoped to their resource group.
-$storageResourceGroup = (& az storage account show `
-    --name $StorageAccount `
-    --query resourceGroup `
-    --output tsv | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or -not $storageResourceGroup) {
-    throw "Unable to find retained Azure storage account $StorageAccount."
+function Remove-RetainedStorageAccount {
+    param(
+        [Parameter(Mandatory = $true)][string]$SelectedStorageAccount,
+        [string]$SelectedResourceGroup = ""
+    )
+
+    # Resolve the owning resource group before deletion because Azure storage
+    # account names are globally unique but deletion is scoped to a group.
+    if (-not $SelectedResourceGroup) {
+        $SelectedResourceGroup = (& az storage account show `
+            --name $SelectedStorageAccount `
+            --query resourceGroup `
+            --output tsv | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $SelectedResourceGroup) {
+            throw "Unable to find retained Azure storage account $SelectedStorageAccount."
+        }
+    }
+    & az storage account delete `
+        --name $SelectedStorageAccount `
+        --resource-group $SelectedResourceGroup `
+        --yes
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to delete retained Azure storage account $SelectedStorageAccount."
+    }
+    Write-Output "Deleted retained Azure storage account $SelectedStorageAccount and all of its containers."
 }
-& az storage account delete `
-    --name $StorageAccount `
-    --resource-group $storageResourceGroup `
-    --yes
-if ($LASTEXITCODE -ne 0) {
-    throw "Unable to delete retained Azure storage account $StorageAccount."
+
+if ($StorageAccount -eq "--all") {
+    $All = $true
+    $StorageAccount = ""
 }
-Write-Output "Deleted retained Azure storage account $StorageAccount and all of its containers."
+
+if ($All) {
+    $retainedStorageOutput = (& az storage account list `
+        --query "[?tags.Project=='opamp' && tags.Purpose=='regression-retention'].[name,resourceGroup]" `
+        --output tsv | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to list tagged OpAMP regression retention storage accounts."
+    }
+    if (-not $retainedStorageOutput) {
+        Write-Output "No tagged OpAMP regression retention storage accounts were found."
+        exit 0
+    }
+    $retainedStorageRecords = $retainedStorageOutput -split "\r?\n" | Where-Object { $_ }
+    foreach ($retainedStorageRecord in $retainedStorageRecords) {
+        $retainedStorageFields = $retainedStorageRecord -split "\s+"
+        Remove-RetainedStorageAccount `
+            -SelectedStorageAccount $retainedStorageFields[0] `
+            -SelectedResourceGroup $retainedStorageFields[1]
+    }
+    exit 0
+}
+
+if (-not $StorageAccount) {
+    throw "Provide the retained storage account name, -All, or --all as the first argument."
+}
+
+Remove-RetainedStorageAccount -SelectedStorageAccount $StorageAccount

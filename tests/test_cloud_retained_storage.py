@@ -20,6 +20,8 @@ AZURE_DIRECTORY = REPOSITORY_ROOT / "cloud" / "azure"
 WORKFLOW_PATH = REPOSITORY_ROOT / ".github" / "workflows" / "deploy_aws.yml"
 OPERATOR_GUIDE_PATH = REPOSITORY_ROOT / "cloud" / "operator_guide.md"
 REGRESSION_COMMAND_PATH = REPOSITORY_ROOT / "cloud" / "run_regression.py"
+DOCS_INDEX_PATH = REPOSITORY_ROOT / "docs" / "index.md"
+RELEASE_NOTES_PATH = REPOSITORY_ROOT / "docs" / "dev" / "release_notes.md"
 
 LICENSE_COPYRIGHT = "Copyright 2026 mp3monster.org"
 LICENSE_GRANT = "Licensed under the Apache License, Version 2.0"
@@ -83,15 +85,23 @@ def test_bucket_cleanup_scripts_delete_only_selected_retained_storage() -> None:
     azure_bash = _read(AZURE_DIRECTORY / "destroy-bucket.sh")
     azure_powershell = _read(AZURE_DIRECTORY / "destroy-bucket.ps1")
 
-    assert 'aws s3 rb "s3://$BUCKET_NAME" --force' in aws_bash
+    assert 'aws s3 rb "s3://$bucket_name" --force' in aws_bash
     assert '[string]$BucketName = ""' in aws_powershell
+    assert "opamp-regression-${aws_account_id}-" in aws_bash
+    assert '"opamp-regression-$awsAccountId-"' in aws_powershell
+    assert "starts_with(Name, \\`$bucket_name_prefix\\`)" in aws_bash
+    assert "starts_with(Name, '$bucketNamePrefix')" in aws_powershell
     assert "dist/aws-artifact-bucket.txt" in aws_bash
     assert "dist/aws-artifact-bucket.txt" in aws_powershell
     assert 'rm -f "$ARTIFACT_BUCKET_FILE"' in aws_bash
     assert "Remove-Item -LiteralPath $ArtifactBucketFile" in aws_powershell
     assert "az storage account show" in azure_bash
+    assert "az storage account list" in azure_bash
     assert "az storage account delete" in azure_bash
-    assert '[Parameter(Mandatory = $true)][string]$StorageAccount' in azure_powershell
+    assert '[string]$StorageAccount = ""' in azure_powershell
+    assert "[switch]$All" in azure_powershell
+    assert "tags.Project=='opamp' && tags.Purpose=='regression-retention'" in azure_bash
+    assert "tags.Project=='opamp' && tags.Purpose=='regression-retention'" in azure_powershell
     assert "az group delete" not in azure_bash
     assert "az group delete" not in azure_powershell
 
@@ -175,8 +185,29 @@ def test_cloud_operator_guide_explains_provider_neutral_lifecycle() -> None:
     assert "## Resource ownership" in operator_guide
     assert "## Reading failures" in operator_guide
     assert "## Safe reruns" in operator_guide
+    assert "configure_github_oidc_role.py" in operator_guide
+    assert "--configure-github" in operator_guide
     assert "../operator_guide.md" in aws_readme
     assert "../operator_guide.md" in azure_readme
+
+
+def test_azure_readme_documents_github_oidc_setup() -> None:
+    """Document Azure OIDC resource generation and GitHub repository settings."""
+    azure_readme = _read(AZURE_DIRECTORY / "README.md")
+
+    assert LICENSE_COPYRIGHT in azure_readme
+    assert "## Configure GitHub OIDC" in azure_readme
+    assert "configure_github_oidc_role.py" in azure_readme
+    assert "--cloud-provider azure" in azure_readme
+    assert "--configure-github" in azure_readme
+    assert "--assign-azure-role" in azure_readme
+    assert "PyNaCl" in azure_readme
+    assert "Windows PowerShell" in azure_readme
+    assert "Windows `cmd.exe`" in azure_readme
+    assert "api://AzureADTokenExchange" in azure_readme
+    assert "AZUREAPPSERVICE_CLIENTID_*" in azure_readme
+    assert "AZURE_APP_NAME" in azure_readme
+    assert "AZURE_RESOURCE_GROUP" in azure_readme
 
 
 def test_cloud_powershell_scripts_support_windows_powershell_encoding() -> None:
@@ -385,7 +416,25 @@ def test_cloud_guides_document_retention_and_explicit_cleanup() -> None:
 
     assert "dist/aws-artifact-bucket.txt" in aws_readme
     assert "cloud/aws/destroy-bucket.sh" in aws_readme
+    assert "cloud/aws/destroy-bucket.sh --all" in aws_readme
+    assert "`opamp-regression-<account-id>-<timestamp>`" in aws_readme
     assert "intentionally retained" in aws_readme
     assert "dist/azure-retention-storage-account.txt" in azure_readme
     assert "cloud/azure/destroy-bucket.sh" in azure_readme
+    assert "cloud/azure/destroy-bucket.sh --all" in azure_readme
+    assert "`Project=opamp` and `Purpose=regression-retention`" in azure_readme
     assert "private deployment-output record" in azure_readme
+
+
+def test_cloud_docs_index_and_release_notes_are_current() -> None:
+    """Keep top-level docs and release notes aligned with cloud automation."""
+    docs_index = _read(DOCS_INDEX_PATH)
+    release_notes = _read(RELEASE_NOTES_PATH)
+
+    assert "[Cloud operator guide](../cloud/operator_guide.md)" in docs_index
+    assert "[AWS deployment](../cloud/aws/readme.md)" in docs_index
+    assert "[Azure deployment](../cloud/azure/README.md)" in docs_index
+    assert "without external marketplace actions" in release_notes
+    assert "`--all` cleanup for generated OpAMP retention storage" in release_notes
+    assert "Pushes to `main` default to AWS" in release_notes
+    assert "provider-aware GitHub OIDC setup helper" in release_notes

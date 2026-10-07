@@ -30,6 +30,7 @@ Use these docs for repository builds and deployable artefacts:
 - [Component Versioning](dev/component_versioning.md) — how git-derived version metadata is refreshed before packaging.
 - [MCP scripts and usage](../mcp/README.md) — MCP tool wheel, sdist, and SBOM flow.
 - [Standalone Packaging](../config-service/docs/standalone-packaging.md) — standalone config-service packaging and SBOM flow.
+- [Cloud operator guide](../cloud/operator_guide.md) — provider-neutral lifecycle, retained evidence, cleanup, and workflow control.
 - [AWS deployment](../cloud/aws/readme.md) — command-line and GitHub Actions deployment of the two-instance regression environment.
 - [Azure deployment](../cloud/azure/README.md) — ARM deployment of the equivalent two-VM regression environment.
 

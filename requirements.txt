@@ -6,6 +6,7 @@ grpcio-tools>=1.60
 fastmcp>=2.0
 PyYAML>=6.0
 PyJWT>=2.8
+PyNaCl>=1.5
 lark>=1.2.2
 luaparser>=4.0.0
 pytest>=8.0
