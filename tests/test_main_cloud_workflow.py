@@ -56,6 +56,9 @@ def test_workflow_avoids_external_marketplace_actions() -> None:
     assert "ACTIONS_ID_TOKEN_REQUEST_URL" in workflow
     assert "assume-role-with-web-identity" in workflow
     assert "az login" in workflow
+    assert "x-access-token:%s" in workflow
+    assert "AUTHORIZATION: basic $checkout_auth_header" in workflow
+    assert "AUTHORIZATION: bearer $GITHUB_TOKEN" not in workflow
 
 
 def test_no_cloud_mode_keeps_the_build_enabled() -> None:

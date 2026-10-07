@@ -76,10 +76,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git init "$GITHUB_WORKSPACE"
+          checkout_auth_header="$(
+            printf 'x-access-token:%s' "$GITHUB_TOKEN" \
+              | python3 -c 'import base64, sys; print(base64.b64encode(sys.stdin.buffer.read()).decode())'
+          )"
+          git init --initial-branch=main "$GITHUB_WORKSPACE"
           git -C "$GITHUB_WORKSPACE" remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
           git -C "$GITHUB_WORKSPACE" \
-            -c http.extraheader="AUTHORIZATION: bearer $GITHUB_TOKEN" \
+            -c http.https://github.com/.extraheader="AUTHORIZATION: basic $checkout_auth_header" \
             fetch --depth=1 origin "$GITHUB_SHA"
           git -C "$GITHUB_WORKSPACE" checkout --force FETCH_HEAD
 
@@ -110,10 +114,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git init "$GITHUB_WORKSPACE"
+          checkout_auth_header="$(
+            printf 'x-access-token:%s' "$GITHUB_TOKEN" \
+              | python3 -c 'import base64, sys; print(base64.b64encode(sys.stdin.buffer.read()).decode())'
+          )"
+          git init --initial-branch=main "$GITHUB_WORKSPACE"
           git -C "$GITHUB_WORKSPACE" remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
           git -C "$GITHUB_WORKSPACE" \
-            -c http.extraheader="AUTHORIZATION: bearer $GITHUB_TOKEN" \
+            -c http.https://github.com/.extraheader="AUTHORIZATION: basic $checkout_auth_header" \
             fetch --depth=1 origin "$GITHUB_SHA"
           git -C "$GITHUB_WORKSPACE" checkout --force FETCH_HEAD
 
@@ -186,10 +194,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git init "$GITHUB_WORKSPACE"
+          checkout_auth_header="$(
+            printf 'x-access-token:%s' "$GITHUB_TOKEN" \
+              | python3 -c 'import base64, sys; print(base64.b64encode(sys.stdin.buffer.read()).decode())'
+          )"
+          git init --initial-branch=main "$GITHUB_WORKSPACE"
           git -C "$GITHUB_WORKSPACE" remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
           git -C "$GITHUB_WORKSPACE" \
-            -c http.extraheader="AUTHORIZATION: bearer $GITHUB_TOKEN" \
+            -c http.https://github.com/.extraheader="AUTHORIZATION: basic $checkout_auth_header" \
             fetch --depth=1 origin "$GITHUB_SHA"
           git -C "$GITHUB_WORKSPACE" checkout --force FETCH_HEAD
 

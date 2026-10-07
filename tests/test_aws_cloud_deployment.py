@@ -226,6 +226,8 @@ def test_github_workflow_uses_manual_oidc_deployment() -> None:
     assert "uses:" not in workflow
     assert "ACTIONS_ID_TOKEN_REQUEST_URL" in workflow
     assert "assume-role-with-web-identity" in workflow
+    assert "x-access-token:%s" in workflow
+    assert "AUTHORIZATION: basic $checkout_auth_header" in workflow
     assert "secrets.AWS_ROLE_TO_ASSUME" in workflow
     assert "secrets.AWS_ACCESS_KEY_ID" not in workflow
     assert '"NamePrefix=${{ inputs.name_prefix }}"' not in workflow
