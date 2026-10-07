@@ -22,16 +22,51 @@ import shutil
 import subprocess
 import sys
 import time
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+
+import tomllib
+
+CONFIG_CONSUMER_KEY = "consumer"
+CONFIG_CONSUMER_AGENT_ADDITIONAL_PARAMS_KEY = "agent_additional_params"
+CONFIG_CONSUMER_AGENT_CONFIG_PATH_KEY = "agent_config_path"
+CONFIG_CONSUMER_HEARTBEAT_FREQUENCY_KEY = "heartbeat_frequency"
+CONFIG_CONSUMER_LOG_LEVEL_KEY = "log_level"
+CONFIG_CONSUMER_SERVER_AUTHORIZATION_KEY = "server-authorization"
+CONFIG_CONSUMER_SERVER_URL_KEY = "server_url"
+CONFIG_CONSUMER_SERVICE_TYPE_KEY = "service_type"
+CONFIG_CONSUMER_TLS_KEY = "tls"
+CONFIG_CONSUMER_TLS_VERIFY_SERVER_KEY = "verify_server"
+CONFIG_FILE_NAME = "opamp.json"
+CONFIG_PROVIDER_KEY = "provider"
+CONFIG_PROVIDER_LOG_LEVEL_KEY = "log_level"
+CONFIG_PROVIDER_STATE_PERSISTENCE_ENABLED_KEY = "enabled"
+CONFIG_PROVIDER_STATE_PERSISTENCE_KEY = "state_persistence"
+CONFIG_PROVIDER_TLS_ENABLED_KEY = "enabled"
+CONFIG_PROVIDER_TLS_KEY = "tls"
+DEFAULT_CONSUMER_HEARTBEAT_FREQUENCY = 30
+DEFAULT_CONSUMER_LOG_LEVEL = "debug"
+DEFAULT_CONSUMER_SERVER_AUTHORIZATION = "none"
+DEFAULT_CONSUMER_SERVER_URL = "http://localhost:8080"
+DEFAULT_CONSUMER_SERVICE_TYPE = "fluentbit"
+DEFAULT_PROVIDER_LOG_LEVEL = "DEBUG"
+ENV_OPAMP_CONFIG_PATH = "OPAMP_CONFIG_PATH"
+ENV_PYTHONNOUSERSITE = "PYTHONNOUSERSITE"
+ENV_PYTHONPATH = "PYTHONPATH"
 
 
 @dataclass(frozen=True)
 class Component:
+    """Describe one packaged component that must install and import cleanly."""
+
     component_id: str
+    """Stable test/report identifier for the component."""
+
     path: str
+    """Repository-relative path to the component's Python package root."""
+
     imports: tuple[str, ...]
+    """Primary modules that must import successfully from the installed wheel."""
 
 
 COMPONENTS: tuple[Component, ...] = (
@@ -211,6 +246,60 @@ def _check_entry_points(distribution: str, scripts: list[str], entry_points: dic
     )
 
 
+def _write_import_config(clean_root: Path) -> Path:
+    """Create the minimal runtime config needed by import-time module checks.
+
+    Args:
+        clean_root: Scratch directory owned by this harness run.
+
+    Returns:
+        Path to the generated OpAMP config JSON file.
+    """
+    config_path = clean_root / CONFIG_FILE_NAME
+    payload = {
+        CONFIG_PROVIDER_KEY: {
+            CONFIG_PROVIDER_LOG_LEVEL_KEY: DEFAULT_PROVIDER_LOG_LEVEL,
+            CONFIG_PROVIDER_TLS_KEY: {
+                CONFIG_PROVIDER_TLS_ENABLED_KEY: False,
+            },
+            CONFIG_PROVIDER_STATE_PERSISTENCE_KEY: {
+                CONFIG_PROVIDER_STATE_PERSISTENCE_ENABLED_KEY: False,
+            },
+        },
+        CONFIG_CONSUMER_KEY: {
+            CONFIG_CONSUMER_SERVER_URL_KEY: DEFAULT_CONSUMER_SERVER_URL,
+            CONFIG_CONSUMER_AGENT_CONFIG_PATH_KEY: ".",
+            CONFIG_CONSUMER_AGENT_ADDITIONAL_PARAMS_KEY: [],
+            CONFIG_CONSUMER_HEARTBEAT_FREQUENCY_KEY: DEFAULT_CONSUMER_HEARTBEAT_FREQUENCY,
+            CONFIG_CONSUMER_SERVICE_TYPE_KEY: DEFAULT_CONSUMER_SERVICE_TYPE,
+            CONFIG_CONSUMER_LOG_LEVEL_KEY: DEFAULT_CONSUMER_LOG_LEVEL,
+            CONFIG_CONSUMER_SERVER_AUTHORIZATION_KEY: DEFAULT_CONSUMER_SERVER_AUTHORIZATION,
+            CONFIG_CONSUMER_TLS_KEY: {
+                CONFIG_CONSUMER_TLS_VERIFY_SERVER_KEY: False,
+            },
+        },
+    }
+    config_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return config_path
+
+
+def _isolated_import_environment(config_path: Path) -> dict[str, str]:
+    """Build an import-check environment that cannot see the source checkout.
+
+    Args:
+        config_path: Generated OpAMP config path to expose through the standard
+            runtime override.
+
+    Returns:
+        Environment mapping for subprocess import and metadata checks.
+    """
+    environment = os.environ.copy()
+    environment[ENV_OPAMP_CONFIG_PATH] = str(config_path)
+    environment[ENV_PYTHONNOUSERSITE] = "1"
+    environment.pop(ENV_PYTHONPATH, None)
+    return environment
+
+
 def _test_component(
     component: Component,
     *,
@@ -226,7 +315,7 @@ def _test_component(
 
     try:
         distribution, scripts, entry_points = _read_project_metadata(component_path)
-    except Exception as exc:  # pragma: no cover - defensive reporting for container use
+    except (KeyError, OSError, tomllib.TOMLDecodeError) as exc:
         return _fail_result(component, "metadata", str(exc), commands)
 
     wheel = wheels_by_component.get(component.component_id)
@@ -261,12 +350,24 @@ def _test_component(
     if result["exit_code"] != 0:
         return _fail_result(component, "pip-check", "installed dependencies are inconsistent", commands)
 
-    result = _run([str(python), "-c", _check_imports(component.imports)], cwd=repo_root)
+    import_config_path = _write_import_config(clean_root)
+    import_work_dir = clean_root / "import-workdirs" / component.component_id
+    import_work_dir.mkdir(parents=True, exist_ok=True)
+    import_environment = _isolated_import_environment(import_config_path)
+    result = _run(
+        [str(python), "-c", _check_imports(component.imports)],
+        cwd=import_work_dir,
+        env=import_environment,
+    )
     commands.append({"stage": "import", **result})
     if result["exit_code"] != 0:
         return _fail_result(component, "import", "one or more import checks failed", commands)
 
-    result = _run([str(python), "-c", _check_entry_points(distribution, scripts, entry_points)], cwd=repo_root)
+    result = _run(
+        [str(python), "-c", _check_entry_points(distribution, scripts, entry_points)],
+        cwd=import_work_dir,
+        env=import_environment,
+    )
     commands.append({"stage": "entry-points", **result})
     if result["exit_code"] != 0:
         return _fail_result(component, "entry-points", "entry point metadata did not match pyproject.toml", commands)

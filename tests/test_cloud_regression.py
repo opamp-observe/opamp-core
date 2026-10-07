@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import logging
 from pathlib import Path
 from types import ModuleType
 
@@ -170,6 +171,70 @@ def test_failed_regression_is_uploaded_and_failure_status_is_returned(
         )
     )
     assert manifest["regression_exit_code"] == regression_failure_code
+
+
+def test_failed_regression_logs_retained_report_summary(
+    regression_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Print retained failure details after upload so cloud logs remain actionable."""
+    regression_failure_code = 7
+    _prepare_reports(tmp_path, "dist/aws-artifact-bucket.txt", "failure-bucket")
+    component_report_directory = (
+        tmp_path / "dist" / "test-reports" / "component-wheel-deployment"
+    )
+    component_report_directory.mkdir(parents=True)
+    (component_report_directory / "component-wheel-deployment-results.json").write_text(
+        json.dumps(
+            {
+                "name": "component-wheel-deployment",
+                "passed": False,
+                "results": [
+                    {
+                        "component_id": "provider",
+                        "passed": False,
+                        "stage": "import",
+                        "detail": "one or more import checks failed",
+                        "commands": [
+                            {
+                                "stage": "import",
+                                "exit_code": 1,
+                                "stderr": "FileNotFoundError: config file not found",
+                                "stdout": "",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(regression_module, "_repository_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        regression_module,
+        "_run_regression_pack",
+        lambda _arguments, _repository_root, _results_directory: regression_failure_code,
+    )
+    monkeypatch.setattr(
+        regression_module,
+        "_upload_aws_results",
+        lambda *_arguments: (0, "s3://failure-bucket/regression-results/evidence/"),
+    )
+
+    with caplog.at_level(logging.ERROR):
+        exit_code = regression_module.main(
+            ["--provider", "aws", "--result-set", TEST_RESULT_SET]
+        )
+
+    assert exit_code == regression_failure_code
+    assert (
+        "Regression failure: component-wheel-deployment: provider failed at import"
+        in caplog.text
+    )
+    assert "FileNotFoundError: config file not found" in caplog.text
 
 
 def test_missing_reports_are_not_represented_as_a_completed_upload(

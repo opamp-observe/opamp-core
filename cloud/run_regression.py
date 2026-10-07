@@ -37,8 +37,23 @@ MANIFEST_DESTINATION_KEY = "destination"
 MANIFEST_PROVIDER_KEY = "provider"
 MANIFEST_REGRESSION_EXIT_CODE_KEY = "regression_exit_code"
 MANIFEST_RESULT_SET_KEY = "result_set"
+REPORT_BUILD_COMMANDS_KEY = "build_commands"
+REPORT_COMMANDS_KEY = "commands"
+REPORT_COMPONENT_ID_KEY = "component_id"
+REPORT_DESCRIPTION_KEY = "description"
+REPORT_DETAIL_KEY = "detail"
+REPORT_EXIT_CODE_KEY = "exit_code"
+REPORT_NAME_KEY = "name"
+REPORT_PASSED_KEY = "passed"
+REPORT_RESULTS_KEY = "results"
+REPORT_STAGE_KEY = "stage"
+REPORT_STDERR_KEY = "stderr"
+REPORT_STDOUT_KEY = "stdout"
+REPORT_TEST_ID_KEY = "test_id"
+REPORTS_FILE_PATTERN = "*-results.json"
 PROVIDER_CHOICES = (AWS_PROVIDER, AZURE_PROVIDER)
 REGRESSION_RUNNER = "tests/test-containers/run_regression_pack.py"
+SUMMARY_TEXT_LIMIT = 500
 
 LOGGER = logging.getLogger(__name__)
 
@@ -122,6 +137,78 @@ def _write_upload_manifest(
         encoding="utf-8",
     )
     return manifest_path
+
+
+def _tail_text(value: object, limit: int = SUMMARY_TEXT_LIMIT) -> str:
+    """Return a compact tail of a captured command stream for failure logs."""
+    text = str(value or "").strip()
+    if len(text) <= limit:
+        return text
+    return text[-limit:]
+
+
+def _summarize_failed_command(command_payload: dict[str, object]) -> str:
+    """Summarize one failed command payload from a regression report."""
+    stage = str(command_payload.get(REPORT_STAGE_KEY) or "").strip()
+    exit_code = command_payload.get(REPORT_EXIT_CODE_KEY)
+    stdout_tail = _tail_text(command_payload.get(REPORT_STDOUT_KEY))
+    stderr_tail = _tail_text(command_payload.get(REPORT_STDERR_KEY))
+    parts = [f"exit={exit_code}"]
+    if stage:
+        parts.append(f"stage={stage}")
+    if stderr_tail:
+        parts.append(f"stderr={stderr_tail}")
+    elif stdout_tail:
+        parts.append(f"stdout={stdout_tail}")
+    return "; ".join(parts)
+
+
+def _collect_regression_failure_summaries(results_directory: Path) -> list[str]:
+    """Collect concise failure lines from retained regression JSON reports."""
+    summaries: list[str] = []
+    for report_path in sorted(results_directory.rglob(REPORTS_FILE_PATTERN)):
+        try:
+            payload = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            summaries.append(f"{report_path.name}: unreadable report: {exc}")
+            continue
+        report_name = str(payload.get(REPORT_NAME_KEY) or report_path.stem)
+        for result in payload.get(REPORT_RESULTS_KEY, []):
+            if not isinstance(result, dict):
+                continue
+            if result.get(REPORT_PASSED_KEY) is True or result.get(REPORT_EXIT_CODE_KEY) == 0:
+                continue
+            result_id = str(
+                result.get(REPORT_TEST_ID_KEY)
+                or result.get(REPORT_COMPONENT_ID_KEY)
+                or result.get(REPORT_DESCRIPTION_KEY)
+                or "unknown"
+            )
+            detail = str(result.get(REPORT_DETAIL_KEY) or "").strip()
+            stage = str(result.get(REPORT_STAGE_KEY) or "").strip()
+            line = f"{report_name}: {result_id} failed"
+            if stage:
+                line = f"{line} at {stage}"
+            if detail:
+                line = f"{line}: {detail}"
+            for command_payload in result.get(REPORT_COMMANDS_KEY, []):
+                if (
+                    isinstance(command_payload, dict)
+                    and command_payload.get(REPORT_EXIT_CODE_KEY) not in (None, 0)
+                ):
+                    line = f"{line} ({_summarize_failed_command(command_payload)})"
+                    break
+            summaries.append(line)
+        for command_payload in payload.get(REPORT_BUILD_COMMANDS_KEY, []):
+            if (
+                isinstance(command_payload, dict)
+                and command_payload.get(REPORT_EXIT_CODE_KEY) not in (None, 0)
+            ):
+                summaries.append(
+                    f"{report_name}: build command failed "
+                    f"({_summarize_failed_command(command_payload)})"
+                )
+    return summaries
 
 
 def _upload_aws_results(
@@ -272,6 +359,10 @@ def main(argv: list[str] | None = None) -> int:
         LOGGER.error("Regression result upload failed with exit code %s", upload_exit_code)
         return upload_exit_code
     LOGGER.info("Retained regression results: %s", destination)
+    if regression_exit_code not in (None, 0):
+        for failure_summary in _collect_regression_failure_summaries(results_directory):
+            LOGGER.error("Regression failure: %s", failure_summary)
+        LOGGER.error("Regression pack failed with exit code %s", regression_exit_code)
     return regression_exit_code or 0
 
 
