@@ -228,6 +228,8 @@ def test_github_workflow_uses_manual_oidc_deployment() -> None:
     assert "assume-role-with-web-identity" in workflow
     assert "x-access-token:%s" in workflow
     assert "AUTHORIZATION: basic $checkout_auth_header" in workflow
+    assert "Validate AWS workflow configuration" in workflow
+    assert "AWS_ROLE_TO_ASSUME repository secret is required" in workflow
     assert "secrets.AWS_ROLE_TO_ASSUME" in workflow
     assert "secrets.AWS_ACCESS_KEY_ID" not in workflow
     assert '"NamePrefix=${{ inputs.name_prefix }}"' not in workflow
@@ -247,6 +249,7 @@ def test_command_line_scripts_and_parameters_are_consistent() -> None:
         AWS_DIRECTORY / "destroy.ps1",
         AWS_DIRECTORY / "destroy-bucket.sh",
         AWS_DIRECTORY / "destroy-bucket.ps1",
+        AWS_DIRECTORY / "scripts" / "configure_github_oidc_role.py",
         AWS_DIRECTORY / "scripts" / "package-cloud-artifacts.sh",
         AWS_DIRECTORY / "scripts" / "package-cloud-artifacts.ps1",
         AWS_DIRECTORY / "parameters.example.env",
@@ -313,3 +316,33 @@ def test_aws_readme_explains_installer_bootstrap_recovery() -> None:
     assert "deploy again without" in readme
     assert "`-SkipPackage`" in readme
     assert "/var/log/opamp-install.log" in readme
+
+
+def test_aws_readme_documents_github_oidc_role_creation() -> None:
+    """Document creating the AWS role used by GitHub's OIDC token exchange."""
+    readme = (AWS_DIRECTORY / "readme.md").read_text(encoding="utf-8")
+
+    assert "### Create the GitHub OIDC resources" in readme
+    assert "configure_github_oidc_role.py --attach-administrator-access" in readme
+    assert "--configure-github" in readme
+    assert "PyNaCl" in readme
+    assert "--github-token-source git" in readme
+    assert "Windows PowerShell" in readme
+    assert "py -3 cloud\\aws\\scripts\\configure_github_oidc_role.py `" in readme
+    assert "Windows `cmd.exe`" in readme
+    assert "py -3 cloud\\aws\\scripts\\configure_github_oidc_role.py ^" in readme
+    assert "gh auth token" in readme
+    assert "Actions secrets API" in readme
+    assert "Actions variables API" in readme
+    assert "aws iam create-open-id-connect-provider" in readme
+    assert "token.actions.githubusercontent.com" in readme
+    assert "aws iam create-role" in readme
+    assert "sts:AssumeRoleWithWebIdentity" in readme
+    assert "repo:opamp-observe/opamp-core:ref:refs/heads/main" in readme
+    assert "repo:opamp-observe@331386630/opamp-core@1181137273:ref:refs/heads/main" in readme
+    assert "AWS_ROLE_TO_ASSUME" in readme
+    assert "--cloud-provider azure" in readme
+    assert "--assign-azure-role" in readme
+    assert "api://AzureADTokenExchange" in readme
+    assert "AZURE_APP_NAME" in readme
+    assert "AZURE_RESOURCE_GROUP" in readme

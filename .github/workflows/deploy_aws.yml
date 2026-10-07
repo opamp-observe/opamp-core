@@ -82,6 +82,23 @@ jobs:
       STACK_NAME: ${{ inputs.stack_name }}
 
     steps:
+      - name: Validate AWS workflow configuration
+        shell: bash
+        env:
+          AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          INPUT_ACTION: ${{ inputs.action }}
+          INPUT_ADMIN_SOURCE_CIDR: ${{ inputs.admin_source_cidr }}
+          INPUT_KEY_NAME: ${{ inputs.key_name }}
+        run: |
+          set -euo pipefail
+          missing_configuration=0
+          [[ -n "$AWS_ROLE_TO_ASSUME" ]] || { echo "AWS_ROLE_TO_ASSUME repository secret is required" >&2; missing_configuration=1; }
+          if [[ "$INPUT_ACTION" == "deploy" ]]; then
+            [[ -n "$INPUT_KEY_NAME" ]] || { echo "key_name input is required for deploy" >&2; missing_configuration=1; }
+            [[ -n "$INPUT_ADMIN_SOURCE_CIDR" ]] || { echo "admin_source_cidr input is required for deploy" >&2; missing_configuration=1; }
+          fi
+          exit "$missing_configuration"
+
       - name: Check out repository
         shell: bash
         env:
@@ -105,7 +122,6 @@ jobs:
           AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
         run: |
           set -euo pipefail
-          [[ -n "$AWS_ROLE_TO_ASSUME" ]] || { echo "AWS_ROLE_TO_ASSUME secret is required" >&2; exit 1; }
           aws_oidc_token="$(
             curl -fsS \
               -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \

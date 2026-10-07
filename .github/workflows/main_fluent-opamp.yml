@@ -188,6 +188,23 @@ jobs:
       AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-2' }}
       STACK_NAME: ${{ vars.AWS_STACK_NAME || 'opamp-regression' }}
     steps:
+      - name: Validate AWS repository configuration
+        shell: bash
+        env:
+          ADMIN_SOURCE_CIDR: ${{ vars.AWS_ADMIN_SOURCE_CIDR }}
+          AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          KEY_NAME: ${{ vars.AWS_KEY_NAME }}
+        run: |
+          set -euo pipefail
+          missing_configuration=0
+          [[ -n "$AWS_ROLE_TO_ASSUME" ]] || { echo "AWS_ROLE_TO_ASSUME repository secret is required for AWS mode" >&2; missing_configuration=1; }
+          [[ -n "$KEY_NAME" ]] || { echo "AWS_KEY_NAME repository variable is required for AWS mode" >&2; missing_configuration=1; }
+          [[ -n "$ADMIN_SOURCE_CIDR" ]] || { echo "AWS_ADMIN_SOURCE_CIDR repository variable is required for AWS mode" >&2; missing_configuration=1; }
+          if [[ "$missing_configuration" -ne 0 ]]; then
+            echo "Set CLOUD_PROVIDER to none to keep main-branch pushes build-only until AWS OIDC is configured." >&2
+            exit 1
+          fi
+
       - name: Check out repository
         shell: bash
         env:
@@ -211,7 +228,6 @@ jobs:
           AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
         run: |
           set -euo pipefail
-          [[ -n "$AWS_ROLE_TO_ASSUME" ]] || { echo "AWS_ROLE_TO_ASSUME secret is required" >&2; exit 1; }
           aws_oidc_token="$(
             curl -fsS \
               -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
@@ -241,8 +257,8 @@ jobs:
           KEY_NAME: ${{ vars.AWS_KEY_NAME }}
         run: |
           set -euo pipefail
-          [[ -n "$KEY_NAME" ]] || { echo "AWS_KEY_NAME repository variable is required" >&2; exit 1; }
-          [[ -n "$ADMIN_SOURCE_CIDR" ]] || { echo "AWS_ADMIN_SOURCE_CIDR repository variable is required" >&2; exit 1; }
+          [[ -n "$KEY_NAME" ]] || { echo "AWS_KEY_NAME repository variable is required for AWS mode" >&2; exit 1; }
+          [[ -n "$ADMIN_SOURCE_CIDR" ]] || { echo "AWS_ADMIN_SOURCE_CIDR repository variable is required for AWS mode" >&2; exit 1; }
 
       - name: Create AWS parameter file
         shell: bash

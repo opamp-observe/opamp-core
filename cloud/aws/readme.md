@@ -337,6 +337,233 @@ not deploy on pushes.
 The workflow requests `id-token: write` and uses temporary OIDC credentials. Do
 not add long-lived AWS access keys as repository secrets.
 
+### Create the GitHub OIDC resources
+
+Run the helper from a shell that is already authenticated to the AWS account
+that will host the regression environment:
+
+```bash
+python cloud/aws/scripts/configure_github_oidc_role.py --attach-administrator-access
+```
+
+To also configure GitHub through the REST API, provide a token with repository
+Actions secrets and variables write access, then pass `--configure-github` and
+the variable values. GitHub secret encryption requires PyNaCl, which is
+installed by `python -m pip install -r requirements.txt` or directly with
+`python -m pip install PyNaCl`. The helper resolves the GitHub token in this
+order:
+
+1. `--github-token <token>`
+2. `GITHUB_TOKEN` or the environment variable named by `--github-token-env`
+3. `gh auth token` from the local GitHub CLI login
+
+You can explicitly read the local Git credential helper instead with
+`--github-token-source git`, but that only works when the stored credential is a
+token with enough repository administration scope; many Git credentials are
+read-only for clone/fetch operations.
+
+Linux, macOS, or Git Bash:
+
+```bash
+export GITHUB_TOKEN=REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS
+python cloud/aws/scripts/configure_github_oidc_role.py \
+  --attach-administrator-access \
+  --configure-github \
+  --aws-key-name opamp-regression \
+  --aws-admin-source-cidr REPLACE_WITH_YOUR_PUBLIC_IP/32 \
+  --cloud-provider aws
+```
+
+Windows PowerShell:
+
+```powershell
+$env:GITHUB_TOKEN = "REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS"
+py -3 cloud\aws\scripts\configure_github_oidc_role.py `
+  --attach-administrator-access `
+  --configure-github `
+  --aws-key-name opamp-regression `
+  --aws-admin-source-cidr "REPLACE_WITH_YOUR_PUBLIC_IP/32" `
+  --cloud-provider aws
+```
+
+Windows `cmd.exe`:
+
+```bat
+set GITHUB_TOKEN=REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS
+py -3 cloud\aws\scripts\configure_github_oidc_role.py ^
+  --attach-administrator-access ^
+  --configure-github ^
+  --aws-key-name opamp-regression ^
+  --aws-admin-source-cidr "REPLACE_WITH_YOUR_PUBLIC_IP/32" ^
+  --cloud-provider aws
+```
+
+If your local Git credential manager already has a suitable GitHub token:
+
+Linux, macOS, or Git Bash:
+
+```bash
+python cloud/aws/scripts/configure_github_oidc_role.py \
+  --attach-administrator-access \
+  --configure-github \
+  --github-token-source git \
+  --aws-key-name opamp-regression \
+  --aws-admin-source-cidr REPLACE_WITH_YOUR_PUBLIC_IP/32 \
+  --cloud-provider aws
+```
+
+Windows PowerShell:
+
+```powershell
+py -3 cloud\aws\scripts\configure_github_oidc_role.py `
+  --attach-administrator-access `
+  --configure-github `
+  --github-token-source git `
+  --aws-key-name opamp-regression `
+  --aws-admin-source-cidr "REPLACE_WITH_YOUR_PUBLIC_IP/32" `
+  --cloud-provider aws
+```
+
+Windows `cmd.exe`:
+
+```bat
+py -3 cloud\aws\scripts\configure_github_oidc_role.py ^
+  --attach-administrator-access ^
+  --configure-github ^
+  --github-token-source git ^
+  --aws-key-name opamp-regression ^
+  --aws-admin-source-cidr "REPLACE_WITH_YOUR_PUBLIC_IP/32" ^
+  --cloud-provider aws
+```
+
+The helper creates or reuses the GitHub OIDC provider, creates or updates the
+`opamp-github-deploy` role, scopes the trust policy to this repository's `main`
+branch, and prints the `AWS_ROLE_TO_ASSUME` value to add as a GitHub repository
+secret. With `--configure-github`, it encrypts and stores that secret through
+GitHub's Actions secrets API and upserts the supplied repository variables
+through the Actions variables API. Use `--dry-run` to preview the AWS CLI and
+GitHub configuration work, or use `--managed-policy-arn <arn>` instead of
+`--attach-administrator-access` when a least-privilege managed policy is
+available.
+
+The same helper can configure the Azure service principal used by the main
+workflow when `--cloud-provider azure` is selected. Run it from a shell that is
+already authenticated to the Azure subscription:
+
+Linux, macOS, or Git Bash:
+
+```bash
+export GITHUB_TOKEN=REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS
+python cloud/aws/scripts/configure_github_oidc_role.py \
+  --cloud-provider azure \
+  --configure-github \
+  --assign-azure-role \
+  --azure-webapp-name fluent-opamp \
+  --azure-resource-group opamp-regression-rg
+```
+
+Windows PowerShell:
+
+```powershell
+$env:GITHUB_TOKEN = "REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS"
+py -3 cloud\aws\scripts\configure_github_oidc_role.py `
+  --cloud-provider azure `
+  --configure-github `
+  --assign-azure-role `
+  --azure-webapp-name fluent-opamp `
+  --azure-resource-group opamp-regression-rg
+```
+
+Windows `cmd.exe`:
+
+```bat
+set GITHUB_TOKEN=REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS
+py -3 cloud\aws\scripts\configure_github_oidc_role.py ^
+  --cloud-provider azure ^
+  --configure-github ^
+  --assign-azure-role ^
+  --azure-webapp-name fluent-opamp ^
+  --azure-resource-group opamp-regression-rg
+```
+
+Azure mode creates or reuses a Microsoft Entra application named
+`opamp-github-deploy`, ensures a service principal exists, writes branch-scoped
+GitHub federated credentials with audience `api://AzureADTokenExchange`, and
+can assign the selected Azure role at the subscription scope. With
+`--configure-github`, it writes the Azure client, tenant, and subscription
+secrets expected by `.github/workflows/main_fluent-opamp.yml`, and upserts the
+`CLOUD_PROVIDER`, `AZURE_APP_NAME`, and `AZURE_RESOURCE_GROUP` repository
+variables when values are supplied.
+
+The equivalent manual AWS CLI flow is shown below. It includes both the
+ordinary GitHub subject format and the immutable owner/repository id subject
+format used by newer GitHub repositories.
+
+```bash
+export AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+export GITHUB_DEPLOY_ROLE_NAME="opamp-github-deploy"
+export GITHUB_OIDC_PROVIDER_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/token.actions.githubusercontent.com"
+
+aws iam get-open-id-connect-provider \
+  --open-id-connect-provider-arn "$GITHUB_OIDC_PROVIDER_ARN" >/dev/null 2>&1 \
+  || aws iam create-open-id-connect-provider \
+    --url https://token.actions.githubusercontent.com \
+    --client-id-list sts.amazonaws.com
+
+mkdir -p dist/aws-iam
+cat > dist/aws-iam/github-oidc-trust-policy.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "$GITHUB_OIDC_PROVIDER_ARN"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+          "token.actions.githubusercontent.com:sub": [
+            "repo:opamp-observe/opamp-core:ref:refs/heads/main",
+            "repo:opamp-observe@331386630/opamp-core@1181137273:ref:refs/heads/main"
+          ]
+        }
+      }
+    }
+  ]
+}
+EOF
+
+aws iam create-role \
+  --role-name "$GITHUB_DEPLOY_ROLE_NAME" \
+  --assume-role-policy-document file://dist/aws-iam/github-oidc-trust-policy.json
+```
+
+The role also needs permissions to package artifacts, create retained S3
+storage, deploy or delete the CloudFormation stack, and read EC2 key-pair
+metadata. For a disposable regression account, the fastest bring-up path is to
+attach `AdministratorAccess` temporarily, verify the workflow, then replace it
+with a narrower organization-approved policy before using the environment for
+anything beyond regression or demonstration work:
+
+```bash
+aws iam attach-role-policy \
+  --role-name "$GITHUB_DEPLOY_ROLE_NAME" \
+  --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+
+aws iam get-role \
+  --role-name "$GITHUB_DEPLOY_ROLE_NAME" \
+  --query 'Role.Arn' \
+  --output text
+```
+
+Copy the returned ARN into the GitHub repository secret
+`AWS_ROLE_TO_ASSUME`. The main workflow also needs repository variables
+`AWS_KEY_NAME` and `AWS_ADMIN_SOURCE_CIDR`; set `CLOUD_PROVIDER` to `none` if
+main-branch pushes should remain build-only until the AWS role and variables
+are ready.
+
 GitHub changed OIDC subject claims for some repositories in July 2026 to add
 immutable organization and repository IDs. Inspect a token from this repository
 and follow the current GitHub OIDC and AWS STS guidance when writing the IAM
@@ -469,6 +696,20 @@ bash cloud/aws/destroy-bucket.sh <bucket-name>
 
 ```powershell
 .\cloud\aws\destroy-bucket.ps1 -BucketName <bucket-name>
+```
+
+Pass `--all` to delete every retained bucket created by the AWS deploy script
+for the current AWS account. The scripts match the generated
+`opamp-regression-<account-id>-<timestamp>` bucket names; they do not delete
+arbitrary S3 buckets or custom bucket names that merely happen to contain OpAMP
+artifacts.
+
+```bash
+bash cloud/aws/destroy-bucket.sh --all
+```
+
+```powershell
+.\cloud\aws\destroy-bucket.ps1 -All
 ```
 
 After successfully deleting the currently recorded bucket, the cleanup script
