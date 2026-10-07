@@ -112,3 +112,10 @@ include = [
   "src/opamp_consumer/consumer_logging.json",
   "src/opamp_consumer/version.json",
 ]
+
+[tool.hatch.build.targets.wheel.force-include]
+"../shared/__init__.py" = "shared/__init__.py"
+"../shared/agent_remote_config.py" = "shared/agent_remote_config.py"
+"../shared/observability.py" = "shared/observability.py"
+"../shared/opamp_config.py" = "shared/opamp_config.py"
+"../shared/uuid_utils.py" = "shared/uuid_utils.py"

@@ -49,13 +49,17 @@ Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opa
 Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = {"" = "src", "shared" = "../shared"}
+packages = [
+  "catalog_service",
+  "catalog_service.config",
+  "catalog_service.config_classifiers",
+  "catalog_service.html",
+  "shared",
+]
 
 [tool.setuptools.package-data]
 catalog_service = ["config/*.json", "html/*.html", "html/*.css", "html/*.png"]
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.pytest.ini_options]
 addopts = [
