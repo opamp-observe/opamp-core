@@ -46,8 +46,16 @@ def test_provider_jobs_are_mutually_gated_by_selected_output() -> None:
     assert "outputs.cloud_provider == 'azure'" in workflow
     assert "outputs.cloud_provider == 'aws'" in workflow
     assert "outputs.cloud_provider == 'none'" in workflow
-    assert workflow.count("uses: azure/login@v2") == 1
-    assert workflow.count("uses: aws-actions/configure-aws-credentials@v6.3.0") == 1
+
+
+def test_workflow_avoids_external_marketplace_actions() -> None:
+    """Keep the workflow compatible with the organization-owned action policy."""
+    workflow = _workflow_text()
+
+    assert "uses:" not in workflow
+    assert "ACTIONS_ID_TOKEN_REQUEST_URL" in workflow
+    assert "assume-role-with-web-identity" in workflow
+    assert "az login" in workflow
 
 
 def test_no_cloud_mode_keeps_the_build_enabled() -> None:
@@ -80,7 +88,7 @@ def test_aws_mode_runs_and_retains_regression_evidence() -> None:
     assert "id: aws_regression" in workflow
     assert "AWS_REGRESSION_ONLY: ${{ vars.AWS_REGRESSION_ONLY }}" in workflow
     assert "AWS_REGRESSION_SKIP: ${{ vars.AWS_REGRESSION_SKIP }}" in workflow
-    assert "python cloud/run_regression.py" in workflow
+    assert "python3 cloud/run_regression.py" in workflow
     assert "--provider aws --aws-region" in workflow
     assert "regression_arguments+=(--only \"$test_id\")" in workflow
     assert "regression_arguments+=(--skip \"$test_id\")" in workflow

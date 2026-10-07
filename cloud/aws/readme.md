@@ -95,7 +95,7 @@ AWS references:
 - [CloudFormation EC2 instances](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-ec2-instance.html)
 - [CloudFormation wait conditions](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-waitcondition.html)
 - [Secrets Manager generated secrets](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-secretsmanager-secret.html)
-- [GitHub OIDC credential action](https://github.com/aws-actions/configure-aws-credentials)
+- GitHub Actions OIDC token exchange for AWS STS
 - [AWS CLI CloudFormation deploy](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/deploy.html)
 
 ## Prerequisites
@@ -339,8 +339,10 @@ not add long-lived AWS access keys as repository secrets.
 
 GitHub changed OIDC subject claims for some repositories in July 2026 to add
 immutable organization and repository IDs. Inspect a token from this repository
-and follow the current `configure-aws-credentials` guidance when writing the IAM
-trust condition.
+and follow the current GitHub OIDC and AWS STS guidance when writing the IAM
+trust condition. The repository workflow exchanges the GitHub OIDC token
+directly with `aws sts assume-role-with-web-identity` so it remains compatible
+with organization policies that allow only organization-owned actions.
 
 ## Use The Deployment
 

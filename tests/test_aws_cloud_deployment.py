@@ -223,9 +223,11 @@ def test_github_workflow_uses_manual_oidc_deployment() -> None:
     assert "workflow_dispatch:" in workflow
     assert "push:" not in workflow
     assert "id-token: write" in workflow
-    assert "aws-actions/configure-aws-credentials@v6.3.0" in workflow
+    assert "uses:" not in workflow
+    assert "ACTIONS_ID_TOKEN_REQUEST_URL" in workflow
+    assert "assume-role-with-web-identity" in workflow
     assert "secrets.AWS_ROLE_TO_ASSUME" in workflow
-    assert "AWS_ACCESS_KEY_ID" not in workflow
+    assert "secrets.AWS_ACCESS_KEY_ID" not in workflow
     assert '"NamePrefix=${{ inputs.name_prefix }}"' not in workflow
     assert "INPUT_NAME_PREFIX: ${{ inputs.name_prefix }}" in workflow
     assert "bash cloud/aws/deploy.sh" in workflow
