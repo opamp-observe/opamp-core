@@ -235,7 +235,9 @@ When no storage account is supplied, deployment creates one named from the
 current UTC date and time plus a subscription suffix, for example
 `opamp20261005174530abc12`. It is placed in `<resource-group>-retained`, which
 is separate from the VM resource group. The generated name is written to
-`dist/azure-retention-storage-account.txt`.
+`dist/azure-retention-storage-account.txt`. Azure storage account names cannot
+contain separator characters, so the timestamp remains compact even though the
+AWS retained bucket name uses hyphen-separated date and time segments.
 
 ## Configure Parameters
 

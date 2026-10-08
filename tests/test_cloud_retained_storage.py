@@ -38,14 +38,16 @@ def test_aws_deploy_creates_timestamped_retained_storage() -> None:
     powershell_script = _read(AWS_DIRECTORY / "deploy.ps1")
 
     assert "date -u +%Y%m%d%H%M%S" in bash_script
-    assert "opamp-regression-${aws_account_id}-${DEPLOYMENT_TIMESTAMP}" in bash_script
+    assert "date -u +%Y-%m-%d-%H-%M-%S" in bash_script
+    assert "opamp-regression-${aws_account_id}-${RETAINED_BUCKET_TIMESTAMP}" in bash_script
     assert "put-public-access-block" in bash_script
     assert "regression-results" in bash_script
     assert "stack-outputs.json" in bash_script
     assert "ARTIFACT_BUCKET is required" not in bash_script
     assert "AWS::S3::Bucket" not in _read(AWS_DIRECTORY / "template.yaml")
     assert 'ToString("yyyyMMddHHmmss")' in powershell_script
-    assert "opamp-regression-$awsAccountId-$deploymentTimestamp" in powershell_script
+    assert 'ToString("yyyy-MM-dd-HH-mm-ss")' in powershell_script
+    assert "opamp-regression-$awsAccountId-$retainedBucketTimestamp" in powershell_script
     assert "dist/aws-artifact-bucket.txt" in powershell_script
 
 
@@ -73,6 +75,7 @@ def test_azure_deploy_retains_results_outside_vm_resource_group() -> None:
     assert '"${RETENTION_RESOURCE_GROUP,,}" == "${RESOURCE_GROUP,,}"' in bash_script
     assert "Microsoft.Storage/storageAccounts" not in _read(AZURE_DIRECTORY / "mainTemplate.json")
     assert 'ToString("yyyyMMddHHmmss")' in powershell_script
+    assert 'ToString("yyyy-MM-dd-HH-mm-ss")' not in powershell_script
     assert '"$ResourceGroup-retained"' in powershell_script
     assert "$RetentionResourceGroup -eq $ResourceGroup" in powershell_script
     assert "dist/azure-retention-storage-account.txt" in powershell_script
@@ -417,12 +420,13 @@ def test_cloud_guides_document_retention_and_explicit_cleanup() -> None:
     assert "dist/aws-artifact-bucket.txt" in aws_readme
     assert "cloud/aws/destroy-bucket.sh" in aws_readme
     assert "cloud/aws/destroy-bucket.sh --all" in aws_readme
-    assert "`opamp-regression-<account-id>-<timestamp>`" in aws_readme
+    assert "`opamp-regression-<account-id>-<yyyy-mm-dd-hh-mm-ss>`" in aws_readme
     assert "intentionally retained" in aws_readme
     assert "dist/azure-retention-storage-account.txt" in azure_readme
     assert "cloud/azure/destroy-bucket.sh" in azure_readme
     assert "cloud/azure/destroy-bucket.sh --all" in azure_readme
     assert "`Project=opamp` and `Purpose=regression-retention`" in azure_readme
+    assert "timestamp remains compact" in azure_readme
     assert "private deployment-output record" in azure_readme
 
 

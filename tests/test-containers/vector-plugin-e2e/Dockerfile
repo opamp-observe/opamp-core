@@ -27,7 +27,11 @@ COPY scripts/prepare-source.sh /usr/local/bin/vector-e2e-prepare-source
 COPY scripts/provider-entrypoint.sh /usr/local/bin/vector-e2e-provider-entrypoint
 COPY scripts/consumer-entrypoint.sh /usr/local/bin/vector-e2e-consumer-entrypoint
 
-RUN chmod +x \
+RUN sed -i 's/\r$//' \
+    /usr/local/bin/vector-e2e-prepare-source \
+    /usr/local/bin/vector-e2e-provider-entrypoint \
+    /usr/local/bin/vector-e2e-consumer-entrypoint \
+    && chmod +x \
     /usr/local/bin/vector-e2e-prepare-source \
     /usr/local/bin/vector-e2e-provider-entrypoint \
     /usr/local/bin/vector-e2e-consumer-entrypoint

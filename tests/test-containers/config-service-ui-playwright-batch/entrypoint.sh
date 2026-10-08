@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# Licensed under the Apache License, Version 2.0.
+# Copyright 2026 mp3monster.org
+#
+# Build a disposable Config Service browser-test runtime, start the service,
+# and run the Fluent Bit chapter batch through Playwright.
 set -euo pipefail
 
 OPAMP_REPO="${OPAMP_REPO:-/workspace/opamp}"
@@ -39,13 +44,18 @@ fi
 
 cd "${CONFIG_SERVICE_DIR}"
 
-if [ ! -f package-lock.json ]; then
-  echo "package-lock.json missing in ${CONFIG_SERVICE_DIR}; npm ci requires lock file." >&2
-  exit 1
+if [ -f package-lock.json ]; then
+  npm ci || {
+    echo "npm ci failed; falling back to npm install because package-lock.json is not in sync."
+    npm install
+  }
+else
+  echo "package-lock.json missing in ${CONFIG_SERVICE_DIR}; using npm install." >&2
+  npm install
 fi
 
-if ! npm ci; then
-  echo "npm ci failed; falling back to npm install because package-lock.json is not in sync."
+if [ ! -d node_modules ]; then
+  echo "npm dependencies missing after install; retrying npm install."
   npm install
 fi
 

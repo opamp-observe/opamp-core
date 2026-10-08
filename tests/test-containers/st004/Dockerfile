@@ -25,7 +25,11 @@ COPY scripts/prepare-source.sh /usr/local/bin/st004-prepare-source
 COPY scripts/provider-entrypoint.sh /usr/local/bin/st004-provider-entrypoint
 COPY scripts/consumer-entrypoint.sh /usr/local/bin/st004-consumer-entrypoint
 
-RUN chmod +x \
+RUN sed -i 's/\r$//' \
+    /usr/local/bin/st004-prepare-source \
+    /usr/local/bin/st004-provider-entrypoint \
+    /usr/local/bin/st004-consumer-entrypoint \
+    && chmod +x \
     /usr/local/bin/st004-prepare-source \
     /usr/local/bin/st004-provider-entrypoint \
     /usr/local/bin/st004-consumer-entrypoint
