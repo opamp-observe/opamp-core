@@ -244,6 +244,11 @@ jobs:
               --output text
           )
           {
+            echo "::add-mask::$aws_access_key_id"
+            echo "::add-mask::$aws_secret_access_key"
+            echo "::add-mask::$aws_session_token"
+          }
+          {
             echo "AWS_ACCESS_KEY_ID=$aws_access_key_id"
             echo "AWS_SECRET_ACCESS_KEY=$aws_secret_access_key"
             echo "AWS_SESSION_TOKEN=$aws_session_token"
@@ -339,7 +344,20 @@ jobs:
         if: steps.aws_regression.outputs.exit_code != '0'
         shell: bash
         run: |
+          set -euo pipefail
           echo "AWS regression failed with exit code ${{ steps.aws_regression.outputs.exit_code }}" >&2
+          regression_report="$(
+            { find dist/test-reports -name regression-pack-results.md -type f 2>/dev/null || true; } \
+              | sort \
+              | tail -n 1
+          )"
+          if [[ -n "$regression_report" && -f "$regression_report" ]]; then
+            echo "AWS regression report: $regression_report" >&2
+            cat "$regression_report" >&2
+          else
+            echo "No regression-pack-results.md file was found under dist/test-reports." >&2
+            find dist/test-reports -maxdepth 4 -type f -print >&2 || true
+          fi
           exit "${{ steps.aws_regression.outputs.exit_code }}"
 
   no_cloud_deployment:
