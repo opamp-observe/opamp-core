@@ -13,3 +13,7 @@ limitations under the License.
 -->
 
 <link rel="stylesheet" href="{{ '/assets/css/fluent-opamp.css' | relative_url }}">
+{% if site.mermaid.enabled %}
+<script defer src="https://cdn.jsdelivr.net/npm/mermaid@{{ site.mermaid.version }}/dist/mermaid.min.js"></script>
+<script defer src="{{ '/assets/js/mermaid-loader.js' | relative_url }}"></script>
+{% endif %}

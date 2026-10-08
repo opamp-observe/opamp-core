@@ -34,6 +34,10 @@ markdown: kramdown
 kramdown:
   input: GFM
 
+mermaid:
+  enabled: true
+  version: "10.9.1"
+
 theme_color: snowwhite
 brand_color: "#1844af"
 night_mode: auto

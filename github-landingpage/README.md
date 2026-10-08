@@ -56,6 +56,10 @@ The canonical project stylesheet is
 `docs/_includes/custom-head.html`, using Jekyll's `relative_url` filter so the
 generated URL follows the active Pages base URL.
 
+Mermaid diagram rendering is enabled from `docs/_config.yml` and loaded through
+the same custom head include. Markdown fences such as ```` ```mermaid ```` are
+converted in the browser by `docs/assets/js/mermaid-loader.js`.
+
 The standalone page continues to load `landing.css`. That file and
 `assets/css/fluent-opamp.css` are compatibility wrappers which import the
 canonical stylesheet from `docs/`, so the landing page and GitHub Pages share

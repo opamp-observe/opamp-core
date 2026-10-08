@@ -29,6 +29,7 @@ STORAGE_ACCOUNT_FILE="${STORAGE_ACCOUNT_FILE:-$REPO_ROOT/dist/azure-retention-st
 SSH_PRIVATE_KEY_FILE="${SSH_PRIVATE_KEY_FILE:-}"
 SKIP_PACKAGE="${SKIP_PACKAGE:-false}"
 DEPLOYMENT_TIMESTAMP="$(date -u +%Y%m%d%H%M%S)"
+RESULT_SET_TIMESTAMP="$(date -u +%Y-%m-%d-%H-%M-%S)"
 
 # Phase 1: validate local tools and the operator-owned parameter file.
 for required_command in az python; do
@@ -110,7 +111,7 @@ az storage blob upload-batch \
   --overwrite >/dev/null
 
 artifact_base_url="https://${STORAGE_ACCOUNT}.blob.core.windows.net/${ARTIFACT_CONTAINER}"
-results_directory="$REPO_ROOT/dist/azure-regression-results/$DEPLOYMENT_TIMESTAMP"
+results_directory="$REPO_ROOT/dist/azure-regression-results/$RESULT_SET_TIMESTAMP"
 connection_guide_file="$results_directory/connection_details.md"
 deployment_outputs_file="$results_directory/deployment-outputs.json"
 mkdir -p "$results_directory"
@@ -135,19 +136,19 @@ python "$REPO_ROOT/scripts/generate_cloud_connection_guide.py" \
 az storage blob upload \
   --account-name "$STORAGE_ACCOUNT" \
   --container-name "$RESULTS_CONTAINER" \
-  --name "$DEPLOYMENT_TIMESTAMP/deployment-outputs.json" \
+  --name "$RESULT_SET_TIMESTAMP/deployment-outputs.json" \
   --file "$deployment_outputs_file" \
   --auth-mode key \
   --overwrite >/dev/null
 az storage blob upload \
   --account-name "$STORAGE_ACCOUNT" \
   --container-name "$RESULTS_CONTAINER" \
-  --name "$DEPLOYMENT_TIMESTAMP/connection_details.md" \
+  --name "$RESULT_SET_TIMESTAMP/connection_details.md" \
   --file "$connection_guide_file" \
   --auth-mode key \
   --overwrite >/dev/null
 
 cat "$deployment_outputs_file"
 echo "Retained storage account: $STORAGE_ACCOUNT"
-echo "Retained deployment results: $RESULTS_CONTAINER/$DEPLOYMENT_TIMESTAMP/"
+echo "Retained deployment results: $RESULTS_CONTAINER/$RESULT_SET_TIMESTAMP/"
 echo "Connection guide: $connection_guide_file"

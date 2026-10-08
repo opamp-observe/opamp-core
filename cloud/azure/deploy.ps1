@@ -29,6 +29,7 @@ param(
 # VM resource group; this script owns packaging, retained storage, and evidence.
 $ErrorActionPreference = "Stop"
 $deploymentTimestamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddHHmmss")
+$resultSetTimestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd-HH-mm-ss")
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
 $utf8NoBomEncoding = New-Object System.Text.UTF8Encoding -ArgumentList $false
 
@@ -154,7 +155,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $artifactBaseUrl = "https://$StorageAccount.blob.core.windows.net/$ArtifactContainer"
-$resultsDirectory = Join-Path $repositoryRoot "dist/azure-regression-results/$deploymentTimestamp"
+$resultsDirectory = Join-Path $repositoryRoot "dist/azure-regression-results/$resultSetTimestamp"
 $connectionGuideFile = Join-Path $resultsDirectory "connection_details.md"
 $deploymentOutputsFile = Join-Path $resultsDirectory "deployment-outputs.json"
 New-Item -ItemType Directory -Path $resultsDirectory -Force | Out-Null
@@ -202,7 +203,7 @@ if ($LASTEXITCODE -ne 0 -or
 & az storage blob upload `
     --account-name $StorageAccount `
     --container-name $ResultsContainer `
-    --name "$deploymentTimestamp/deployment-outputs.json" `
+    --name "$resultSetTimestamp/deployment-outputs.json" `
     --file $deploymentOutputsFile `
     --auth-mode key `
     --overwrite | Out-Null
@@ -212,7 +213,7 @@ if ($LASTEXITCODE -ne 0) {
 & az storage blob upload `
     --account-name $StorageAccount `
     --container-name $ResultsContainer `
-    --name "$deploymentTimestamp/connection_details.md" `
+    --name "$resultSetTimestamp/connection_details.md" `
     --file $connectionGuideFile `
     --auth-mode key `
     --overwrite | Out-Null
@@ -222,5 +223,5 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Output $deploymentOutputs
 Write-Output "Retained storage account: $StorageAccount"
-Write-Output "Retained deployment results: $ResultsContainer/$deploymentTimestamp/"
+Write-Output "Retained deployment results: $ResultsContainer/$resultSetTimestamp/"
 Write-Output "Connection guide: $connectionGuideFile"
