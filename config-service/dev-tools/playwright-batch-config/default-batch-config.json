@@ -22,7 +22,17 @@
     "^chapter8/fluentbit/simple-streamer\\.yaml$",
     "^chapter9/compose\\.yaml$",
     "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter6/ltsv-parser\\.yaml$",
-    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter6/multilineparser\\.yaml$"
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter6/multilineparser\\.yaml$",
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter8/create\\.yaml$",
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter8/create2\\.yaml$",
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter8/query-naming\\.answer\\.yaml$",
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter8/query-naming\\.yaml$",
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter8/query\\.yaml$",
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter8/query2-stream-name\\.yaml$",
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter8/query2\\.yaml$",
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter8/query3\\.yaml$",
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter8/query4\\.yaml$",
+    "^extras/FluentBit-3_2-Additional-YAML-Configs/chapter8/stream\\.yaml$"
   ],
   "saveSuffix": "-ui-validated",
   "additionalPluginAttribute": {
