@@ -153,6 +153,28 @@ An infrastructure success followed by a guide or upload error does not require
 recreating the VMs. The output JSON can be passed to the guide generator again,
 then both files can be uploaded to the existing retained location.
 
+## Regression root causes to watch
+
+Use the exact symptom in the GitHub job or retained report to separate cloud
+setup issues from application regressions:
+
+| Symptom | Likely root cause | Recovery |
+|---|---|---|
+| `actions/checkout`, `actions/setup-python`, or another external action is not allowed | The organization permits only actions from repositories owned by `opamp-observe` | Keep the workflow on inline shell steps or use an organization-owned mirror of the action. A GitHub token does not override this policy. |
+| `could not read Username for 'https://github.com'` during manual checkout | The replacement checkout step cannot authenticate the fetch | Confirm the workflow has `permissions: contents: read` and passes `GITHUB_TOKEN` through the `http.extraheader` fetch option. |
+| `AWS_ROLE_TO_ASSUME secret is required` | The repository secret was not configured, or the main workflow was pointed at AWS before the role existed | Create or update the GitHub OIDC role, store its ARN as the `AWS_ROLE_TO_ASSUME` repository secret, or set `CLOUD_PROVIDER` to `none` until AWS is ready. |
+| `fatal: detected dubious ownership in repository at '/workspace/source'` | A Linux container is reading a checkout owned by the host or GitHub runner user | Register the mounted checkout as a Git `safe.directory` before commands such as `git ls-files`. |
+| `env: 'bash\r': No such file or directory` or similar script startup failures | Windows line endings reached a Linux container or VM bootstrap script | Rebuild the cloud artifacts without `SKIP_PACKAGE`, and keep Bash scripts and generated manifests normalized to LF. |
+| `ImportError` from a partially initialized `opamp_consumer.abstract_client` | Consumer plugin startup imported plugin configuration while the abstract client module was still initializing | Run `consumer-plugin-startup` locally; keep plugin constants and shared configuration imports out of circular module paths. |
+| Playwright reports a missing browser under `/ms-playwright/` and names a different required version | `@playwright/test` and the Playwright Docker image drifted apart | Pin the package version and Docker image tag together, then rerun `config-service-ui-playwright-batch`. |
+| The regression pack summary shows only `st001` failed | The provider or consumer scenario failed after the earlier package and plugin probes passed | Inspect `dist/test-reports/st001/<profile>/results.md`, `verify.log`, `summary.json`, and `compose.log` before changing cloud infrastructure. |
+
+The runner writes failed command details and evidence tails into
+`dist/test-reports/regression-pack/regression-pack-results.md`. The matching
+JSON report keeps the full captured stdout and stderr. In cloud runs,
+`cloud/run_regression.py` uploads those reports before returning the failed
+exit code, so a red GitHub job can still have complete retained evidence.
+
 ## Safe reruns
 
 - A stack or deployment in a completed state can be updated in place.

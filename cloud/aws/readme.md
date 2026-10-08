@@ -316,6 +316,15 @@ an already completed run without rerunning it, use:
 py -3 cloud/run_regression.py --provider aws --upload-only
 ```
 
+For regression failures from the main workflow, start with the retained
+`regression-pack-results.md` report and then inspect the failing test's
+evidence directory under `test-reports/`. The provider-neutral
+[operator guide](../operator_guide.md#regression-root-causes-to-watch) lists
+the recurring root causes seen during AWS hardening, including GitHub action
+policy restrictions, missing `AWS_ROLE_TO_ASSUME`, container Git
+`safe.directory` checks, Windows line endings, consumer plugin import cycles,
+and Playwright image/version drift.
+
 ## Deploy From GitHub
 
 The `Deploy AWS OpAMP regression environment` workflow is manual-only. It does
