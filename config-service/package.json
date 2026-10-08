@@ -12,7 +12,7 @@
     "ui:unit:watch": "vitest"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2",
+    "@playwright/test": "1.64.0",
     "js-yaml": "^4.1.0",
     "jsdom": "^26.1.0",
     "vitest": "^2.1.8"

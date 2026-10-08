@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE="${PLAYWRIGHT_DOCKER_IMAGE:-mcr.microsoft.com/playwright:v1.59.1-noble}"
+IMAGE="${PLAYWRIGHT_DOCKER_IMAGE:-mcr.microsoft.com/playwright:v1.64.0-noble}"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker CLI not found in PATH. Install Docker or enable Docker Desktop WSL integration first." >&2
