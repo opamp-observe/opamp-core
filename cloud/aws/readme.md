@@ -248,7 +248,7 @@ The deployment script builds all component wheels, creates
 `dist/opamp-cloud-artifacts.tar.gz`, creates or reuses private retained S3
 storage, validates the template, deploys it, and prints the stack outputs. It
 also generates
-`dist/aws-regression-results/<UTC timestamp>/connection_details.md` with the
+`dist/aws-regression-results/<yyyy-mm-dd-hh-mm-ss>/connection_details.md` with the
 OpAMP and Keycloak URLs plus SSH commands for both instances. The guide is
 uploaded beside `stack-outputs.json` in retained S3 storage.
 Pass `ARTIFACT_BUCKET=<bucket-name>` or `-ArtifactBucket <bucket-name>` to reuse
@@ -292,10 +292,11 @@ logs remain available on the affected instance at
 instance exists.
 
 Each successful deployment uploads its CloudFormation outputs and connection
-guide under `regression-results/<UTC timestamp>/`. Deployment does not itself
-run a test set. Use the provider-neutral regression command to run selected
-tests and upload the complete `dist/test-reports/` tree to
-`regression-results/<UTC timestamp>/test-reports/`:
+guide under `regression-results/<yyyy-mm-dd-hh-mm-ss>/`. Deployment does not
+itself run a test set. Use the provider-neutral regression command to run
+selected tests and upload the complete `dist/test-reports/` tree to
+`regression-results/<yyyy-mm-dd-hh-mm-ss>/test-reports/`. The timestamp is one
+hyphen-separated folder name rather than a year/month/day path hierarchy:
 
 ```bash
 python cloud/run_regression.py --provider aws --only st001

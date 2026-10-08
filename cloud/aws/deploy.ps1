@@ -32,6 +32,7 @@ param(
 # packaging, retained S3 storage, parameter preparation, and result capture.
 $ErrorActionPreference = "Stop"
 $deploymentTimestamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddHHmmss")
+$resultSetTimestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd-HH-mm-ss")
 $retainedBucketTimestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd-HH-mm-ss")
 $adminSourceCidrParameter = "AdminSourceCidr"
 $adminSourceCidrPrefixLength = 32
@@ -311,7 +312,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # Phase 6: template success is complete at this point. The remaining work is
 # retryable post-processing: save outputs, render the guide, and retain both.
-$resultsDirectory = Join-Path $repositoryRoot "dist/aws-regression-results/$deploymentTimestamp"
+$resultsDirectory = Join-Path $repositoryRoot "dist/aws-regression-results/$resultSetTimestamp"
 $connectionGuideFile = Join-Path $resultsDirectory "connection_details.md"
 $stackOutputsFile = Join-Path $resultsDirectory "stack-outputs.json"
 New-Item -ItemType Directory -Path $resultsDirectory -Force | Out-Null
@@ -346,7 +347,7 @@ if ($LASTEXITCODE -ne 0 -or
 }
 & aws s3 cp `
     $stackOutputsFile `
-    "s3://$ArtifactBucket/$RegressionResultsPrefix/$deploymentTimestamp/stack-outputs.json" `
+    "s3://$ArtifactBucket/$RegressionResultsPrefix/$resultSetTimestamp/stack-outputs.json" `
     --region $AwsRegion `
     --only-show-errors
 if ($LASTEXITCODE -ne 0) {
@@ -354,7 +355,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 & aws s3 cp `
     $connectionGuideFile `
-    "s3://$ArtifactBucket/$RegressionResultsPrefix/$deploymentTimestamp/connection_details.md" `
+    "s3://$ArtifactBucket/$RegressionResultsPrefix/$resultSetTimestamp/connection_details.md" `
     --region $AwsRegion `
     --only-show-errors
 if ($LASTEXITCODE -ne 0) {
@@ -370,5 +371,5 @@ if ($LASTEXITCODE -ne 0) {
     throw "Unable to read CloudFormation outputs."
 }
 Write-Output "Retained bucket: $ArtifactBucket"
-Write-Output "Retained deployment results: s3://$ArtifactBucket/$RegressionResultsPrefix/$deploymentTimestamp/"
+Write-Output "Retained deployment results: s3://$ArtifactBucket/$RegressionResultsPrefix/$resultSetTimestamp/"
 Write-Output "Connection guide: $connectionGuideFile"

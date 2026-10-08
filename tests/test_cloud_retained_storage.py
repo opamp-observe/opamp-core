@@ -39,6 +39,7 @@ def test_aws_deploy_creates_timestamped_retained_storage() -> None:
 
     assert "date -u +%Y%m%d%H%M%S" in bash_script
     assert "date -u +%Y-%m-%d-%H-%M-%S" in bash_script
+    assert "RESULT_SET_TIMESTAMP" in bash_script
     assert "opamp-regression-${aws_account_id}-${RETAINED_BUCKET_TIMESTAMP}" in bash_script
     assert "put-public-access-block" in bash_script
     assert "regression-results" in bash_script
@@ -47,6 +48,7 @@ def test_aws_deploy_creates_timestamped_retained_storage() -> None:
     assert "AWS::S3::Bucket" not in _read(AWS_DIRECTORY / "template.yaml")
     assert 'ToString("yyyyMMddHHmmss")' in powershell_script
     assert 'ToString("yyyy-MM-dd-HH-mm-ss")' in powershell_script
+    assert "$resultSetTimestamp" in powershell_script
     assert "opamp-regression-$awsAccountId-$retainedBucketTimestamp" in powershell_script
     assert "dist/aws-artifact-bucket.txt" in powershell_script
 
@@ -67,6 +69,8 @@ def test_azure_deploy_retains_results_outside_vm_resource_group() -> None:
     powershell_script = _read(AZURE_DIRECTORY / "deploy.ps1")
 
     assert "date -u +%Y%m%d%H%M%S" in bash_script
+    assert "date -u +%Y-%m-%d-%H-%M-%S" in bash_script
+    assert "RESULT_SET_TIMESTAMP" in bash_script
     assert 'RETENTION_RESOURCE_GROUP="${RETENTION_RESOURCE_GROUP:-${RESOURCE_GROUP}-retained}"' in bash_script
     assert 'STORAGE_ACCOUNT="opamp${DEPLOYMENT_TIMESTAMP}${subscription_suffix,,}"' in bash_script
     assert "opamp-regression-results" in bash_script
@@ -75,7 +79,8 @@ def test_azure_deploy_retains_results_outside_vm_resource_group() -> None:
     assert '"${RETENTION_RESOURCE_GROUP,,}" == "${RESOURCE_GROUP,,}"' in bash_script
     assert "Microsoft.Storage/storageAccounts" not in _read(AZURE_DIRECTORY / "mainTemplate.json")
     assert 'ToString("yyyyMMddHHmmss")' in powershell_script
-    assert 'ToString("yyyy-MM-dd-HH-mm-ss")' not in powershell_script
+    assert 'ToString("yyyy-MM-dd-HH-mm-ss")' in powershell_script
+    assert "$resultSetTimestamp" in powershell_script
     assert '"$ResourceGroup-retained"' in powershell_script
     assert "$RetentionResourceGroup -eq $ResourceGroup" in powershell_script
     assert "dist/azure-retention-storage-account.txt" in powershell_script
@@ -388,6 +393,7 @@ def test_cloud_regression_command_runs_and_uploads_reports_for_both_providers() 
     assert LICENSE_COPYRIGHT in regression_command
     assert LICENSE_GRANT in regression_command
     assert "run_regression_pack.py" in regression_command
+    assert 'RESULT_SET_TIMESTAMP_FORMAT = "%Y-%m-%d-%H-%M-%S"' in regression_command
     assert '"aws",' in regression_command
     assert '"az",' in regression_command
     assert '"--upload-only"' in regression_command

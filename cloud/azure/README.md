@@ -288,7 +288,7 @@ When the deployment completes, Azure prints outputs like:
 - `consumerSsh`
 
 It also generates
-`dist/azure-regression-results/<UTC timestamp>/connection_details.md` with the
+`dist/azure-regression-results/<yyyy-mm-dd-hh-mm-ss>/connection_details.md` with the
 OpAMP and Keycloak URLs plus SSH commands for both VMs. Set
 `SSH_PRIVATE_KEY_FILE` for Bash or `-SshPrivateKeyFile` for PowerShell to add
 the local identity path to those commands; otherwise they use the SSH agent or
@@ -299,10 +299,11 @@ reuse an existing account. Use `SKIP_PACKAGE=true` or `-SkipPackage` to reuse
 the existing local artifact directory.
 
 Each successful deployment uploads its ARM outputs and `connection_details.md`
-under the private `opamp-regression-results/<UTC timestamp>/` prefix.
+under the private `opamp-regression-results/<yyyy-mm-dd-hh-mm-ss>/` prefix.
 Deployment does not itself run a test set. Use the provider-neutral regression
 command to run selected tests and upload the complete `dist/test-reports/`
-tree beneath `<UTC timestamp>/test-reports/`:
+tree beneath `<yyyy-mm-dd-hh-mm-ss>/test-reports/`. The timestamp is one
+hyphen-separated folder name rather than a year/month/day path hierarchy:
 
 ```bash
 python cloud/run_regression.py --provider azure --only st001

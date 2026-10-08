@@ -31,6 +31,7 @@ CREATE_KEY_PAIR="${CREATE_KEY_PAIR:-false}"
 NEW_KEY_PAIR_NAME="${NEW_KEY_PAIR_NAME:-}"
 PRIVATE_KEY_FILE="${PRIVATE_KEY_FILE:-}"
 DEPLOYMENT_TIMESTAMP="$(date -u +%Y%m%d%H%M%S)"
+RESULT_SET_TIMESTAMP="$(date -u +%Y-%m-%d-%H-%M-%S)"
 RETAINED_BUCKET_TIMESTAMP="$(date -u +%Y-%m-%d-%H-%M-%S)"
 KEY_NAME_PARAMETER="KeyName"
 ADMIN_SOURCE_CIDR_PARAMETER="AdminSourceCidr"
@@ -257,7 +258,7 @@ fi
 
 # Phase 6: save provider outputs and a human-readable guide locally and in S3.
 # These steps can be repeated without recreating a successful stack.
-results_directory="$REPO_ROOT/dist/aws-regression-results/$DEPLOYMENT_TIMESTAMP"
+results_directory="$REPO_ROOT/dist/aws-regression-results/$RESULT_SET_TIMESTAMP"
 connection_guide_file="$results_directory/connection_details.md"
 stack_outputs_file="$results_directory/stack-outputs.json"
 mkdir -p "$results_directory"
@@ -273,12 +274,12 @@ python "$REPO_ROOT/scripts/generate_cloud_connection_guide.py" \
   --ssh-private-key "$PRIVATE_KEY_FILE"
 aws s3 cp \
   "$stack_outputs_file" \
-  "s3://$ARTIFACT_BUCKET/$REGRESSION_RESULTS_PREFIX/$DEPLOYMENT_TIMESTAMP/stack-outputs.json" \
+  "s3://$ARTIFACT_BUCKET/$REGRESSION_RESULTS_PREFIX/$RESULT_SET_TIMESTAMP/stack-outputs.json" \
   --region "$AWS_REGION" \
   --only-show-errors
 aws s3 cp \
   "$connection_guide_file" \
-  "s3://$ARTIFACT_BUCKET/$REGRESSION_RESULTS_PREFIX/$DEPLOYMENT_TIMESTAMP/connection_details.md" \
+  "s3://$ARTIFACT_BUCKET/$REGRESSION_RESULTS_PREFIX/$RESULT_SET_TIMESTAMP/connection_details.md" \
   --region "$AWS_REGION" \
   --only-show-errors
 
@@ -288,5 +289,5 @@ aws cloudformation describe-stacks \
   --query "Stacks[0].Outputs[].[OutputKey,OutputValue]" \
   --output table
 echo "Retained bucket: $ARTIFACT_BUCKET"
-echo "Retained deployment results: s3://$ARTIFACT_BUCKET/$REGRESSION_RESULTS_PREFIX/$DEPLOYMENT_TIMESTAMP/"
+echo "Retained deployment results: s3://$ARTIFACT_BUCKET/$REGRESSION_RESULTS_PREFIX/$RESULT_SET_TIMESTAMP/"
 echo "Connection guide: $connection_guide_file"

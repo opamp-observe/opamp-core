@@ -197,8 +197,10 @@ the test process exit code. Use `--upload-only` after a test was run separately.
 AWS reads its default bucket from `dist/aws-artifact-bucket.txt`. Azure reads
 its default storage account from
 `dist/azure-retention-storage-account.txt`. Each upload uses a new UTC result
-set and stores evidence below `<result-set>/test-reports/`, including a manifest
-that records the destination and regression exit status.
+set and stores evidence below `<yyyy-mm-dd-hh-mm-ss>/test-reports/`, including
+a manifest that records the destination and regression exit status. The
+timestamp separators are part of one folder name; they do not create a
+year/month/day path hierarchy.
 
 ## Main workflow cloud control
 

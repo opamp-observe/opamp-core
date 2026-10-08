@@ -24,7 +24,7 @@ import pytest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 REGRESSION_COMMAND_PATH = REPOSITORY_ROOT / "cloud" / "run_regression.py"
-TEST_RESULT_SET = "20261006123000"
+TEST_RESULT_SET = "2026-10-06-12-30-00"
 
 
 def _load_regression_module() -> ModuleType:
@@ -140,6 +140,16 @@ def test_azure_upload_only_uses_saved_storage_account(
     assert "--destination-path" in captured_commands[0]
     assert f"{TEST_RESULT_SET}/test-reports" in captured_commands[0]
     assert storage_account in captured_commands[0]
+
+
+def test_default_result_set_uses_separators_without_path_hierarchy(
+    regression_module: ModuleType,
+) -> None:
+    """Keep generated cloud folders readable without splitting dates into directories."""
+    result_set = regression_module._default_result_set()
+
+    assert len(result_set.split("-")) == 6
+    assert "/" not in result_set
 
 
 def test_failed_regression_is_uploaded_and_failure_status_is_returned(

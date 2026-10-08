@@ -55,6 +55,7 @@ REPORT_TEST_ID_KEY = "test_id"
 REPORTS_FILE_PATTERN = "*-results.json"
 PROVIDER_CHOICES = (AWS_PROVIDER, AZURE_PROVIDER)
 REGRESSION_RUNNER = "tests/test-containers/run_regression_pack.py"
+RESULT_SET_TIMESTAMP_FORMAT = "%Y-%m-%d-%H-%M-%S"
 SUMMARY_TEXT_LIMIT = 500
 STATUS_PASSED = "passed"
 STATUS_REGRESSION_FAILED = "regression_failed"
@@ -160,6 +161,11 @@ def _manifest_status(
     if regression_exit_code is None:
         return STATUS_UPLOAD_ONLY
     return STATUS_PASSED
+
+
+def _default_result_set() -> str:
+    """Return the default retained-storage folder name with separated UTC fields."""
+    return datetime.now(UTC).strftime(RESULT_SET_TIMESTAMP_FORMAT)
 
 
 def _tail_text(value: object, limit: int = SUMMARY_TEXT_LIMIT) -> str:
@@ -303,7 +309,11 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="upload existing reports without running the regression pack",
     )
-    parser.add_argument("--result-set", default="", help="storage path; defaults to UTC time")
+    parser.add_argument(
+        "--result-set",
+        default="",
+        help="storage folder name; defaults to hyphen-separated UTC time",
+    )
     parser.add_argument("--results-directory", default=DEFAULT_RESULTS_DIRECTORY)
     parser.add_argument("--storage-name", default="", help="S3 bucket or storage account")
     parser.add_argument("--aws-region", default="eu-west-2")
@@ -336,7 +346,7 @@ def main(argv: list[str] | None = None) -> int:
     if not result_files:
         raise RuntimeError(f"No regression result files found in {results_directory}")
 
-    result_set = arguments.result_set or datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+    result_set = arguments.result_set or _default_result_set()
     if arguments.provider == AWS_PROVIDER:
         storage_file = _resolve_repository_path(repository_root, DEFAULT_AWS_BUCKET_FILE)
         storage_name = arguments.storage_name or _read_retained_storage_name(

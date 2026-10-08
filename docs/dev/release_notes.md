@@ -41,6 +41,7 @@ limitations under the License.
 * Added automatic Python wheel packaging and Linux bootstrap staging, including cross-platform UTF-8 and LF normalization for scripts and wheel manifests produced on Windows.
 * Added optional AWS EC2 key-pair creation with protected local PEM storage, existing-key inference from PEM filenames, automatic administrator CIDR detection, and regional key validation.
 * Added timestamped retained S3 and Azure Blob storage outside the ordinary infrastructure teardown boundary, with private regression-result retention, single-target storage cleanup, and `--all` cleanup for generated OpAMP retention storage.
+* Updated retained deployment and regression result folder names to use hyphen-separated UTC timestamps such as `yyyy-mm-dd-hh-mm-ss` without creating a nested date path hierarchy.
 * Added generated Markdown connection guides containing service URLs and ready-to-run SSH commands, retained locally and in cloud storage alongside provider deployment outputs.
 * Added a provider-neutral regression command that runs selected test sets and uploads complete local evidence, including failed-run status manifests, to retained AWS or Azure storage.
 * Added an Azure, AWS, or build-only deployment selector to the main GitHub Actions workflow, controlled by the `CLOUD_PROVIDER` repository variable or a manual-run override. Pushes to `main` default to AWS, deploy the CloudFormation regression environment, run retained regression evidence upload, and fail the workflow when regression fails.
