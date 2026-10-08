@@ -32,6 +32,7 @@ param(
 # packaging, retained S3 storage, parameter preparation, and result capture.
 $ErrorActionPreference = "Stop"
 $deploymentTimestamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddHHmmss")
+$retainedBucketTimestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd-HH-mm-ss")
 $adminSourceCidrParameter = "AdminSourceCidr"
 $adminSourceCidrPrefixLength = 32
 $failedStackEventsQuery = "StackEvents[?contains(ResourceStatus, 'FAILED')].[Timestamp,LogicalResourceId,ResourceType,ResourceStatus,ResourceStatusReason]"
@@ -203,7 +204,7 @@ if (-not $ArtifactBucket) {
     if ($LASTEXITCODE -ne 0 -or -not $awsAccountId) {
         throw "Unable to determine the AWS account ID."
     }
-    $ArtifactBucket = "opamp-regression-$awsAccountId-$deploymentTimestamp"
+    $ArtifactBucket = "opamp-regression-$awsAccountId-$retainedBucketTimestamp"
     if ($AwsRegion -eq "us-east-1") {
         & aws s3api create-bucket --bucket $ArtifactBucket --region $AwsRegion | Out-Null
     } else {

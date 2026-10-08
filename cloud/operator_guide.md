@@ -80,7 +80,10 @@ Linux even when they were produced on Windows.
 
 When no storage name is supplied, the deploy script creates a timestamped S3
 bucket or Azure storage account. Its name is recorded under `dist/` so cleanup
-scripts and later deployments can find it. Storage is deliberately outside the
+scripts and later deployments can find it. Generated AWS bucket names use a
+hyphen-separated UTC timestamp such as `2026-10-05-17-45-30`. Generated Azure
+storage account names keep a compact timestamp because Azure storage account
+names cannot contain separator characters. Storage is deliberately outside the
 template's normal teardown boundary.
 
 The artifact location and retained result location have different exposure:
@@ -129,8 +132,8 @@ Storage cleanup scripts are intentionally separate and destructive: deleting a
 bucket or storage account also deletes every retained artifact and result in it.
 Passing `--all` to a cleanup script removes only generated OpAMP regression
 retention storage for the selected provider. AWS matches the generated
-`opamp-regression-<account-id>-<timestamp>` bucket prefix in the current
-account, while Azure matches the `Project=opamp` and
+`opamp-regression-<account-id>-<yyyy-mm-dd-hh-mm-ss>` bucket prefix in the
+current account, while Azure matches the `Project=opamp` and
 `Purpose=regression-retention` storage account tags in the selected
 subscription.
 

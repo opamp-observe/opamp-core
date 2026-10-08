@@ -31,6 +31,7 @@ CREATE_KEY_PAIR="${CREATE_KEY_PAIR:-false}"
 NEW_KEY_PAIR_NAME="${NEW_KEY_PAIR_NAME:-}"
 PRIVATE_KEY_FILE="${PRIVATE_KEY_FILE:-}"
 DEPLOYMENT_TIMESTAMP="$(date -u +%Y%m%d%H%M%S)"
+RETAINED_BUCKET_TIMESTAMP="$(date -u +%Y-%m-%d-%H-%M-%S)"
 KEY_NAME_PARAMETER="KeyName"
 ADMIN_SOURCE_CIDR_PARAMETER="AdminSourceCidr"
 ADMIN_SOURCE_CIDR_PREFIX_LENGTH="32"
@@ -198,7 +199,7 @@ create_artifact_bucket() {
 # regression evidence survives ordinary infrastructure deletion.
 if [[ -z "$ARTIFACT_BUCKET" ]]; then
   aws_account_id="$(aws sts get-caller-identity --query Account --output text)"
-  ARTIFACT_BUCKET="opamp-regression-${aws_account_id}-${DEPLOYMENT_TIMESTAMP}"
+  ARTIFACT_BUCKET="opamp-regression-${aws_account_id}-${RETAINED_BUCKET_TIMESTAMP}"
   create_artifact_bucket "$ARTIFACT_BUCKET"
   echo "Created retained S3 bucket $ARTIFACT_BUCKET"
 else

@@ -152,9 +152,9 @@ inherited permissions and grants read access only to the current Windows user.
 
 The deploy script creates a private S3 bucket when `ARTIFACT_BUCKET` or
 `-ArtifactBucket` is omitted. Its name includes the AWS account ID and the
-current UTC date and time, for example
-`opamp-regression-123456789012-20261005174530`. The generated name is also
-written to `dist/aws-artifact-bucket.txt`.
+current UTC date and time with hyphen-separated date and time segments, for
+example `opamp-regression-123456789012-2026-10-05-17-45-30`. The generated
+name is also written to `dist/aws-artifact-bucket.txt`.
 
 ## Configure Parameters
 
@@ -700,9 +700,9 @@ bash cloud/aws/destroy-bucket.sh <bucket-name>
 
 Pass `--all` to delete every retained bucket created by the AWS deploy script
 for the current AWS account. The scripts match the generated
-`opamp-regression-<account-id>-<timestamp>` bucket names; they do not delete
-arbitrary S3 buckets or custom bucket names that merely happen to contain OpAMP
-artifacts.
+`opamp-regression-<account-id>-<yyyy-mm-dd-hh-mm-ss>` bucket names; they do not
+delete arbitrary S3 buckets or custom bucket names that merely happen to
+contain OpAMP artifacts.
 
 ```bash
 bash cloud/aws/destroy-bucket.sh --all
