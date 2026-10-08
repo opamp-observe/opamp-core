@@ -59,6 +59,9 @@ def test_workflow_avoids_external_marketplace_actions() -> None:
     assert "x-access-token:%s" in workflow
     assert "AUTHORIZATION: basic $checkout_auth_header" in workflow
     assert "AUTHORIZATION: bearer $GITHUB_TOKEN" not in workflow
+    assert "::add-mask::$aws_access_key_id" in workflow
+    assert "::add-mask::$aws_secret_access_key" in workflow
+    assert "::add-mask::$aws_session_token" in workflow
 
 
 def test_no_cloud_mode_keeps_the_build_enabled() -> None:
@@ -101,6 +104,8 @@ def test_aws_mode_runs_and_retains_regression_evidence() -> None:
     assert "regression_arguments+=(--only \"$test_id\")" in workflow
     assert "regression_arguments+=(--skip \"$test_id\")" in workflow
     assert "regression-pack-results.md" in workflow
+    assert "AWS regression report: $regression_report" in workflow
+    assert "No regression-pack-results.md file was found" in workflow
     assert "Fail when AWS regression failed" in workflow
 
 
