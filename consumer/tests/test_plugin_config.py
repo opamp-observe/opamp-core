@@ -20,7 +20,9 @@ from pathlib import Path
 
 import pytest
 
+from opamp_consumer import plugin_config
 from opamp_consumer.plugin_config import (
+    collect_consumer_plugin_config_updates,
     looks_like_executable_path,
     resolve_optional_executable_from_config,
 )
@@ -35,6 +37,10 @@ WINDOWS_DRIVE_RELATIVE_EXECUTABLE_PATH = "C:agent.exe"
 WINDOWS_ABSOLUTE_EXECUTABLE_PATH = "C:\\tools\\agent.exe"
 EXPECTED_RELATIVE_EXECUTABLE_PATH = "bin/agent"
 EXPECTED_WINDOWS_ABSOLUTE_EXECUTABLE_PATH = "C:\\tools\\agent.exe"
+PLUGIN_IMPORT_ERROR_MESSAGE = (
+    "cannot import name 'KEY_HEALTH' from partially initialized module "
+    "'opamp_consumer.abstract_client'"
+)
 
 
 @pytest.mark.parametrize(
@@ -133,3 +139,30 @@ def test_resolve_optional_executable_from_config_omits_blank_values(
     )
 
     assert resolved is None
+
+
+def test_collect_consumer_plugin_config_updates_skips_partial_import(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Plugin hook discovery should not fail while abstract_client is importing.
+
+    Args:
+        monkeypatch: Pytest fixture used to simulate the circular import window.
+        tmp_path: Pytest temporary directory fixture for the owning config file.
+    """
+
+    def fake_import_module(module_name: str) -> object:
+        """Raise the same partial-import error produced by plugin client imports."""
+        raise ImportError(PLUGIN_IMPORT_ERROR_MESSAGE)
+
+    monkeypatch.setattr(plugin_config.importlib, "import_module", fake_import_module)
+
+    updates = collect_consumer_plugin_config_updates(
+        service_type="fluentbit",
+        consumer_plugins=[],
+        consumer_raw={},
+        config_path=tmp_path / "opamp.json",
+    )
+
+    assert updates == {}

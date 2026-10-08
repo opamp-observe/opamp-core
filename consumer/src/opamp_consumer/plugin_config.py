@@ -198,6 +198,17 @@ def _load_plugin_config_hook(
                 module_name,
             )
             continue
+        except ImportError as error:
+            if "partially initialized module" not in str(error):
+                raise
+            logger.debug(
+                "plugin config module skipped during partial import "
+                "service_type=%s module=%s error=%s",
+                service_type,
+                module_name,
+                error,
+            )
+            continue
         except AttributeError as error:
             if "partially initialized module" not in str(error):
                 raise
