@@ -19,6 +19,7 @@ if [[ "${use_local}" == "true" && -d "${local_source}" ]]; then
     find "${destination}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
     (
       cd "${local_source}"
+      git config --global --add safe.directory "${local_source}"
       git ls-files -z -co --exclude-standard \
         | while IFS= read -r -d '' path; do
             [[ -e "${path}" ]] && printf '%s\0' "${path}"

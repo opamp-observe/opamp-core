@@ -25,12 +25,39 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+COMMAND_KEY = "command"
+COMMANDS_KEY = "commands"
+COMMAND_TAIL_LIMIT = 4000
+DESCRIPTION_KEY = "description"
+DURATION_SECONDS_KEY = "duration_seconds"
+EXIT_CODE_KEY = "exit_code"
+EVIDENCE_TAIL_LIMIT = 12000
+JSON_REPORT_FILE_NAME = "regression-pack-results.json"
+MARKDOWN_REPORT_FILE_NAME = "regression-pack-results.md"
+STDERR_KEY = "stderr"
+STDOUT_KEY = "stdout"
+TEST_ID_KEY = "test_id"
+
+EVIDENCE_FILE_NAMES = (
+    "results.md",
+    "summary.json",
+    "verify.log",
+    "compose.log",
+)
+
 
 @dataclass(frozen=True)
 class RegressionTest:
+    """Container regression entry with the commands needed to exercise it."""
+
     test_id: str
+    """Stable regression identifier used by --only and report rows."""
+
     description: str
+    """Human-readable description of the behavior under test."""
+
     commands: tuple[tuple[str, ...], ...]
+    """Ordered shell commands; the first non-zero command fails the test."""
 
 
 def _repo_root() -> Path:
@@ -367,15 +394,133 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
     ]
 
 
+def _tail_text(value: object, limit: int) -> str:
+    """Return a compact tail of command or evidence output.
+
+    Parameters:
+    - value: Stream text or other value to render into the Markdown report.
+    - limit: Maximum character count retained from the end of the text.
+    """
+    text = str(value or "").strip()
+    if len(text) <= limit:
+        return text
+    return text[-limit:]
+
+
+def _markdown_code_block(value: str, language: str = "text") -> list[str]:
+    """Render a fenced Markdown code block for diagnostic report details.
+
+    Parameters:
+    - value: Text to include inside the fenced block.
+    - language: Optional Markdown language tag for syntax highlighting.
+    """
+    return [f"```{language}", value, "```"]
+
+
+def _append_failed_command_details(
+    lines: list[str],
+    result: dict[str, object],
+) -> None:
+    """Append captured stdout/stderr for the failed command in a result.
+
+    Parameters:
+    - lines: Mutable Markdown line buffer for the report being written.
+    - result: Regression result payload containing command execution records.
+    """
+    command_payloads = result.get(COMMANDS_KEY, [])
+    if not isinstance(command_payloads, list):
+        return
+    for command_payload in command_payloads:
+        if not isinstance(command_payload, dict):
+            continue
+        if int(command_payload.get(EXIT_CODE_KEY) or 0) == 0:
+            continue
+        command = command_payload.get(COMMAND_KEY, [])
+        command_text = " ".join(str(part) for part in command) if isinstance(command, list) else str(command)
+        lines.extend(["", f"- Command: `{command_text}`"])
+        lines.append(f"- Exit code: `{command_payload.get(EXIT_CODE_KEY)}`")
+        stderr_tail = _tail_text(command_payload.get(STDERR_KEY), COMMAND_TAIL_LIMIT)
+        stdout_tail = _tail_text(command_payload.get(STDOUT_KEY), COMMAND_TAIL_LIMIT)
+        if stderr_tail:
+            lines.extend(["", "stderr tail:"])
+            lines.extend(_markdown_code_block(stderr_tail))
+        if stdout_tail:
+            lines.extend(["", "stdout tail:"])
+            lines.extend(_markdown_code_block(stdout_tail))
+        return
+
+
+def _append_evidence_file_details(
+    lines: list[str],
+    result: dict[str, object],
+    output_dir: Path,
+) -> None:
+    """Append relevant per-scenario evidence files for a failed result.
+
+    Parameters:
+    - lines: Mutable Markdown line buffer for the report being written.
+    - result: Regression result payload used to resolve the sibling evidence tree.
+    - output_dir: Regression-pack report directory under dist/test-reports.
+    """
+    test_id = str(result.get(TEST_ID_KEY) or "").strip()
+    if not test_id:
+        return
+    evidence_root = output_dir.parent / test_id
+    if not evidence_root.is_dir():
+        return
+
+    evidence_paths: list[Path] = []
+    for evidence_file_name in EVIDENCE_FILE_NAMES:
+        evidence_paths.extend(sorted(evidence_root.rglob(evidence_file_name)))
+    if not evidence_paths:
+        return
+
+    lines.extend(["", "Evidence file tails:"])
+    for evidence_path in evidence_paths:
+        relative_path = evidence_path.relative_to(output_dir.parent)
+        lines.extend(["", f"`{relative_path.as_posix()}`:"])
+        try:
+            evidence_text = evidence_path.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            lines.append(f"Unable to read evidence file: {exc}")
+            continue
+        lines.extend(_markdown_code_block(_tail_text(evidence_text, EVIDENCE_TAIL_LIMIT)))
+
+
+def _append_failure_details(
+    lines: list[str],
+    results: list[dict[str, object]],
+    output_dir: Path,
+) -> None:
+    """Append failure diagnostics after the summary table.
+
+    Parameters:
+    - lines: Mutable Markdown line buffer for the report being written.
+    - results: Regression result payloads created by the runner.
+    - output_dir: Directory receiving the Markdown and JSON pack reports.
+    """
+    failed_results = [
+        result for result in results if int(result.get(EXIT_CODE_KEY) or 0) != 0
+    ]
+    if not failed_results:
+        return
+    lines.extend(["", "## Failures", ""])
+    for result in failed_results:
+        lines.append(f"### {result.get(TEST_ID_KEY)}")
+        _append_failed_command_details(lines, result)
+        _append_evidence_file_details(lines, result, output_dir)
+        lines.append("")
+
+
 def _write_reports(results: list[dict[str, object]], output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    passed = all(int(result["exit_code"]) == 0 for result in results)
+    passed = all(int(result[EXIT_CODE_KEY]) == 0 for result in results)
     payload = {
         "name": "opamp-container-regression-pack",
         "passed": passed,
         "results": results,
     }
-    (output_dir / "regression-pack-results.json").write_text(
+    (output_dir / JSON_REPORT_FILE_NAME).write_text(
         json.dumps(payload, indent=2) + "\n",
         encoding="utf-8",
     )
@@ -387,14 +532,16 @@ def _write_reports(results: list[dict[str, object]], output_dir: Path) -> None:
         "|---|---|---:|---:|",
     ]
     for result in results:
-        status = "passed" if int(result["exit_code"]) == 0 else "failed"
+        status = "passed" if int(result[EXIT_CODE_KEY]) == 0 else "failed"
         lines.append(
-            f"| {result['test_id']} | {status} | {result['exit_code']} | {result['duration_seconds']}s |"
+            f"| {result[TEST_ID_KEY]} | {status} | {result[EXIT_CODE_KEY]} | "
+            f"{result[DURATION_SECONDS_KEY]}s |"
         )
     lines.append("")
     lines.append(f"Overall: {'passed' if passed else 'failed'}")
     lines.append("")
-    (output_dir / "regression-pack-results.md").write_text(
+    _append_failure_details(lines, results, output_dir)
+    (output_dir / MARKDOWN_REPORT_FILE_NAME).write_text(
         "\n".join(lines),
         encoding="utf-8",
     )
