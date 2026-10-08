@@ -308,8 +308,10 @@ jobs:
           if [[ "${AWS_REGRESSION_CONTINUE_ON_FAILURE,,}" == "true" ]]; then
             regression_arguments+=(--continue-on-failure)
           fi
+          set +e
           python3 cloud/run_regression.py "${regression_arguments[@]}"
           regression_exit_code=$?
+          set -e
           echo "exit_code=$regression_exit_code" >> "$GITHUB_OUTPUT"
           exit 0
 

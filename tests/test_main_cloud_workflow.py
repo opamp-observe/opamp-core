@@ -95,6 +95,8 @@ def test_aws_mode_runs_and_retains_regression_evidence() -> None:
     assert "AWS_REGRESSION_ONLY: ${{ vars.AWS_REGRESSION_ONLY }}" in workflow
     assert "AWS_REGRESSION_SKIP: ${{ vars.AWS_REGRESSION_SKIP }}" in workflow
     assert "python3 cloud/run_regression.py" in workflow
+    assert "set +e\n          python3 cloud/run_regression.py" in workflow
+    assert "regression_exit_code=$?\n          set -e" in workflow
     assert "--provider aws --aws-region" in workflow
     assert "regression_arguments+=(--only \"$test_id\")" in workflow
     assert "regression_arguments+=(--skip \"$test_id\")" in workflow
