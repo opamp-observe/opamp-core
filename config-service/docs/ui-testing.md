@@ -164,7 +164,7 @@ config-service/dev-tools/run_ui_quality_checks_in_container.sh -g "metadata"
 
 This runner:
 1. verifies Docker daemon availability
-2. runs Playwright inside `mcr.microsoft.com/playwright:v1.59.1-noble`
+2. runs Playwright inside `mcr.microsoft.com/playwright:v1.64.0-noble`
 3. installs Python and Node dependencies in-container
 4. executes the UI tests, forwarding any extra Playwright arguments
 
