@@ -24,7 +24,27 @@ keycloak_port="${ST004_KEYCLOAK_PORT:-18082}"
 output_root="${ST004_OUTPUT_DIR:-${repo_root}/dist/test-reports/st004}"
 project="${ST004_COMPOSE_PROJECT:-opamp-st004-keycloak}"
 output_dir="${output_root}/${scenario}"
-python_cmd="${OPAMP_PYTHON:-python3}"
+python_command=()
+
+resolve_python_command() {
+  # Select a host Python launcher that can execute the verifier. Windows Git
+  # Bash can expose Store aliases for python3/python, so each candidate is
+  # tested with a real import before it is accepted.
+  if [ -n "${OPAMP_PYTHON:-}" ] && "${OPAMP_PYTHON}" -c "import sys" >/dev/null 2>&1; then
+    python_command=("${OPAMP_PYTHON}")
+  elif python3 -c "import sys" >/dev/null 2>&1; then
+    python_command=(python3)
+  elif python -c "import sys" >/dev/null 2>&1; then
+    python_command=(python)
+  elif py -3 -c "import sys" >/dev/null 2>&1; then
+    python_command=(py -3)
+  else
+    echo "could not find a working Python interpreter; install Python 3 or add it to PATH" >&2
+    return 127
+  fi
+}
+
+resolve_python_command
 
 mkdir -p "${output_dir}"
 
@@ -42,7 +62,7 @@ if [ "${up_status}" -ne 0 ]; then
 fi
 
 set +e
-"${python_cmd}" "${scenario_dir}/scripts/verify_st004.py" \
+"${python_command[@]}" "${scenario_dir}/scripts/verify_st004.py" \
   --base-url "http://127.0.0.1:${provider_port}" \
   --keycloak-url "http://127.0.0.1:${keycloak_port}" \
   --compose-file "${compose_file}" \

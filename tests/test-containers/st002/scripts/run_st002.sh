@@ -22,6 +22,25 @@ repo_root="$(cd "${scenario_dir}/../../.." && pwd)"
 compose_file="${scenario_dir}/docker-compose.yml"
 provider_port="${ST002_PROVIDER_PORT:-18081}"
 output_root="${ST002_OUTPUT_DIR:-${repo_root}/dist/test-reports/st002}"
+python_command=()
+
+resolve_python_command() {
+  # Select a host Python launcher that can execute the verifier. Windows Git
+  # Bash can expose Store aliases for python3/python, so each candidate is
+  # tested with a real import before it is accepted.
+  if python3 -c "import sys" >/dev/null 2>&1; then
+    python_command=(python3)
+  elif python -c "import sys" >/dev/null 2>&1; then
+    python_command=(python)
+  elif py -3 -c "import sys" >/dev/null 2>&1; then
+    python_command=(py -3)
+  else
+    echo "could not find a working Python interpreter; install Python 3 or add it to PATH" >&2
+    return 127
+  fi
+}
+
+resolve_python_command
 
 run_one() {
   # Parameters:
@@ -53,7 +72,7 @@ run_one() {
   # Capture the verifier status manually so logs and cleanup still run when a
   # check fails; failing evidence is as useful as passing evidence.
   set +e
-  python3 "${scenario_dir}/scripts/verify_st002.py" \
+  "${python_command[@]}" "${scenario_dir}/scripts/verify_st002.py" \
     --scenario "${name}" \
     --base-url "http://127.0.0.1:${provider_port}" \
     --compose-file "${compose_file}" \
