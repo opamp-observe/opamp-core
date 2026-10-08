@@ -101,6 +101,8 @@ def test_aws_upload_only_uses_saved_bucket_and_timestamped_prefix(
     )
     assert manifest["provider"] == "aws"
     assert manifest["regression_exit_code"] is None
+    assert manifest["status"] == "upload_only"
+    assert manifest["upload_exit_code"] == 0
 
 
 def test_azure_upload_only_uses_saved_storage_account(
@@ -171,6 +173,46 @@ def test_failed_regression_is_uploaded_and_failure_status_is_returned(
         )
     )
     assert manifest["regression_exit_code"] == regression_failure_code
+    assert manifest["status"] == "regression_failed"
+    assert manifest["upload_exit_code"] == 0
+
+
+def test_upload_failure_records_upload_status_after_regression_passed(
+    regression_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Return the upload failure while preserving that the regression itself passed."""
+    upload_failure_code = 2
+    _prepare_reports(tmp_path, "dist/aws-artifact-bucket.txt", "upload-failure-bucket")
+    monkeypatch.setattr(regression_module, "_repository_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        regression_module,
+        "_run_regression_pack",
+        lambda _arguments, _repository_root, _results_directory: 0,
+    )
+    monkeypatch.setattr(
+        regression_module,
+        "_upload_aws_results",
+        lambda *_arguments: (
+            upload_failure_code,
+            "s3://upload-failure-bucket/regression-results/evidence/",
+        ),
+    )
+
+    exit_code = regression_module.main(
+        ["--provider", "aws", "--result-set", TEST_RESULT_SET]
+    )
+
+    assert exit_code == upload_failure_code
+    manifest = json.loads(
+        (tmp_path / "dist/test-reports/cloud_upload_manifest.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert manifest["regression_exit_code"] == 0
+    assert manifest["status"] == "upload_failed"
+    assert manifest["upload_exit_code"] == upload_failure_code
 
 
 def test_failed_regression_logs_retained_report_summary(

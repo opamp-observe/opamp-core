@@ -104,9 +104,11 @@ def test_aws_mode_runs_and_retains_regression_evidence() -> None:
     assert "regression_arguments+=(--only \"$test_id\")" in workflow
     assert "regression_arguments+=(--skip \"$test_id\")" in workflow
     assert "regression-pack-results.md" in workflow
+    assert "AWS regression passed, but retained evidence upload failed" in workflow
     assert "AWS regression report: $regression_report" in workflow
+    assert "AWS regression upload manifest: $upload_manifest" in workflow
     assert "No regression-pack-results.md file was found" in workflow
-    assert "Fail when AWS regression failed" in workflow
+    assert "Fail when AWS regression or evidence upload failed" in workflow
 
 
 def test_operator_guide_documents_cloud_provider_control() -> None:

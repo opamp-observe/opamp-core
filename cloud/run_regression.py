@@ -37,6 +37,8 @@ MANIFEST_DESTINATION_KEY = "destination"
 MANIFEST_PROVIDER_KEY = "provider"
 MANIFEST_REGRESSION_EXIT_CODE_KEY = "regression_exit_code"
 MANIFEST_RESULT_SET_KEY = "result_set"
+MANIFEST_STATUS_KEY = "status"
+MANIFEST_UPLOAD_EXIT_CODE_KEY = "upload_exit_code"
 REPORT_BUILD_COMMANDS_KEY = "build_commands"
 REPORT_COMMANDS_KEY = "commands"
 REPORT_COMPONENT_ID_KEY = "component_id"
@@ -54,6 +56,10 @@ REPORTS_FILE_PATTERN = "*-results.json"
 PROVIDER_CHOICES = (AWS_PROVIDER, AZURE_PROVIDER)
 REGRESSION_RUNNER = "tests/test-containers/run_regression_pack.py"
 SUMMARY_TEXT_LIMIT = 500
+STATUS_PASSED = "passed"
+STATUS_REGRESSION_FAILED = "regression_failed"
+STATUS_UPLOAD_FAILED = "upload_failed"
+STATUS_UPLOAD_ONLY = "upload_only"
 
 LOGGER = logging.getLogger(__name__)
 
@@ -122,6 +128,7 @@ def _write_upload_manifest(
     result_set: str,
     destination: str,
     regression_exit_code: int | None,
+    upload_exit_code: int | None,
 ) -> Path:
     """Record what was uploaded and whether the associated regression run passed."""
     manifest_path = results_directory / MANIFEST_FILE_NAME
@@ -131,12 +138,28 @@ def _write_upload_manifest(
         MANIFEST_PROVIDER_KEY: provider,
         MANIFEST_REGRESSION_EXIT_CODE_KEY: regression_exit_code,
         MANIFEST_RESULT_SET_KEY: result_set,
+        MANIFEST_STATUS_KEY: _manifest_status(regression_exit_code, upload_exit_code),
+        MANIFEST_UPLOAD_EXIT_CODE_KEY: upload_exit_code,
     }
     manifest_path.write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     return manifest_path
+
+
+def _manifest_status(
+    regression_exit_code: int | None,
+    upload_exit_code: int | None,
+) -> str:
+    """Resolve a compact manifest status from regression and upload outcomes."""
+    if upload_exit_code not in (None, 0):
+        return STATUS_UPLOAD_FAILED
+    if regression_exit_code not in (None, 0):
+        return STATUS_REGRESSION_FAILED
+    if regression_exit_code is None:
+        return STATUS_UPLOAD_ONLY
+    return STATUS_PASSED
 
 
 def _tail_text(value: object, limit: int = SUMMARY_TEXT_LIMIT) -> str:
@@ -329,6 +352,7 @@ def main(argv: list[str] | None = None) -> int:
             result_set,
             destination,
             regression_exit_code,
+            None,
         )
         upload_exit_code, destination = _upload_aws_results(
             arguments, repository_root, results_directory, storage_name, result_set
@@ -350,13 +374,34 @@ def main(argv: list[str] | None = None) -> int:
             result_set,
             destination,
             regression_exit_code,
+            None,
         )
         upload_exit_code, destination = _upload_azure_results(
             arguments, repository_root, results_directory, storage_name, result_set
         )
 
+    _write_upload_manifest(
+        results_directory,
+        arguments.provider,
+        result_set,
+        destination,
+        regression_exit_code,
+        upload_exit_code,
+    )
     if upload_exit_code != 0:
-        LOGGER.error("Regression result upload failed with exit code %s", upload_exit_code)
+        if regression_exit_code in (None, 0):
+            LOGGER.error(
+                "Regression result upload failed with exit code %s after the "
+                "regression pack passed",
+                upload_exit_code,
+            )
+        else:
+            LOGGER.error(
+                "Regression result upload failed with exit code %s after the "
+                "regression pack returned %s",
+                upload_exit_code,
+                regression_exit_code,
+            )
         return upload_exit_code
     LOGGER.info("Retained regression results: %s", destination)
     if regression_exit_code not in (None, 0):

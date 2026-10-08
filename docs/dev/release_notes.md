@@ -47,6 +47,7 @@ limitations under the License.
 * Added a provider-aware GitHub OIDC setup helper that creates or updates the AWS IAM role or Azure Microsoft Entra application, configures branch-scoped GitHub federated credentials, and can write repository secrets and variables through the GitHub REST API.
 * Added application-aware deployment completion and diagnostics: AWS wait conditions report VM bootstrap failures, server installer and startup logs are retained, and Keycloak readiness is checked before realm configuration.
 * Added cloud regression troubleshooting notes covering GitHub action policy limits, OIDC setup gaps, mounted-checkout Git ownership checks, Windows-to-Linux line endings, consumer plugin import cycles, ST scenario evidence, and Playwright image/version drift.
+* Improved the AWS regression workflow failure message so a passing regression pack followed by retained evidence upload failure is reported as an upload problem, with the local upload manifest printed in the job log.
 * Added deployment cost guidance, cleanup instructions, safe-rerun behavior, provider terminology, resource ownership, and failure recovery documentation in the [cloud operator guide](../../cloud/operator_guide.md), [AWS guide](../../cloud/aws/readme.md), and [Azure guide](../../cloud/azure/README.md).
 
 ### 5.0
