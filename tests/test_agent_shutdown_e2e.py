@@ -13,6 +13,10 @@
 
 """Unit tests for the containerized agent-shutdown regression verifier."""
 
+# The verifier is a standalone script, so its private helpers are the focused
+# unit-test surface rather than an importable public API.
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 import importlib.util
@@ -29,6 +33,14 @@ VERIFIER_PATH = (
     / "agent-shutdown-e2e"
     / "scripts"
     / "verify_agent_shutdown.py"
+)
+RUNNER_PATH = (
+    REPO_ROOT
+    / "tests"
+    / "test-containers"
+    / "agent-shutdown-e2e"
+    / "scripts"
+    / "run_agent_shutdown_e2e.sh"
 )
 
 
@@ -171,3 +183,18 @@ def test_aggregate_phase_can_require_selected_agents(tmp_path: Path) -> None:
     )()
 
     assert verifier._run_aggregate_phase(args) == 0
+
+
+def test_runner_makes_container_evidence_host_readable_before_removal() -> None:
+    """Prevent root-owned agent files from making retained cloud uploads fail."""
+    runner = RUNNER_PATH.read_text(encoding="utf-8")
+
+    assert 'readable_evidence_mode="a+rX"' in runner
+    chmod_command = (
+        'chmod -R "${readable_evidence_mode}" "${container_evidence_directory}"'
+    )
+    assert chmod_command in runner
+    assert runner.count('make_consumer_evidence_readable "${active_consumer}"') == 2
+    assert runner.index('make_consumer_evidence_readable "${active_consumer}"') < runner.index(
+        'docker rm -f "${active_consumer}"'
+    )
