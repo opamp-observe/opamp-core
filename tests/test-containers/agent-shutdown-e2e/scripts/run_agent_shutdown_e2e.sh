@@ -26,6 +26,8 @@ network_name="opamp-agent-shutdown-e2e-network"
 runtime_image="opamp-agent-shutdown-e2e-runtime:latest"
 ui_image="opamp-agent-shutdown-e2e-ui:latest"
 active_consumer=""
+container_evidence_directory="/evidence"
+readable_evidence_mode="a+rX"
 
 python_command=()
 if command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
@@ -39,8 +41,20 @@ else
   exit 1
 fi
 
+# Make container-generated evidence readable by the host runner before the
+# container is removed. The container name is supplied as the first argument.
+make_consumer_evidence_readable() {
+  local container_name="$1"
+  echo "DEBUG Making evidence readable for ${container_name}."
+  docker exec "${container_name}" \
+    chmod -R "${readable_evidence_mode}" "${container_evidence_directory}"
+}
+
+# Capture diagnostics and remove resources when the scenario exits. Any active
+# consumer name is taken from the enclosing run state.
 cleanup() {
   if [[ -n "${active_consumer}" ]]; then
+    make_consumer_evidence_readable "${active_consumer}" || true
     docker logs "${active_consumer}" \
       > "${scenario_output}/consumer-container.log" 2>&1 || true
     docker rm -f "${active_consumer}" >/dev/null 2>&1 || true
@@ -111,6 +125,7 @@ for agent_type in "${agent_types[@]}"; do
     --service-instance-id "${service_instance_id}" \
     --output-dir "${scenario_output}"
 
+  make_consumer_evidence_readable "${active_consumer}"
   docker logs "${active_consumer}" > "${scenario_output}/consumer-container.log" 2>&1 || true
   docker rm -f "${active_consumer}" >/dev/null
   active_consumer=""
