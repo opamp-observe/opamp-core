@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Developer CLI Extension Guide
 
 The developer CLI lives under `dev-tools/src/opamp_dev_tools`.
@@ -12,6 +26,9 @@ The developer CLI lives under `dev-tools/src/opamp_dev_tools`.
 - `version_metadata.py`: shared git-derived version metadata helpers
 - `security.py`: repository and component security checks
 - `certificates.py`: self-signed certificate and Keycloak guided helpers
+- `container_images.py`: Docker/Podman runtime selection and managed image cleanup
+- `wheel_publish.py`: local/cloud wheel retrieval, GitHub publishing, and cloud pushes
+- `release_assets.py`: release assembly and shared GitHub release API publishing
 
 ## Adding a New Command
 
@@ -37,4 +54,3 @@ Console output mirrors the same information for interactive use.
 When existing repository scripts are absorbed into this CLI, keep a thin wrapper
 in `scripts/` only when preserving the old entrypoint avoids breaking current
 workflows or tests.
-

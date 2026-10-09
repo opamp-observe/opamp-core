@@ -54,6 +54,7 @@ REPO_RUFF_SECURITY_TARGETS = (
     "shared",
     "scripts",
 )
+PYTEST_IMPORT_MODE_ARGUMENT = "--import-mode=importlib"
 
 
 def run_repo_security_checks(runtime: CommandRuntime, *, python_exe: str) -> bool:
@@ -84,7 +85,11 @@ def run_repo_security_checks(runtime: CommandRuntime, *, python_exe: str) -> boo
     ensure_pytest_dependencies(runtime, python_exe=python_exe)
 
     compact_provider_ui_assets(runtime)
-    runtime.run([python_exe, "-m", "pytest", "-s"], cwd=runtime.repo_root, env=env)
+    runtime.run(
+        [python_exe, "-m", "pytest", "-s", PYTEST_IMPORT_MODE_ARGUMENT],
+        cwd=runtime.repo_root,
+        env=env,
+    )
     runtime.run(
         [
             "ruff",
