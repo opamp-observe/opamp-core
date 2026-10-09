@@ -38,12 +38,13 @@ from .components import (
     run_e2e_tests,
     select_components,
 )
+from .config_sync import sync_config_service_json_assets
+from .container_images import CONTAINER_RUNTIME_CHOICES, clean_project_images
+from .hooks import apply_precommit_logic
 from .javascript_complexity import (
     DEFAULT_MAX_COMPLEXITY,
     run_javascript_complexity_checks,
 )
-from .config_sync import sync_config_service_json_assets
-from .hooks import apply_precommit_logic
 from .provider_ui import compact_provider_ui_assets
 from .release_assets import (
     add_release_assets_arguments,
@@ -59,6 +60,21 @@ from .runtime import (
 from .schema_validation import validate_config_service_schemas
 from .security import run_component_security_checks, run_repo_security_checks
 from .versioning import set_repository_version
+from .wheel_publish import (
+    AWS_DEFAULT_ARTIFACT_KEY,
+    AZURE_ARTIFACT_CONTAINER_DEFAULT,
+    AZURE_AUTH_MODE_DEFAULT,
+    AZURE_AUTH_MODES,
+    AZURE_CONTAINER_DEFAULT,
+    CLOUD_ORIGIN_CHOICES,
+    DEFAULT_DIST_ROOT,
+    DEFAULT_GITHUB_REPOSITORY,
+    DEFAULT_RELEASE_PREFIX,
+    UPLOAD_ORIGIN_CHOICES,
+    WheelUploadOptions,
+    push_latest_wheels_to_cloud,
+    upload_latest_wheels,
+)
 
 INTERACTIVE_EXIT_MESSAGE = "Exiting developer CLI."
 INTERACTIVE_RETURN_TO_MAIN_MESSAGE = "Returning to main menu."
@@ -122,6 +138,149 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
     apply_parser = dev_subparsers.add_parser("apply", help="Apply repository automation")
     apply_subparsers = apply_parser.add_subparsers(dest="apply_command", required=True)
     apply_subparsers.add_parser("precommit-logic", help="Configure repository git hooks")
+    clean_images_parser = dev_subparsers.add_parser(
+        "clean-images",
+        help="Remove images created by OpAMP development and regression builds",
+    )
+    clean_images_parser.add_argument(
+        "--runtime",
+        choices=CONTAINER_RUNTIME_CHOICES,
+        default="",
+        help="Container runtime override; defaults to OPAMP_CONTAINER_RUNTIME or auto-detection",
+    )
+    clean_images_parser.add_argument(
+        "--include-legacy",
+        action="store_true",
+        help="Also remove unlabelled images whose repository starts with opamp-",
+    )
+    clean_images_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force removal of images that are referenced by containers",
+    )
+    clean_images_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="List matching images without removing them",
+    )
+    upload_wheels_parser = dev_subparsers.add_parser(
+        "upload-wheels",
+        help="Publish the latest wheels from local, AWS, or Azure storage to GitHub",
+    )
+    upload_wheels_parser.add_argument(
+        "--origin",
+        choices=UPLOAD_ORIGIN_CHOICES,
+        required=True,
+        help="Wheel source: local host, latest AWS bucket, or latest Azure storage account",
+    )
+    upload_wheels_parser.add_argument(
+        "--release",
+        required=True,
+        help="GitHub release tag and cloud source release folder name",
+    )
+    upload_wheels_parser.add_argument(
+        "--dist-root",
+        default=DEFAULT_DIST_ROOT,
+        help="Host directory searched recursively for wheel files",
+    )
+    upload_wheels_parser.add_argument(
+        "--storage-name",
+        default="",
+        help="Source AWS bucket or Azure account; defaults to the latest deployment marker",
+    )
+    upload_wheels_parser.add_argument(
+        "--repository",
+        default=DEFAULT_GITHUB_REPOSITORY,
+        help="GitHub repository in owner/name format",
+    )
+    upload_wheels_parser.add_argument(
+        "--github-token",
+        default="",
+        help="GitHub token; defaults to GITHUB_TOKEN or GH_TOKEN",
+    )
+    upload_wheels_parser.add_argument(
+        "--prefix",
+        default=DEFAULT_RELEASE_PREFIX,
+        help="AWS or Azure object prefix before the release name",
+    )
+    upload_wheels_parser.add_argument(
+        "--aws-region",
+        default="",
+        help="AWS region; defaults to AWS_REGION, AWS_DEFAULT_REGION, or eu-west-2",
+    )
+    upload_wheels_parser.add_argument(
+        "--azure-container",
+        default=AZURE_CONTAINER_DEFAULT,
+        help="Azure release-wheel container searched before deployment artifacts",
+    )
+    upload_wheels_parser.add_argument(
+        "--azure-artifact-container",
+        default=AZURE_ARTIFACT_CONTAINER_DEFAULT,
+        help="Azure deployment artifact container used when release wheels are absent",
+    )
+    upload_wheels_parser.add_argument(
+        "--aws-artifact-key",
+        default=AWS_DEFAULT_ARTIFACT_KEY,
+        help="AWS deployment archive key used when release wheels are absent",
+    )
+    upload_wheels_parser.add_argument(
+        "--azure-auth-mode",
+        choices=AZURE_AUTH_MODES,
+        default=AZURE_AUTH_MODE_DEFAULT,
+        help="Azure CLI storage authentication mode",
+    )
+    upload_wheels_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show retrieval and GitHub destination without transferring files",
+    )
+    push_to_cloud_parser = dev_subparsers.add_parser(
+        "push-to-cloud",
+        help="Push the latest local wheel for each package to AWS or Azure",
+    )
+    push_to_cloud_parser.add_argument(
+        "--origin",
+        choices=CLOUD_ORIGIN_CHOICES,
+        required=True,
+        help="Cloud destination provider",
+    )
+    push_to_cloud_parser.add_argument("--release", required=True, help="Cloud release folder name")
+    push_to_cloud_parser.add_argument(
+        "--dist-root",
+        default=DEFAULT_DIST_ROOT,
+        help="Host directory searched recursively for wheel files",
+    )
+    push_to_cloud_parser.add_argument(
+        "--storage-name",
+        default="",
+        help="AWS bucket or Azure account; defaults to the latest deployment marker",
+    )
+    push_to_cloud_parser.add_argument(
+        "--prefix",
+        default=DEFAULT_RELEASE_PREFIX,
+        help="Cloud object prefix before the release name",
+    )
+    push_to_cloud_parser.add_argument(
+        "--aws-region",
+        default="",
+        help="AWS region; defaults to AWS_REGION, AWS_DEFAULT_REGION, or eu-west-2",
+    )
+    push_to_cloud_parser.add_argument(
+        "--azure-container",
+        default=AZURE_CONTAINER_DEFAULT,
+        help="Azure Blob Storage container receiving wheel files",
+    )
+    push_to_cloud_parser.add_argument(
+        "--azure-auth-mode",
+        choices=AZURE_AUTH_MODES,
+        default=AZURE_AUTH_MODE_DEFAULT,
+        help="Azure CLI storage authentication mode",
+    )
+    push_to_cloud_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show selected wheels and cloud destinations without uploading",
+    )
 
     build_parser_cmd = command_parsers.add_parser("build", help="Build, test, and generate outputs")
     build_subparsers = build_parser_cmd.add_subparsers(dest="build_command", required=True)
@@ -365,6 +524,48 @@ def _dispatch_dev_command(args: argparse.Namespace, runtime: CommandRuntime) -> 
         return sync_config_service_json_assets(runtime)
     if args.dev_command == "apply" and args.apply_command == "precommit-logic":
         return apply_precommit_logic(runtime)
+    if args.dev_command == "clean-images":
+        return clean_project_images(
+            runtime,
+            configured_runtime=args.runtime,
+            include_legacy=args.include_legacy,
+            force=args.force,
+            dry_run=args.dry_run,
+        )
+    if args.dev_command == "upload-wheels":
+        return upload_latest_wheels(
+            runtime,
+            WheelUploadOptions(
+                origin=args.origin,
+                release=args.release,
+                dist_root=args.dist_root,
+                storage_name=args.storage_name,
+                repository=args.repository,
+                github_token=args.github_token,
+                prefix=args.prefix,
+                aws_region=args.aws_region,
+                azure_container=args.azure_container,
+                azure_auth_mode=args.azure_auth_mode,
+                azure_artifact_container=args.azure_artifact_container,
+                aws_artifact_key=args.aws_artifact_key,
+                dry_run=args.dry_run,
+            ),
+        )
+    if args.dev_command == "push-to-cloud":
+        return push_latest_wheels_to_cloud(
+            runtime,
+            WheelUploadOptions(
+                origin=args.origin,
+                release=args.release,
+                dist_root=args.dist_root,
+                storage_name=args.storage_name,
+                prefix=args.prefix,
+                aws_region=args.aws_region,
+                azure_container=args.azure_container,
+                azure_auth_mode=args.azure_auth_mode,
+                dry_run=args.dry_run,
+            ),
+        )
     raise RuntimeError("unsupported dev command")
 
 
@@ -554,6 +755,9 @@ def _prompt_for_dev_tokens() -> list[str] | None:
             ("set version", "Prompt for and set a new repository version"),
             ("sync config-service-json", "Mirror config-service JSON definitions and schemas"),
             ("apply precommit-logic", "Configure repository git hooks"),
+            ("clean-images", "Remove project-managed Docker or Podman images"),
+            ("upload-wheels", "Publish wheels from local, AWS, or Azure to GitHub"),
+            ("push-to-cloud", "Push the latest local wheels to AWS or Azure"),
         ],
     )
     if command is None:
@@ -564,7 +768,80 @@ def _prompt_for_dev_tokens() -> list[str] | None:
         return ["dev", "set", "version"]
     if command == "sync config-service-json":
         return ["dev", "sync", "config-service-json"]
-    return ["dev", "apply", "precommit-logic"]
+    if command == "apply precommit-logic":
+        return ["dev", "apply", "precommit-logic"]
+    if command == "clean-images":
+        return _prompt_for_clean_images_tokens()
+    if command == "upload-wheels":
+        return _prompt_for_upload_wheels_tokens()
+    return _prompt_for_push_to_cloud_tokens()
+
+
+def _prompt_for_clean_images_tokens() -> list[str] | None:
+    """Prompt for project image cleanup options."""
+    runtime_name = _prompt_for_selection(
+        "Container runtime",
+        [
+            ("auto", "Use OPAMP_CONTAINER_RUNTIME or auto-detect Docker/Podman"),
+            ("docker", "Use Docker"),
+            ("podman", "Use Podman"),
+        ],
+    )
+    if runtime_name is None:
+        return None
+    tokens = ["dev", "clean-images"]
+    if runtime_name != "auto":
+        tokens.extend(["--runtime", runtime_name])
+    if _prompt_yes_no("Include legacy unlabelled opamp-* images?", default=False):
+        tokens.append("--include-legacy")
+    if _prompt_yes_no("Force removal of images referenced by containers?", default=False):
+        tokens.append("--force")
+    if _prompt_yes_no("Dry run only?", default=False):
+        tokens.append("--dry-run")
+    return tokens
+
+
+def _prompt_for_upload_wheels_tokens() -> list[str] | None:
+    """Prompt for the required wheel release destination options."""
+    origin = _prompt_for_selection(
+        "Wheel release origin",
+        [
+            ("local", "Publish wheels already present on this host"),
+            ("aws", "Retrieve wheels from the latest AWS S3 bucket"),
+            ("azure", "Retrieve wheels from the latest Azure storage account"),
+        ],
+    )
+    if origin is None:
+        return None
+    release = input("Release name or tag: ").strip()
+    while not release:
+        print("Release name or tag is required.")
+        release = input("Release name or tag: ").strip()
+    tokens = ["dev", "upload-wheels", "--origin", origin, "--release", release]
+    if _prompt_yes_no("Dry run only?", default=False):
+        tokens.append("--dry-run")
+    return tokens
+
+
+def _prompt_for_push_to_cloud_tokens() -> list[str] | None:
+    """Prompt for a cloud wheel destination and release folder."""
+    origin = _prompt_for_selection(
+        "Wheel cloud destination",
+        [
+            ("aws", "Push wheels to the latest AWS S3 bucket"),
+            ("azure", "Push wheels to the latest Azure storage account"),
+        ],
+    )
+    if origin is None:
+        return None
+    release = input("Release name: ").strip()
+    while not release:
+        print("Release name is required.")
+        release = input("Release name: ").strip()
+    tokens = ["dev", "push-to-cloud", "--origin", origin, "--release", release]
+    if _prompt_yes_no("Dry run only?", default=False):
+        tokens.append("--dry-run")
+    return tokens
 
 
 def _prompt_for_build_tokens(available_components: list[str]) -> list[str] | None:
@@ -808,11 +1085,11 @@ def _extract_repo_root_from_tokens(arg_tokens: Sequence[str]) -> Path | None:
         ``--repo-root=...`` form.
 
     """
-    for index, token in enumerate(arg_tokens):
-        if token == "--repo-root" and index + 1 < len(arg_tokens):
+    for index, argument in enumerate(arg_tokens):
+        if argument == "--repo-root" and index + 1 < len(arg_tokens):
             return Path(arg_tokens[index + 1]).expanduser().resolve()
-        if token.startswith("--repo-root="):
-            return Path(token.partition("=")[2]).expanduser().resolve()
+        if argument.startswith("--repo-root="):
+            return Path(argument.partition("=")[2]).expanduser().resolve()
     return None
 
 
@@ -828,13 +1105,13 @@ def _extract_global_option_tokens(arg_tokens: Sequence[str]) -> list[str]:
     extracted: list[str] = []
     index = 0
     while index < len(arg_tokens):
-        token = arg_tokens[index]
-        if token in {"--repo-root", "--python"} and index + 1 < len(arg_tokens):
-            extracted.extend([token, arg_tokens[index + 1]])
+        argument = arg_tokens[index]
+        if argument in {"--repo-root", "--python"} and index + 1 < len(arg_tokens):
+            extracted.extend([argument, arg_tokens[index + 1]])
             index += 2
             continue
-        if token.startswith("--repo-root=") or token.startswith("--python="):
-            extracted.append(token)
+        if argument.startswith("--repo-root=") or argument.startswith("--python="):
+            extracted.append(argument)
             index += 1
             continue
         index += 1

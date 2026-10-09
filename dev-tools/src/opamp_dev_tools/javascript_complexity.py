@@ -247,9 +247,9 @@ def _eslint_command(*, repo_root: Path, config_path: Path, files: list[Path]) ->
 def _display_path(repo_root: Path, path: Path) -> str:
     """Return a stable display path for one file relative to the repo root when possible."""
     try:
-        return str(path.resolve().relative_to(repo_root))
+        return path.resolve().relative_to(repo_root).as_posix()
     except ValueError:
-        return str(path.resolve())
+        return path.resolve().as_posix()
 
 
 def _combined_process_output(completed: subprocess.CompletedProcess[str]) -> str:

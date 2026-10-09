@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "opamp-mcp-config"
-version = "0.4.1"
+version = "0.6.0"
 description = "Menu-driven MCP client configuration utility for OpAMP"
 readme = "README.md"
 requires-python = ">=3.10"

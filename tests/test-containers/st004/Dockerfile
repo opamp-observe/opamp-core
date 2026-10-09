@@ -3,6 +3,8 @@
 
 FROM python:3.11-slim
 
+LABEL opamp-observe.managed="true"
+
 # ST-004 follows the same source-at-runtime pattern as ST-001/ST-002 so local
 # checkout changes can be exercised without rebuilding a copied-source image.
 ENV DEBIAN_FRONTEND=noninteractive \

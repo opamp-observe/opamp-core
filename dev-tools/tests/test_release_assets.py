@@ -14,11 +14,42 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from opamp_dev_tools import release_assets
 from opamp_dev_tools.release_assets import (
     DEFAULT_RELEASE_COMPONENT_KEYS,
     parse_release_component_keys,
     resolve_release_sbom_paths,
 )
+
+PUBLISH_ARGUMENT_ARTIFACT_PATHS = "artifact_paths"
+
+
+class _ReleaseRuntime:
+    """Capture GitHub release publishing status messages.
+
+    Attributes
+    ----------
+    messages:
+        Informational messages emitted by the publishing helper.
+
+    """
+
+    def __init__(self) -> None:
+        """Initialize an empty message capture."""
+        self.messages: list[str] = []
+
+    def info(self, message: str) -> None:
+        """Capture one publishing status message.
+
+        Parameters
+        ----------
+        message:
+            Console message emitted by the release publisher.
+
+        """
+        self.messages.append(message)
 
 
 def test_default_release_component_selection_includes_independent_deployables() -> None:
@@ -51,3 +82,53 @@ def test_release_component_sbom_overrides_support_new_targets(tmp_path: Path) ->
 
     assert resolved["catalog-service"].name == "custom-catalog.cdx.json"
     assert resolved["cli"].name == "opamp_cli_deployable_artifacts.cyclonedx.json"
+
+
+def test_publish_github_release_files_validates_and_forwards_assets(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """The public release helper should validate files before API delegation."""
+    runtime = _ReleaseRuntime()
+    missing_path = tmp_path / "missing.whl"
+    with pytest.raises(RuntimeError, match="does not exist"):
+        release_assets.publish_github_release_files(
+            runtime=runtime,
+            repo="example/repository",
+            tag="v1.0.0",
+            artifact_paths=[missing_path],
+            github_token="test-auth-value",
+        )
+
+    artifact_path = tmp_path / "example.whl"
+    artifact_path.write_bytes(b"wheel")
+    captured_paths: list[list[Path]] = []
+
+    def fake_publish_release_assets(**arguments: object) -> None:
+        """Capture paths delegated to the existing GitHub API implementation.
+
+        Parameters
+        ----------
+        arguments:
+            Keyword arguments accepted by the internal publisher.
+
+        """
+        captured_paths.append(
+            list(arguments[PUBLISH_ARGUMENT_ARTIFACT_PATHS])  # type: ignore[arg-type]
+        )
+
+    monkeypatch.setattr(
+        release_assets,
+        "_publish_release_assets",
+        fake_publish_release_assets,
+    )
+    release_assets.publish_github_release_files(
+        runtime=runtime,
+        repo="example/repository",
+        tag="v1.0.0",
+        artifact_paths=[artifact_path],
+        github_token="test-auth-value",
+    )
+
+    assert captured_paths == [[artifact_path]]
+    assert runtime.messages[-1] == "Publish complete."

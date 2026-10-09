@@ -570,6 +570,61 @@ def _resolve_github_release_token(github_token: str) -> str:
     )
 
 
+def publish_github_release_files(
+    *,
+    runtime: Any,
+    repo: str,
+    tag: str,
+    artifact_paths: list[Path],
+    github_token: str = "",
+    release_name: str | None = None,
+    release_notes: str = DEFAULT_RELEASE_NOTES,
+    draft: bool = False,
+    prerelease: bool = False,
+) -> None:
+    """Create or reuse a GitHub release and upload local files as assets.
+
+    Parameters
+    ----------
+    runtime:
+        Command runtime used for progress logging.
+    repo:
+        GitHub repository in ``owner/name`` form.
+    tag:
+        Release tag to create or update.
+    artifact_paths:
+        Existing host files uploaded as release assets.
+    github_token:
+        Explicit token override; ``GITHUB_TOKEN`` and ``GH_TOKEN`` are
+        checked when this value is empty.
+    release_name:
+        Optional display name used when a release must be created.
+    release_notes:
+        Release body used when a release must be created.
+    draft:
+        Whether a newly created release should remain a draft.
+    prerelease:
+        Whether a newly created release should be marked as a prerelease.
+
+    """
+    missing_paths = [path for path in artifact_paths if not path.is_file()]
+    if missing_paths:
+        raise RuntimeError(f"Release asset does not exist: {missing_paths[0]}")
+    token = _resolve_github_release_token(github_token)
+    _publish_release_assets(
+        repo=repo,
+        tag=tag,
+        release_name=release_name,
+        release_notes=release_notes,
+        draft=draft,
+        prerelease=prerelease,
+        token=token,
+        artifact_paths=artifact_paths,
+        runtime=runtime,
+    )
+    runtime.info("Publish complete.")
+
+
 def _collect_publish_paths(
     *,
     component_keys: list[str],
@@ -639,9 +694,11 @@ def _github_request(
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = content_type
 
-    request = urllib.request.Request(url, data=data, headers=headers, method=method.upper())
+    request = urllib.request.Request(  # noqa: S310 - URL is built from the GitHub HTTPS API.
+        url, data=data, headers=headers, method=method.upper()
+    )
     try:
-        with urllib.request.urlopen(request) as response:  # nosec B310
+        with urllib.request.urlopen(request) as response:  # noqa: S310  # nosec B310
             raw = response.read()
             if not raw:
                 return None
@@ -663,7 +720,7 @@ def _github_upload_asset(
     url = f"{base_upload_url}?{query}"
     data = asset_path.read_bytes()
     content_type = mimetypes.guess_type(asset_path.name)[0] or "application/octet-stream"
-    request = urllib.request.Request(
+    request = urllib.request.Request(  # noqa: S310 - URL is a GitHub HTTPS upload URL.
         url,
         data=data,
         headers={
@@ -676,7 +733,7 @@ def _github_upload_asset(
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request) as response:  # nosec B310
+        with urllib.request.urlopen(request) as response:  # noqa: S310  # nosec B310
             raw = response.read()
             return json.loads(raw.decode("utf-8"))
     except urllib.error.HTTPError as exc:
@@ -699,7 +756,7 @@ def _release_by_tag(*, repo: str, tag: str, token: str) -> dict[str, Any] | None
         method="GET",
     )
     try:
-        with urllib.request.urlopen(request) as response:  # nosec B310
+        with urllib.request.urlopen(request) as response:  # noqa: S310  # nosec B310
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         if exc.code == 404:

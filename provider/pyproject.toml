@@ -16,7 +16,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opamp-server"
-version = "0.4.1"
+version = "0.6.0"
 description = "OpAMP Server - upstream source https://github.com/mp3monster/fluent-opamp "
 readme = "README.md"
 requires-python = ">=3.10"

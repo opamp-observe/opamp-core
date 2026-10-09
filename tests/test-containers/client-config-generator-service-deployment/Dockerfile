@@ -12,6 +12,8 @@
 
 FROM python:3.11-slim
 
+LABEL opamp-observe.managed="true"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 

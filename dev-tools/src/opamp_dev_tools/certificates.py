@@ -20,7 +20,7 @@ import ipaddress
 import json
 import os
 import pathlib
-from typing import Iterable
+from collections.abc import Iterable
 
 from .runtime import CommandRuntime, prompt_bool, prompt_int, prompt_text
 
@@ -133,10 +133,8 @@ def ensure_provider_tls_config(
             default=DEFAULT_TRUST_ANCHOR_MODE,
         )
 
-    assert config_file is not None
-    assert cert_file is not None
-    assert key_file is not None
-    assert trust_anchor_mode is not None
+    if None in (config_file, cert_file, key_file, trust_anchor_mode):
+        raise RuntimeError("Provider TLS configuration values were not resolved")
 
     normalized_trust_anchor_mode = str(trust_anchor_mode).strip()
     if normalized_trust_anchor_mode not in TRUST_ANCHOR_MODES:
@@ -146,8 +144,8 @@ def ensure_provider_tls_config(
         )
 
     config_path = _resolve_repo_relative_path(runtime.repo_root, config_file)
-    cert_path = _resolve_repo_relative_path(runtime.repo_root, cert_file)
-    key_path = _resolve_repo_relative_path(runtime.repo_root, key_file)
+    cert_path = _resolve_config_reference_path(runtime.repo_root, cert_file)
+    key_path = _resolve_config_reference_path(runtime.repo_root, key_file)
     payload = _load_json_object(config_path)
     provider = payload.get("provider")
     if not isinstance(provider, dict):
@@ -201,6 +199,23 @@ def _resolve_repo_relative_path(repo_root: pathlib.Path, raw_path: str) -> pathl
     if path.is_absolute():
         return path.resolve()
     return (repo_root / path).resolve()
+
+
+def _resolve_config_reference_path(repo_root: pathlib.Path, raw_path: str) -> str:
+    """Resolve local paths while preserving absolute POSIX deployment paths.
+
+    Parameters
+    ----------
+    repo_root:
+        Repository root used to resolve relative certificate references.
+    raw_path:
+        Certificate or key path stored in provider configuration.
+
+    """
+    expanded_path = pathlib.Path(raw_path).expanduser()
+    if pathlib.PurePosixPath(raw_path).is_absolute() and not expanded_path.is_absolute():
+        return raw_path
+    return str(_resolve_repo_relative_path(repo_root, raw_path))
 
 
 def _load_json_object(path: pathlib.Path) -> dict[str, object]:

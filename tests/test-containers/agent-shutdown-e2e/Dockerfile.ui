@@ -13,6 +13,8 @@
 
 FROM mcr.microsoft.com/playwright:v1.59.1-noble
 
+LABEL opamp-observe.managed="true"
+
 WORKDIR /opt/agent-shutdown-ui
 
 RUN npm init -y \

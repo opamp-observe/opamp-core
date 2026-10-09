@@ -285,3 +285,66 @@ def test_main_prefers_explicit_repo_root(
     assert exit_code == 0
     assert f"Repository root: {explicit_root.resolve()}" in stdout
     assert "(current working directory)" not in stdout
+
+
+def test_parser_accepts_container_image_cleanup_options(tmp_path: Path) -> None:
+    """The direct CLI should expose runtime-aware managed image cleanup."""
+    parser = cli.build_parser(tmp_path)
+
+    args = parser.parse_args(
+        [
+            "dev",
+            "clean-images",
+            "--runtime",
+            "podman",
+            "--include-legacy",
+            "--force",
+            "--dry-run",
+        ]
+    )
+
+    assert args.dev_command == "clean-images"
+    assert args.runtime == "podman"
+    assert args.include_legacy is True
+    assert args.force is True
+    assert args.dry_run is True
+
+
+def test_parser_accepts_wheel_upload_origin_and_release(tmp_path: Path) -> None:
+    """The direct CLI should require a release name and supported origin."""
+    parser = cli.build_parser(tmp_path)
+
+    args = parser.parse_args(
+        [
+            "dev",
+            "upload-wheels",
+            "--origin",
+            "azure",
+            "--release",
+            "v5.1.0",
+            "--storage-name",
+            "opampstorage",
+        ]
+    )
+
+    assert args.dev_command == "upload-wheels"
+    assert args.origin == "azure"
+    assert args.release == "v5.1.0"
+    assert args.storage_name == "opampstorage"
+
+
+def test_parser_accepts_local_wheel_upload_and_cloud_push(tmp_path: Path) -> None:
+    """The CLI should separate GitHub publishing from local-to-cloud pushes."""
+    parser = cli.build_parser(tmp_path)
+
+    upload_args = parser.parse_args(
+        ["dev", "upload-wheels", "--origin", "local", "--release", "v5.1.0"]
+    )
+    push_args = parser.parse_args(
+        ["dev", "push-to-cloud", "--origin", "aws", "--release", "v5.1.0"]
+    )
+
+    assert upload_args.origin == "local"
+    assert upload_args.repository == "opamp-observe/opamp-core"
+    assert push_args.dev_command == "push-to-cloud"
+    assert push_args.origin == "aws"

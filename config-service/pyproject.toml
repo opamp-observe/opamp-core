@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "config-service"
-version = "0.5.0"
+version = "0.6.0"
 description = "Tool for viewing and editing observability agent configurations."
 readme = "README.md"
 requires-python = ">=3.10"
