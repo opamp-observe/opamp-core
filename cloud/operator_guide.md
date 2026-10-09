@@ -202,6 +202,30 @@ a manifest that records the destination and regression exit status. The
 timestamp separators are part of one folder name; they do not create a
 year/month/day path hierarchy.
 
+## Release wheel publishing
+
+The developer CLI can publish wheels from the local host or the latest retained
+cloud storage resource to a GitHub release:
+
+```text
+opamp-dev-cli dev upload-wheels --origin local --release v5.1.0
+opamp-dev-cli dev upload-wheels --origin aws --release v5.1.0
+opamp-dev-cli dev upload-wheels --origin azure --release v5.1.0
+```
+
+GitHub uses `GITHUB_TOKEN`, `GH_TOKEN`, or `--github-token` and replaces
+same-name assets on the selected release. AWS defaults to the bucket recorded
+in `dist/aws-artifact-bucket.txt`. Azure defaults to the storage account in
+`dist/azure-retention-storage-account.txt` and the private
+`opamp-regression-results` container. The command checks
+`releases/<release>/wheels/` first and falls back to each provider's deployment
+artifacts when that prefix is empty.
+
+Use `dev push-to-cloud --origin <aws|azure> --release <name>` to send the latest
+local wheels in the other direction. Cloud pushes store wheels below
+`releases/<release>/wheels/`. Use `--storage-name` to choose a different bucket
+or storage account and `--dry-run` to verify a transfer before running it.
+
 ## Main workflow cloud control
 
 `.github/workflows/main_fluent-opamp.yml` always performs its build and uses

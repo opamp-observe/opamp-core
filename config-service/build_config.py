@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 PACKAGE_NAME = "config-service"
-PACKAGE_VERSION = "0.5.0"
+PACKAGE_VERSION = "0.6.0"
 PACKAGE_DESCRIPTION = "Tool for viewing and editing observability agent configurations."
 INSTALL_REQUIRES = [
     "quart>=0.19.4",

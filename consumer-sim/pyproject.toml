@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "opamp-consumer-sim"
-version = "0.4.1"
+version = "0.6.0"
 description = "Standalone multi-instance launcher for OpAMP consumer simulator processes"
 readme = "README.md"
 requires-python = ">=3.10"

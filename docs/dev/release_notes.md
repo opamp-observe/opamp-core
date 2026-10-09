@@ -14,7 +14,7 @@ limitations under the License.
 
 # Release Notes
 
-## 5.1
+## 0.6.0
 ### Consumer
 * Address some gaps found in the decoupling work
 * Addition of the Vector agent
@@ -34,6 +34,9 @@ limitations under the License.
 * Added `cli-config` commands to view, summarize, and safely switch the active CLI demo profile configuration, with autocomplete support and friendlier interactive error messages.
 * Fixed Broker startup from the CLI and source-tree command line by ensuring repo-level shared modules are importable.
 * Improved background startup failures so Broker and other managed processes report a useful log detail alongside the exit code and log path.
+* Added developer CLI commands to clean labelled Docker or Podman regression images and optionally include legacy `opamp-*` images.
+* Added release wheel publishing from local, AWS, or Azure origins into GitHub, with cloud deployment artifact fallbacks and a separate `push-to-cloud` command for local-to-cloud transfers.
+* Updated the full repository security gate to use pytest importlib mode so duplicate test filenames in component-specific test directories collect independently.
 
 ### Cloud Deployments
 * Added equivalent two-VM regression and demonstration environments for AWS CloudFormation and Azure Resource Manager, including networking, restricted administrative access, OpAMP server and consumer roles, Keycloak, OAuth2 Proxy, Nginx, and OpenTelemetry Collectors.

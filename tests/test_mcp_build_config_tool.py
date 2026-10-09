@@ -27,28 +27,28 @@ def _write_fake_wheel(path: Path, *, requires_dist: list[str] | None = None) -> 
     metadata = (
         "Metadata-Version: 2.3\n"
         "Name: opamp-mcp-config\n"
-        "Version: 0.4.1\n"
+        "Version: 0.6.0\n"
         f"{requires}"
     )
     with zipfile.ZipFile(path, "w") as archive:
-        archive.writestr("opamp_mcp_config-0.4.1.dist-info/METADATA", metadata)
+        archive.writestr("opamp_mcp_config-0.6.0.dist-info/METADATA", metadata)
 
 
 def test_read_wheel_metadata_extracts_dependencies(tmp_path: Path) -> None:
     tool = _load_module()
-    wheel_path = tmp_path / "opamp_mcp_config-0.4.1-py3-none-any.whl"
+    wheel_path = tmp_path / "opamp_mcp_config-0.6.0-py3-none-any.whl"
     _write_fake_wheel(wheel_path, requires_dist=["PyYAML>=6; extra == 'yaml'", "build>=1.2"])
 
     metadata = tool._read_wheel_metadata(wheel_path)
 
     assert metadata["name"] == "opamp-mcp-config"
-    assert metadata["version"] == "0.4.1"
+    assert metadata["version"] == "0.6.0"
     assert "build>=1.2" in metadata["requires_dist"]
 
 
 def test_build_sbom_payload_describes_wheel_artifact(tmp_path: Path) -> None:
     tool = _load_module()
-    wheel_path = tmp_path / "opamp_mcp_config-0.4.1-py3-none-any.whl"
+    wheel_path = tmp_path / "opamp_mcp_config-0.6.0-py3-none-any.whl"
     _write_fake_wheel(wheel_path, requires_dist=["build>=1.2"])
 
     payload = tool._build_sbom_payload(wheel_path)
@@ -62,7 +62,7 @@ def test_build_sbom_payload_describes_wheel_artifact(tmp_path: Path) -> None:
 
 def test_write_sbom_creates_json_file(tmp_path: Path) -> None:
     tool = _load_module()
-    wheel_path = tmp_path / "opamp_mcp_config-0.4.1-py3-none-any.whl"
+    wheel_path = tmp_path / "opamp_mcp_config-0.6.0-py3-none-any.whl"
     sbom_path = tmp_path / "sbom" / "opamp_mcp_config.cyclonedx.json"
     _write_fake_wheel(wheel_path)
 
@@ -74,8 +74,8 @@ def test_write_sbom_creates_json_file(tmp_path: Path) -> None:
 
 def test_latest_wheel_prefers_sorted_artifact(tmp_path: Path) -> None:
     tool = _load_module()
-    older = tmp_path / "opamp_mcp_config-0.4.1-py3-none-any.whl"
-    newer = tmp_path / "opamp_mcp_config-0.4.1-py3-none-any.whl"
+    older = tmp_path / "opamp_mcp_config-0.6.0-py3-none-any.whl"
+    newer = tmp_path / "opamp_mcp_config-0.6.0-py3-none-any.whl"
     older.write_text("", encoding="utf-8")
     newer.write_text("", encoding="utf-8")
 
@@ -135,7 +135,7 @@ def test_cli_builds_wheel_and_sbom_without_install(
     tmp_path: Path,
 ) -> None:
     tool = _load_module()
-    wheel_path = tmp_path / "opamp_mcp_config-0.4.1-py3-none-any.whl"
+    wheel_path = tmp_path / "opamp_mcp_config-0.6.0-py3-none-any.whl"
     _write_fake_wheel(wheel_path)
     sbom_path = tmp_path / "opamp_mcp_config.cyclonedx.json"
     calls: list[str] = []
@@ -178,7 +178,7 @@ def test_cli_skip_sbom_and_install_invokes_pip(
     tmp_path: Path,
 ) -> None:
     tool = _load_module()
-    wheel_path = tmp_path / "opamp_mcp_config-0.4.1-py3-none-any.whl"
+    wheel_path = tmp_path / "opamp_mcp_config-0.6.0-py3-none-any.whl"
     _write_fake_wheel(wheel_path)
     calls: list[str] = []
 
