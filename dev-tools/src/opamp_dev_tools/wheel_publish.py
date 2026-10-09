@@ -29,9 +29,12 @@ from typing import Any
 from urllib.parse import quote
 
 from .release_assets import publish_github_release_files
+from .runtime import CommandRuntimeError
 
 AWS_DEFAULT_REGION = "eu-west-2"
 AWS_DEFAULT_ARTIFACT_KEY = "opamp-cloud/opamp-cloud-artifacts.tar.gz"
+AWS_EMPTY_QUERY_RESULT = "None"
+AWS_RETAINED_BUCKET_PREFIX = "opamp-regression-"
 AWS_REGION_ENV = "AWS_REGION"
 AWS_DEFAULT_REGION_ENV = "AWS_DEFAULT_REGION"
 AWS_STORAGE_MARKER = "dist/aws-artifact-bucket.txt"
@@ -303,9 +306,7 @@ def _push_to_aws(
         Object-key prefix containing the release destination.
 
     """
-    bucket_name = options.storage_name.strip() or _read_storage_marker(
-        runtime.repo_root, AWS_STORAGE_MARKER
-    )
+    bucket_name = _resolve_aws_bucket_name(runtime, options.storage_name)
     resolved_region = _resolve_aws_region(options.aws_region)
     for wheel in wheels:
         destination = f"s3://{bucket_name}/{storage_prefix}/{wheel.path.name}"
@@ -416,9 +417,7 @@ def _retrieve_aws_wheels(
         Host directory that receives downloaded wheel artifacts.
 
     """
-    bucket_name = options.storage_name.strip() or _read_storage_marker(
-        runtime.repo_root, AWS_STORAGE_MARKER
-    )
+    bucket_name = _resolve_aws_bucket_name(runtime, options.storage_name)
     resolved_region = _resolve_aws_region(options.aws_region)
     release_prefix = _storage_prefix(options.prefix, _storage_segment(options.release))
     release_source = f"s3://{bucket_name}/{release_prefix}/"
@@ -612,6 +611,80 @@ def _resolve_aws_region(configured_region: str) -> str:
         or os.environ.get(AWS_DEFAULT_REGION_ENV, "").strip()
         or AWS_DEFAULT_REGION
     )
+
+
+def _resolve_aws_bucket_name(runtime: Any, configured_name: str) -> str:
+    """Resolve an explicit, recorded, or newly discovered retained S3 bucket.
+
+    Parameters
+    ----------
+    runtime:
+        Command runtime used for paths, AWS CLI execution, and console logging.
+    configured_name:
+        Explicit S3 bucket override supplied by the user.
+
+    """
+    explicit_name = configured_name.strip()
+    if explicit_name:
+        return explicit_name
+
+    marker_path = (runtime.repo_root / AWS_STORAGE_MARKER).resolve()
+    if marker_path.is_file():
+        recorded_name = marker_path.read_text(encoding="utf-8").strip()
+        if recorded_name:
+            runtime.info(f"DEBUG: using retained AWS bucket marker: {recorded_name}")
+            return recorded_name
+        runtime.info(f"DEBUG: retained AWS bucket marker is empty: {marker_path}")
+    else:
+        runtime.info(f"DEBUG: retained AWS bucket marker does not exist: {marker_path}")
+
+    discovered_name = _discover_latest_aws_bucket(runtime)
+    marker_path.parent.mkdir(parents=True, exist_ok=True)
+    marker_path.write_text(f"{discovered_name}\n", encoding="utf-8")
+    runtime.info(f"Discovered latest retained AWS bucket: {discovered_name}")
+    runtime.info(f"Recorded retained AWS bucket marker: {marker_path}")
+    return discovered_name
+
+
+def _discover_latest_aws_bucket(runtime: Any) -> str:
+    """Query AWS for the newest retained OpAMP S3 bucket by creation time.
+
+    Parameters
+    ----------
+    runtime:
+        Command runtime used to execute the AWS CLI query.
+
+    """
+    bucket_query = (
+        "sort_by(Buckets[?starts_with(Name, `"
+        f"{AWS_RETAINED_BUCKET_PREFIX}`)], &CreationDate)[-1].Name"
+    )
+    try:
+        completed = runtime.run(
+            [
+                "aws",
+                "s3api",
+                "list-buckets",
+                "--query",
+                bucket_query,
+                "--output",
+                "text",
+            ],
+            capture_output=True,
+        )
+    except CommandRuntimeError as error:
+        raise RuntimeError(
+            "Unable to discover retained AWS buckets. Authenticate the AWS CLI "
+            "(run 'aws login' when using AWS login sessions), then retry; alternatively "
+            "pass --storage-name."
+        ) from error
+    bucket_name = (completed.stdout or "").strip()
+    if not bucket_name or bucket_name == AWS_EMPTY_QUERY_RESULT:
+        raise RuntimeError(
+            "No retained AWS S3 bucket was found with prefix "
+            f"{AWS_RETAINED_BUCKET_PREFIX}. Deploy AWS first or pass --storage-name."
+        )
+    return bucket_name
 
 
 def _read_wheel_artifact(wheel_path: Path) -> WheelArtifact:

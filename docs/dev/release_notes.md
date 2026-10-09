@@ -35,7 +35,7 @@ limitations under the License.
 * Fixed Broker startup from the CLI and source-tree command line by ensuring repo-level shared modules are importable.
 * Improved background startup failures so Broker and other managed processes report a useful log detail alongside the exit code and log path.
 * Added developer CLI commands to clean labelled Docker or Podman regression images and optionally include legacy `opamp-*` images.
-* Added release wheel publishing from local, AWS, or Azure origins into GitHub, with cloud deployment artifact fallbacks and a separate `push-to-cloud` command for local-to-cloud transfers.
+* Added release wheel publishing from local, AWS, or Azure origins into GitHub, with automatic discovery of the newest retained AWS bucket, cloud deployment artifact fallbacks, and a separate `push-to-cloud` command for local-to-cloud transfers.
 * Updated the full repository security gate to use pytest importlib mode so duplicate test filenames in component-specific test directories collect independently.
 
 ### Cloud Deployments

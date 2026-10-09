@@ -68,7 +68,9 @@ GitHub uploads target `opamp-observe/opamp-core` by default and use
 `--github-token`, `GITHUB_TOKEN`, or `GH_TOKEN`. Override the repository with
 `--repository owner/name`.
 
-AWS uses `--storage-name` or `dist/aws-artifact-bucket.txt`; Azure uses
+AWS uses `--storage-name` or `dist/aws-artifact-bucket.txt`. When neither is
+available, it queries AWS and selects the newest `opamp-regression-*` bucket by
+creation time, then records that bucket in the marker file. Azure uses
 `--storage-name` or `dist/azure-retention-storage-account.txt`, with the
 `opamp-regression-results` release-wheel container by default.
 

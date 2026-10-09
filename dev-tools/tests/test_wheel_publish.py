@@ -26,6 +26,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from opamp_dev_tools import wheel_publish
+from opamp_dev_tools.runtime import CommandRuntimeError
 
 FIRST_TIMESTAMP = 1_700_000_000
 SECOND_TIMESTAMP = FIRST_TIMESTAMP + 100
@@ -121,6 +122,56 @@ class _DownloadRuntime(_FakeRuntime):
         completed = super().run(command)
         self.command_effect(command)
         return completed
+
+
+class _AwsDiscoveryRuntime(_FakeRuntime):
+    """Return a configured result for retained AWS bucket discovery.
+
+    Attributes
+    ----------
+    bucket_output:
+        AWS CLI text returned by the simulated list-buckets query.
+
+    """
+
+    def __init__(self, repo_root: Path, bucket_output: str) -> None:
+        """Initialize the runtime with simulated AWS query output.
+
+        Parameters
+        ----------
+        repo_root:
+            Temporary repository root containing wheels and marker files.
+        bucket_output:
+            Bucket name or empty AWS CLI query result returned to the resolver.
+
+        """
+        super().__init__(repo_root)
+        self.bucket_output = bucket_output
+
+    def run(
+        self,
+        command: list[str],
+        *,
+        capture_output: bool = False,
+    ) -> subprocess.CompletedProcess[str]:
+        """Capture the AWS query and return its configured text output.
+
+        Parameters
+        ----------
+        command:
+            AWS CLI command being simulated.
+        capture_output:
+            Whether the caller requested captured standard output.
+
+        """
+        self.commands.append(command)
+        assert capture_output is True
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=self.bucket_output,
+            stderr="",
+        )
 
 
 def _write_wheel(
@@ -219,6 +270,117 @@ def test_upload_latest_wheels_to_aws_uses_bucket_marker(tmp_path: Path) -> None:
     ]
 
 
+def test_push_to_aws_discovers_and_records_latest_bucket(tmp_path: Path) -> None:
+    """AWS transfers should discover the newest retained bucket without a marker."""
+    _write_wheel(
+        tmp_path / "dist" / "example-1.0-py3-none-any.whl",
+        project_name="example",
+        version="1.0",
+        timestamp=FIRST_TIMESTAMP,
+    )
+    discovered_bucket = "opamp-regression-123456789012-2026-10-09-12-00-00"
+    runtime = _AwsDiscoveryRuntime(tmp_path, f"{discovered_bucket}\n")
+
+    wheel_publish.push_latest_wheels_to_cloud(
+        runtime,
+        wheel_publish.WheelUploadOptions(
+            origin="aws",
+            release="v1.2.3",
+            dry_run=True,
+        ),
+    )
+
+    assert runtime.commands[0][:3] == ["aws", "s3api", "list-buckets"]
+    assert wheel_publish.AWS_RETAINED_BUCKET_PREFIX in runtime.commands[0][4]
+    assert (tmp_path / wheel_publish.AWS_STORAGE_MARKER).read_text(
+        encoding="utf-8"
+    ) == f"{discovered_bucket}\n"
+    assert any(f"s3://{discovered_bucket}/" in message for message in runtime.messages)
+
+
+@pytest.mark.parametrize("bucket_output", ["None\n", "\n"])
+def test_push_to_aws_reports_when_discovery_finds_no_bucket(
+    tmp_path: Path,
+    bucket_output: str,
+) -> None:
+    """AWS discovery should explain how to recover when no retained bucket exists.
+
+    Parameters
+    ----------
+    tmp_path:
+        Temporary repository root containing a wheel and empty marker.
+    bucket_output:
+        Empty result representation returned by the AWS CLI.
+
+    """
+    _write_wheel(
+        tmp_path / "dist" / "example-1.0-py3-none-any.whl",
+        project_name="example",
+        version="1.0",
+        timestamp=FIRST_TIMESTAMP,
+    )
+    marker_path = tmp_path / wheel_publish.AWS_STORAGE_MARKER
+    marker_path.parent.mkdir(parents=True, exist_ok=True)
+    marker_path.write_text("\n", encoding="utf-8")
+    runtime = _AwsDiscoveryRuntime(tmp_path, bucket_output)
+
+    with pytest.raises(RuntimeError, match="Deploy AWS first or pass --storage-name"):
+        wheel_publish.push_latest_wheels_to_cloud(
+            runtime,
+            wheel_publish.WheelUploadOptions(
+                origin="aws",
+                release="v1.2.3",
+                dry_run=True,
+            ),
+        )
+
+    assert marker_path.read_text(encoding="utf-8") == "\n"
+
+
+def test_push_to_aws_reports_discovery_authentication_failure(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """AWS discovery failures should provide authentication recovery guidance."""
+    _write_wheel(
+        tmp_path / "dist" / "example-1.0-py3-none-any.whl",
+        project_name="example",
+        version="1.0",
+        timestamp=FIRST_TIMESTAMP,
+    )
+    runtime = _FakeRuntime(tmp_path)
+
+    def fail_aws_query(
+        _command: list[str],
+        *,
+        capture_output: bool = False,
+    ) -> subprocess.CompletedProcess[str]:
+        """Simulate an AWS CLI session or authorization failure.
+
+        Parameters
+        ----------
+        _command:
+            AWS CLI discovery command supplied by the resolver.
+        capture_output:
+            Whether command output was requested by the resolver.
+
+        """
+        assert capture_output is True
+        raise CommandRuntimeError("AWS session expired")
+
+    monkeypatch.setattr(runtime, "run", fail_aws_query)
+
+    with pytest.raises(RuntimeError, match="Authenticate the AWS CLI"):
+        wheel_publish.push_latest_wheels_to_cloud(
+            runtime,
+            wheel_publish.WheelUploadOptions(
+                origin="aws",
+                release="v1.2.3",
+                dry_run=True,
+            ),
+        )
+
+
 def test_upload_latest_wheels_to_azure_uses_explicit_account(tmp_path: Path) -> None:
     """Azure uploads should target the requested account and release prefix."""
     wheel_path = tmp_path / "dist" / "example-1.0-py3-none-any.whl"
@@ -258,6 +420,32 @@ def test_upload_latest_wheels_to_azure_uses_explicit_account(tmp_path: Path) -> 
         "--overwrite",
         "true",
     ]
+
+
+def test_push_to_azure_uses_storage_account_marker(tmp_path: Path) -> None:
+    """Azure pushes should read a non-empty storage account marker."""
+    wheel_path = tmp_path / "dist" / "example-1.0-py3-none-any.whl"
+    _write_wheel(
+        wheel_path,
+        project_name="example",
+        version="1.0",
+        timestamp=FIRST_TIMESTAMP,
+    )
+    marker_path = tmp_path / wheel_publish.AZURE_STORAGE_MARKER
+    marker_path.parent.mkdir(parents=True, exist_ok=True)
+    marker_path.write_text("markedaccount\n", encoding="utf-8")
+    runtime = _FakeRuntime(tmp_path)
+
+    wheel_publish.push_latest_wheels_to_cloud(
+        runtime,
+        wheel_publish.WheelUploadOptions(
+            origin="azure",
+            release="v1.2.3",
+            dry_run=True,
+        ),
+    )
+
+    assert any("--account-name markedaccount" in message for message in runtime.messages)
 
 
 def test_upload_latest_wheels_to_github_reuses_release_publisher(
@@ -479,16 +667,16 @@ def test_upload_validation_reports_bad_origin_release_prefix_and_markers(tmp_pat
     with pytest.raises(RuntimeError, match="marker file does not exist"):
         wheel_publish.upload_latest_wheels(
             runtime,
-            wheel_publish.WheelUploadOptions(origin="aws", release="v1"),
+            wheel_publish.WheelUploadOptions(origin="azure", release="v1"),
         )
 
-    marker_path = tmp_path / wheel_publish.AWS_STORAGE_MARKER
+    marker_path = tmp_path / wheel_publish.AZURE_STORAGE_MARKER
     marker_path.parent.mkdir(parents=True, exist_ok=True)
     marker_path.write_text("\n", encoding="utf-8")
     with pytest.raises(RuntimeError, match="marker file is empty"):
         wheel_publish.upload_latest_wheels(
             runtime,
-            wheel_publish.WheelUploadOptions(origin="aws", release="v1"),
+            wheel_publish.WheelUploadOptions(origin="azure", release="v1"),
         )
 
 

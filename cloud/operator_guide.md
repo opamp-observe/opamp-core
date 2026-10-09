@@ -163,6 +163,7 @@ setup issues from application regressions:
 | `actions/checkout`, `actions/setup-python`, or another external action is not allowed | The organization permits only actions from repositories owned by `opamp-observe` | Keep the workflow on inline shell steps or use an organization-owned mirror of the action. A GitHub token does not override this policy. |
 | `could not read Username for 'https://github.com'` during manual checkout | The replacement checkout step cannot authenticate the fetch | Confirm the workflow has `permissions: contents: read` and passes `GITHUB_TOKEN` through the `http.extraheader` fetch option. |
 | `AWS_ROLE_TO_ASSUME secret is required` | The repository secret was not configured, or the main workflow was pointed at AWS before the role existed | Create or update the GitHub OIDC role, store its ARN as the `AWS_ROLE_TO_ASSUME` repository secret, or set `CLOUD_PROVIDER` to `none` until AWS is ready. |
+| `Unable to discover retained AWS buckets` or `Your session has expired` | The local AWS CLI session expired before `upload-wheels` could find the newest retained bucket | Run `aws login` for AWS login sessions, or use the authentication command required by the active AWS profile, then retry. `--storage-name <bucket>` bypasses discovery but still requires S3 access. |
 | `fatal: detected dubious ownership in repository at '/workspace/source'` | A Linux container is reading a checkout owned by the host or GitHub runner user | Register the mounted checkout as a Git `safe.directory` before commands such as `git ls-files`. |
 | `env: 'bash\r': No such file or directory` or similar script startup failures | Windows line endings reached a Linux container or VM bootstrap script | Rebuild the cloud artifacts without `SKIP_PACKAGE`, and keep Bash scripts and generated manifests normalized to LF. |
 | `ImportError` from a partially initialized `opamp_consumer.abstract_client` | Consumer plugin startup imported plugin configuration while the abstract client module was still initializing | Run `consumer-plugin-startup` locally; keep plugin constants and shared configuration imports out of circular module paths. |
@@ -214,8 +215,10 @@ opamp-dev-cli dev upload-wheels --origin azure --release v5.1.0
 ```
 
 GitHub uses `GITHUB_TOKEN`, `GH_TOKEN`, or `--github-token` and replaces
-same-name assets on the selected release. AWS defaults to the bucket recorded
-in `dist/aws-artifact-bucket.txt`. Azure defaults to the storage account in
+same-name assets on the selected release. AWS first uses the bucket recorded
+in `dist/aws-artifact-bucket.txt`; when that marker is absent or empty, it
+discovers the newest `opamp-regression-*` bucket by creation time and records
+the result locally. Azure defaults to the storage account in
 `dist/azure-retention-storage-account.txt` and the private
 `opamp-regression-results` container. The command checks
 `releases/<release>/wheels/` first and falls back to each provider's deployment

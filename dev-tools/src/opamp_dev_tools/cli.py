@@ -186,7 +186,10 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
     upload_wheels_parser.add_argument(
         "--storage-name",
         default="",
-        help="Source AWS bucket or Azure account; defaults to the latest deployment marker",
+        help=(
+            "Source AWS bucket or Azure account; uses the deployment marker, then AWS "
+            "discovers the newest retained bucket"
+        ),
     )
     upload_wheels_parser.add_argument(
         "--repository",
@@ -253,7 +256,10 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
     push_to_cloud_parser.add_argument(
         "--storage-name",
         default="",
-        help="AWS bucket or Azure account; defaults to the latest deployment marker",
+        help=(
+            "AWS bucket or Azure account; uses the deployment marker, then AWS discovers "
+            "the newest retained bucket"
+        ),
     )
     push_to_cloud_parser.add_argument(
         "--prefix",
