@@ -17,6 +17,8 @@ FROM docker.elastic.co/elastic-agent/elastic-agent:9.3.3 AS elastic-agent-runtim
 
 FROM python:3.11-slim
 
+LABEL opamp-observe.managed="true"
+
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONUNBUFFERED=1 \

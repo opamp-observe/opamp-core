@@ -3,6 +3,8 @@
 
 FROM timberio/vector:0.58.0-debian
 
+LABEL opamp-observe.managed="true"
+
 USER root
 
 ENV DEBIAN_FRONTEND=noninteractive \

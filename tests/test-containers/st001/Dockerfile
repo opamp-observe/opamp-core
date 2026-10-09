@@ -3,6 +3,8 @@
 
 FROM python:3.11-slim
 
+LABEL opamp-observe.managed="true"
+
 # The ST-001 services all use this same image. Source is staged at runtime so
 # the containers can test either the mounted working tree or a pinned Git ref.
 ENV DEBIAN_FRONTEND=noninteractive \
