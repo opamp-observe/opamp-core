@@ -111,6 +111,10 @@ def _ensure_regression_directories(repo_root: Path) -> None:
         repo_root / "dist" / "test-reports" / "vector-plugin-e2e",
         repo_root / "dist" / "test-reports" / "vector-plugin-e2e" / "consumer-vector",
         repo_root / "dist" / "test-reports" / "config-service-ui-playwright-batch",
+        repo_root / "dist" / "test-reports" / "st004b",
+        repo_root / "dist" / "test-reports" / "st009",
+        repo_root / "dist" / "test-reports" / "st010",
+        repo_root / "dist" / "test-reports" / "st011",
         repo_root / "config-service" / "dist",
     ):
         directory.mkdir(parents=True, exist_ok=True)
@@ -124,7 +128,16 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
         "opamp-client-config-generator-deployment:latest"
     )
     consumer_deployment_image = "opamp-consumer-deployment-test:latest"
+    consumer_deployment_examples = (
+        repo_root / "tests/test-containers/opamp-consumer-deployment/examples"
+    )
+    consumer_deployment_reports = (
+        repo_root / "dist/test-reports/opamp-consumer-deployment"
+    )
     config_service_ui_image = "config-service-ui-playwright-batch:latest"
+    st009_image = "opamp-st009-test:latest"
+    st010_image = "opamp-st010-test:latest"
+    st011_image = "opamp-st011-test:latest"
     return [
         RegressionTest(
             test_id="component-wheel-deployment",
@@ -171,7 +184,9 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                     "-f",
                     str(
                         repo_root
-                        / "tests/test-containers/client-config-generator-service-deployment/Dockerfile"
+                        / "tests/test-containers"
+                        / "client-config-generator-service-deployment"
+                        / "Dockerfile"
                     ),
                     "-t",
                     client_config_generator_deployment_image,
@@ -216,8 +231,9 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
         RegressionTest(
             test_id="opamp-consumer-deployment-smoke",
             description=(
-                "Builds the consumer wheel, then smoke-tests Fluent Bit, Fluentd, and Elastic Heartbeat "
-                "deployment containers through install, plugin verification, and config staging."
+                "Builds the consumer wheel, then smoke-tests Fluent Bit, Fluentd, "
+                "and Elastic Heartbeat deployment containers through install, plugin "
+                "verification, and config staging."
             ),
             commands=(
                 (
@@ -253,9 +269,9 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                     "-v",
                     f"{repo_root}:/host-assets",
                     "-v",
-                    f"{repo_root / 'tests/test-containers/opamp-consumer-deployment/examples'}:/config",
+                    f"{consumer_deployment_examples}:/config",
                     "-v",
-                    f"{repo_root / 'dist/test-reports/opamp-consumer-deployment/fluentbit'}:/host-output",
+                    f"{consumer_deployment_reports / 'fluentbit'}:/host-output",
                     "--add-host",
                     "host.docker.internal:host-gateway",
                     "-e",
@@ -269,9 +285,9 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                     "-v",
                     f"{repo_root}:/host-assets",
                     "-v",
-                    f"{repo_root / 'tests/test-containers/opamp-consumer-deployment/examples'}:/config",
+                    f"{consumer_deployment_examples}:/config",
                     "-v",
-                    f"{repo_root / 'dist/test-reports/opamp-consumer-deployment/fluentd'}:/host-output",
+                    f"{consumer_deployment_reports / 'fluentd'}:/host-output",
                     "--add-host",
                     "host.docker.internal:host-gateway",
                     "-e",
@@ -285,9 +301,9 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                     "-v",
                     f"{repo_root}:/host-assets",
                     "-v",
-                    f"{repo_root / 'tests/test-containers/opamp-consumer-deployment/examples'}:/config",
+                    f"{consumer_deployment_examples}:/config",
                     "-v",
-                    f"{repo_root / 'dist/test-reports/opamp-consumer-deployment/elastic-heartbeat'}:/host-output",
+                    f"{consumer_deployment_reports / 'elastic-heartbeat'}:/host-output",
                     "--add-host",
                     "host.docker.internal:host-gateway",
                     "-e",
@@ -299,7 +315,13 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
         RegressionTest(
             test_id="st001",
             description="Runs ST-001 socket and HTTP simulator/provider container scenarios.",
-            commands=((bash, _bash_path(repo_root / "tests/test-containers/st001/scripts/run_st001.sh"), "all"),),
+            commands=(
+                (
+                    bash,
+                    _bash_path(repo_root / "tests/test-containers/st001/scripts/run_st001.sh"),
+                    "all",
+                ),
+            ),
         ),
         RegressionTest(
             test_id="agent-shutdown-e2e",
@@ -312,7 +334,9 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                     bash,
                     _bash_path(
                         repo_root
-                        / "tests/test-containers/agent-shutdown-e2e/scripts/run_agent_shutdown_e2e.sh"
+                        / "tests/test-containers"
+                        / "agent-shutdown-e2e"
+                        / "scripts/run_agent_shutdown_e2e.sh"
                     ),
                 ),
             ),
@@ -320,12 +344,136 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
         RegressionTest(
             test_id="st002",
             description="Runs ST-002 socket and HTTP simulator/provider container scenarios.",
-            commands=((bash, _bash_path(repo_root / "tests/test-containers/st002/scripts/run_st002.sh"), "all"),),
+            commands=(
+                (
+                    bash,
+                    _bash_path(repo_root / "tests/test-containers/st002/scripts/run_st002.sh"),
+                    "all",
+                ),
+            ),
         ),
         RegressionTest(
             test_id="st004",
             description="Runs ST-004 Keycloak authorization container scenario.",
-            commands=((bash, _bash_path(repo_root / "tests/test-containers/st004/scripts/run_st004.sh"), "keycloak"),),
+            commands=(
+                (
+                    bash,
+                    _bash_path(repo_root / "tests/test-containers/st004/scripts/run_st004.sh"),
+                    "keycloak",
+                ),
+            ),
+        ),
+        RegressionTest(
+            test_id="st004b",
+            description=(
+                "Runs ST-004B no-auth, static-token, MCP gate, JWT rejection, "
+                "and TLS container profiles."
+            ),
+            commands=(
+                (
+                    bash,
+                    _bash_path(
+                        repo_root / "tests/test-containers/st004b/scripts/run_st004b.sh"
+                    ),
+                    "all",
+                ),
+            ),
+        ),
+        RegressionTest(
+            test_id="st009",
+            description=(
+                "Runs the ST-009 simulator launcher safety, scripted failure, "
+                "and ten-client provider scale scenario."
+            ),
+            commands=(
+                (
+                    "docker",
+                    "build",
+                    "-f",
+                    str(repo_root / "tests/test-containers/st009/Dockerfile"),
+                    "-t",
+                    st009_image,
+                    str(repo_root),
+                ),
+                (
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-e",
+                    "OPAMP_REPO=/workspace/opamp",
+                    "-e",
+                    "RESULTS_DIR=/host-output",
+                    "-v",
+                    f"{repo_root}:/workspace/opamp:ro",
+                    "-v",
+                    f"{repo_root / 'dist/test-reports/st009'}:/host-output",
+                    st009_image,
+                ),
+            ),
+        ),
+        RegressionTest(
+            test_id="st010",
+            description=(
+                "Runs the ST-010 CLI lifecycle, clean package deployment, sdist, "
+                "SBOM, and installed entry-point scenario."
+            ),
+            commands=(
+                (
+                    "docker",
+                    "build",
+                    "-f",
+                    str(repo_root / "tests/test-containers/st010/Dockerfile"),
+                    "-t",
+                    st010_image,
+                    str(repo_root),
+                ),
+                (
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-e",
+                    "OPAMP_REPO=/workspace/opamp",
+                    "-e",
+                    "RESULTS_DIR=/host-output",
+                    "-v",
+                    f"{repo_root}:/workspace/opamp:ro",
+                    "-v",
+                    f"{repo_root / 'dist/test-reports/st010'}:/host-output",
+                    st010_image,
+                ),
+            ),
+        ),
+        RegressionTest(
+            test_id="st011",
+            description=(
+                "Runs the ST-011 provider MCP, client configuration, and broker "
+                "integration contracts using local Slack and LLM doubles."
+            ),
+            commands=(
+                (
+                    "docker",
+                    "build",
+                    "-f",
+                    str(repo_root / "tests/test-containers/st011/Dockerfile"),
+                    "-t",
+                    st011_image,
+                    str(repo_root),
+                ),
+                (
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-e",
+                    "OPAMP_REPO=/workspace/opamp",
+                    "-e",
+                    "RESULTS_DIR=/host-output",
+                    "-v",
+                    f"{repo_root}:/workspace/opamp:ro",
+                    "-v",
+                    f"{repo_root / 'dist/test-reports/st011'}:/host-output",
+                    st011_image,
+                ),
+            ),
         ),
         RegressionTest(
             test_id="vector-plugin-e2e",
@@ -333,7 +481,15 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                 "Runs a provider plus Vector-supervising consumer and verifies "
                 "Vector health/output evidence."
             ),
-            commands=((bash, _bash_path(repo_root / "tests/test-containers/vector-plugin-e2e/scripts/run_vector_plugin_e2e.sh")),),
+            commands=(
+                (
+                    bash,
+                    _bash_path(
+                        repo_root
+                        / "tests/test-containers/vector-plugin-e2e/scripts/run_vector_plugin_e2e.sh"
+                    ),
+                ),
+            ),
         ),
         RegressionTest(
             test_id="config-service-ui-playwright-batch",
@@ -363,7 +519,10 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                     "docker",
                     "build",
                     "-f",
-                    str(repo_root / "tests/test-containers/config-service-ui-playwright-batch/Dockerfile"),
+                    str(
+                        repo_root
+                        / "tests/test-containers/config-service-ui-playwright-batch/Dockerfile"
+                    ),
                     "-t",
                     config_service_ui_image,
                     str(repo_root),
@@ -378,13 +537,22 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                     "-e",
                     "CONFIG_SERVICE_DIR=/workspace/opamp/config-service",
                     "-e",
-                    "CONFIG_SERVICE_CONFIG_PATH=/workspace/opamp/config-service/config/config-service.json",
+                    (
+                        "CONFIG_SERVICE_CONFIG_PATH="
+                        "/workspace/opamp/config-service/config/config-service.json"
+                    ),
                     "-e",
                     "WHEEL_DIR=/workspace/opamp/config-service/dist",
                     "-e",
-                    "RESULTS_DIR=/workspace/opamp/dist/test-reports/config-service-ui-playwright-batch",
+                    (
+                        "RESULTS_DIR="
+                        "/workspace/opamp/dist/test-reports/config-service-ui-playwright-batch"
+                    ),
                     "-e",
-                    "PLAYWRIGHT_BATCH_CONFIG=/workspace/opamp/config-service/dev-tools/playwright-batch-config/default-batch-config.json",
+                    (
+                        "PLAYWRIGHT_BATCH_CONFIG=/workspace/opamp/config-service/"
+                        "dev-tools/playwright-batch-config/default-batch-config.json"
+                    ),
                     "-v",
                     f"{repo_root}:/workspace/opamp",
                     config_service_ui_image,
@@ -436,7 +604,11 @@ def _append_failed_command_details(
         if int(command_payload.get(EXIT_CODE_KEY) or 0) == 0:
             continue
         command = command_payload.get(COMMAND_KEY, [])
-        command_text = " ".join(str(part) for part in command) if isinstance(command, list) else str(command)
+        command_text = (
+            " ".join(str(part) for part in command)
+            if isinstance(command, list)
+            else str(command)
+        )
         lines.extend(["", f"- Command: `{command_text}`"])
         lines.append(f"- Exit code: `{command_payload.get(EXIT_CODE_KEY)}`")
         stderr_tail = _tail_text(command_payload.get(STDERR_KEY), COMMAND_TAIL_LIMIT)
@@ -587,13 +759,28 @@ def _run_test(test: RegressionTest, *, repo_root: Path) -> dict[str, object]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run selected container regressions and write aggregate evidence.
+
+    Args:
+        argv: Optional command-line arguments used instead of process arguments.
+    """
     repo_root = _repo_root()
     _ensure_regression_directories(repo_root)
     tests = _default_tests(repo_root)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--list", action="store_true", help="list regression tests and exit")
-    parser.add_argument("--only", action="append", default=[], help="run only the named test id; can be repeated")
-    parser.add_argument("--skip", action="append", default=[], help="skip the named test id; can be repeated")
+    parser.add_argument(
+        "--only",
+        action="append",
+        default=[],
+        help="run only the named test id; can be repeated",
+    )
+    parser.add_argument(
+        "--skip",
+        action="append",
+        default=[],
+        help="skip the named test id; can be repeated",
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,

@@ -3,10 +3,9 @@ Licensed under the Apache License, Version 2.0.
 Copyright 2026 mp3monster.org
 -->
 
-# ST-002 Provider and Consumer Baseline Containers
+# ST-002 Transport Baseline Scaffolding
 
-This folder contains the Docker artefacts for ST-002: provider plus simulator
-consumer baseline OpAMP sessions over WebSocket and HTTP.
+This folder currently repeats the provider plus simulator transport baseline over WebSocket and HTTP. It does not yet queue remote configuration or assert config-status transitions, on-disk updates, backup behavior, content-type rejection, or hash mismatch handling. It is therefore scaffolding rather than complete ST-002 coverage.
 
 The socket profile is the priority path:
 
@@ -60,11 +59,6 @@ dist/test-reports/st002/<socket|http>/
 The primary review file is `results.md`; raw API captures are written beside it
 as JSON.
 
-## Optional Real-Agent Variants
+## Remaining ST-002 Coverage
 
-ST-002 defines Fluent Bit and Fluentd real-agent flows as optional when those
-binaries are available. This folder keeps the mandatory simulator coverage
-runnable without downloading real agent binaries. Use the existing
-`tests/test-containers/opamp-consumer-deployment` harness for Fluent Bit/Fluentd
-wheel deployment experiments, or add new ST-002 profiles here when a pinned
-agent download source is required.
+Add remote-config queueing and status assertions to both transport profiles, then add pinned Fluent Bit and Fluentd profiles for file replacement, preservation, and rejection behavior. The existing `tests/test-containers/opamp-consumer-deployment` harness can supply the packaged real-agent base.

@@ -98,6 +98,7 @@ def test_validate_payload_against_schema_accepts_valid_payload(
 
 def test_start_instances_fails_fast_on_schema_violation(
     tmp_path: pathlib.Path,
+    monkeypatch,
 ) -> None:
     """Start must fail with a strong, explicit schema-validation message."""
     config_path = tmp_path / "launch.json"
@@ -116,6 +117,8 @@ def test_start_instances_fails_fast_on_schema_violation(
         encoding="utf-8",
     )
 
+    monkeypatch.setenv(launcher.ENV_APP_ENABLE_DEV_FEATURES, "true")
+
     with pytest.raises(RuntimeError, match="FATAL CONFIG SCHEMA VALIDATION FAILED") as exc_info:
         launcher._start_instances(config_path)
 
@@ -123,6 +126,23 @@ def test_start_instances_fails_fast_on_schema_violation(
     assert "config-file=" in error_text
     assert "schema-file=" in error_text
     assert "Validation issues:" in error_text
+
+
+def test_start_instances_requires_development_features_before_loading_config(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    """Startup must stop before reading configuration when development features are disabled."""
+    config_path = tmp_path / "launch.json"
+    monkeypatch.delenv(launcher.ENV_APP_ENABLE_DEV_FEATURES, raising=False)
+    monkeypatch.setattr(
+        launcher,
+        "_load_launcher_payload",
+        lambda _config_path: pytest.fail("configuration must not be loaded"),
+    )
+
+    with pytest.raises(RuntimeError, match="APP_ENABLE_DEV_FEATURES=true"):
+        launcher._start_instances(config_path)
 
 
 def test_build_process_environment_sets_process_record_context() -> None:
@@ -249,6 +269,7 @@ def test_start_instances_clears_stale_semaphore_in_working_dir(
         ),
         encoding="utf-8",
     )
+    monkeypatch.setenv(launcher.ENV_APP_ENABLE_DEV_FEATURES, "true")
 
     class _FakeProcess:
         pid = 43210

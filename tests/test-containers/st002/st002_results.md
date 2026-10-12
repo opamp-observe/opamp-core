@@ -53,6 +53,8 @@ Evidence:
 
 ## Reconciliation Against ST-002
 
+This implementation currently proves only the reusable transport baseline. Remote-config lifecycle, status, file mutation/backup, and rejection checks remain unimplemented, so this folder must not be treated as a complete ST-002 pass.
+
 | ST-002 requirement | Coverage |
 |---|---|
 | Provider starts | `provider` service starts `opamp_provider.server`; verifier polls `/api/clients`. |
