@@ -42,6 +42,7 @@ CLI_DEMO_CONFIG_PATH = Path("cli/config/demo_consumer_profiles.json")
 CLI_VERSION_TARGETS_CONFIG_PATH = Path("cli/config/version_targets.json")
 ARG_CONFIG_PATH = "--config-path"
 ARG_AGENT_CONFIG_PATH = "--agent-config-path"
+VERSION_FLAG = "--version"
 DEFAULT_SERVER_PORT = 8080
 DEFAULT_CATALOG_WEB_PORT = 8090
 PROCESS_START_CHECK_DELAY_SECONDS = 1.0
@@ -171,6 +172,7 @@ GUIDED_ACTION_ALIASES = {
 
 HELP_TEXT = """Usage:
   opamp-cli
+  opamp-cli --version
   opamp-cli script <output_name> <command...>
   opamp-cli <command...>
   opamp-cli help

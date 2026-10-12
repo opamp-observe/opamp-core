@@ -43,6 +43,13 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from . import (
+        consumer_plugins,
+        container_management,
+        dev_commands,
+        process_tail,
+        setup_venv,
+    )
     from .common import (
         _is_windows,
         _normalize_python_script_command,
@@ -51,13 +58,7 @@ try:
         _slugify,
         _utc_timestamp,
     )
-    from . import (
-        consumer_plugins,
-        container_management,
-        dev_commands,
-        process_tail,
-        setup_venv,
-    )
+    from .component_version import COMPONENT_NAME, component_version_text
     from .config_commands import (
         COMMAND_CONFIG_METADATA,
         COMMAND_CONFIG_VALIDATE,
@@ -72,9 +73,12 @@ try:
         ACTION_ID_CONFIG_SERVICE,
         ACTION_ID_FLUENTBIT_CLIENT,
         ACTION_ID_FLUENTD_CLIENT,
-        ACTION_ID_VECTOR_CLIENT,
         ACTION_ID_SERVER,
         ACTION_ID_SIMULATOR,
+        ACTION_ID_VECTOR_CLIENT,
+        ACTION_KEY_LOG_NAME,
+        ACTION_KEY_METADATA,
+        ACTION_KEY_RECORD_NAME,
         ACTION_KIND_BACKGROUND_START,
         ACTION_KIND_DEMO_CONSUMERS_START,
         ACTION_KIND_DEMO_CONSUMERS_STOP,
@@ -83,11 +87,8 @@ try:
         ACTION_KIND_SIMULATOR_START,
         ACTION_KIND_STOP_ALL_RECORDED,
         ACTION_KIND_STOP_RECORDED,
-        ACTION_KEY_LOG_NAME,
-        ACTION_KEY_METADATA,
-        ACTION_KEY_RECORD_NAME,
-        ARG_CONFIG_PATH,
         APP_ENABLE_DEV_FEATURES_ENV,
+        ARG_CONFIG_PATH,
         CLI_COMPONENT_LOG_FILENAME,
         CLI_DEMO_CONFIG_PATH,
         CLI_DEMO_FLAG_ENV,
@@ -97,11 +98,11 @@ try:
         CLI_SETTING_DEMO_CONFIG_PATH,
         CLI_SETTING_ENABLE_PROCESS_TAIL,
         CLI_SETTINGS_FILENAME,
+        COMMAND_CLEAR_LOGS,
         COMMAND_CLI_CONFIG,
         COMMAND_CLI_CONFIG_CHANGE,
         COMMAND_CLI_CONFIG_SUMMARY,
         COMMAND_CLI_CONFIG_VIEW,
-        COMMAND_CLEAR_LOGS,
         COMMAND_CONFIG,
         COMMAND_DEMO,
         COMMAND_DEV_CONTAINERS,
@@ -111,8 +112,8 @@ try:
         COMMAND_DEV_VERSION_BUMP,
         COMMAND_DISABLE_PROCESS_TAIL,
         COMMAND_ENABLE_PROCESS_TAIL,
-        COMMAND_EXITED_TEMPLATE,
         COMMAND_EXIT,
+        COMMAND_EXITED_TEMPLATE,
         COMMAND_HELP,
         COMMAND_LIST,
         COMMAND_QUIT,
@@ -122,13 +123,13 @@ try:
         CONFIG_KEY_CONFIG_PATH,
         DEFAULT_CATALOG_WEB_PORT,
         DEFAULT_SERVER_PORT,
-        DEMO_CONSUMERS_SELECTION,
         DEMO_CONSUMER_CLIENT_CONFIG_KEYS,
+        DEMO_CONSUMERS_SELECTION,
         DEMO_PROFILE_KEY_ELASTIC_AGENT,
         DEMO_PROFILE_KEY_ELASTIC_HEARTBEAT,
-        DEMO_PROFILE_KEY_VECTOR,
         DEMO_PROFILE_KEY_FLUENTBIT,
         DEMO_PROFILE_KEY_FLUENTD,
+        DEMO_PROFILE_KEY_VECTOR,
         ENABLED_FLAG_VALUE,
         GUIDED_ACTION_ALIASES,
         GUIDED_INTENTS,
@@ -136,10 +137,10 @@ try:
         GUIDED_STOP_ACTION_ORDER,
         HELP_TEXT,
         HTTP_READY_FAILURE_STATUS_THRESHOLD,
-        INTERACTIVE_PROMPT,
         INTENT_RESTART,
         INTENT_START,
         INTENT_STOP,
+        INTERACTIVE_PROMPT,
         LABEL_ALL_CLIENTS,
         LABEL_ALL_MANAGED_PROCESSES,
         LABEL_BROKER,
@@ -147,21 +148,22 @@ try:
         LABEL_CONFIG_SERVICE,
         LABEL_FLUENTBIT_CLIENT,
         LABEL_FLUENTD_CLIENT,
-        LABEL_VECTOR_CLIENT,
         LABEL_SERVER,
         LABEL_SIMULATOR,
+        LABEL_VECTOR_CLIENT,
         LOCALHOST_ADDRESS,
+        OPAMP_CONFIG_PATH_ENV,
         PROCESS_READY_POLL_INTERVAL_SECONDS,
         PROCESS_READY_TIMEOUT_SECONDS,
         PROCESS_START_CHECK_DELAY_SECONDS,
         PROCESS_STOP_POLL_INTERVAL_SECONDS,
         PROCESS_STOP_TIMEOUT_SECONDS,
-        OPAMP_CONFIG_PATH_ENV,
         PYTHONPATH_ENV,
         SCRIPT_KEYWORD,
         SIMULATOR_RECORD_PREFIX,
         STARTUP_FAILURE_MARKERS,
         TRUE_VALUES,
+        VERSION_FLAG,
     )
     from .script_mode import (
         _resolve_script_path,
@@ -174,6 +176,11 @@ except ImportError:
     current_dir = Path(__file__).resolve().parent
     if str(current_dir) not in sys.path:
         sys.path.insert(0, str(current_dir))
+    import consumer_plugins  # type: ignore[no-redef]
+    import container_management  # type: ignore[no-redef]
+    import dev_commands  # type: ignore[no-redef]
+    import process_tail  # type: ignore[no-redef]
+    import setup_venv  # type: ignore[no-redef]
     from common import (  # type: ignore[no-redef]
         _is_windows,
         _normalize_python_script_command,
@@ -182,11 +189,10 @@ except ImportError:
         _slugify,
         _utc_timestamp,
     )
-    import consumer_plugins  # type: ignore[no-redef]
-    import container_management  # type: ignore[no-redef]
-    import dev_commands  # type: ignore[no-redef]
-    import process_tail  # type: ignore[no-redef]
-    import setup_venv  # type: ignore[no-redef]
+    from component_version import (  # type: ignore[no-redef]
+        COMPONENT_NAME,
+        component_version_text,
+    )
     from config_commands import (  # type: ignore[no-redef]
         COMMAND_CONFIG_METADATA,
         COMMAND_CONFIG_VALIDATE,
@@ -201,9 +207,12 @@ except ImportError:
         ACTION_ID_CONFIG_SERVICE,
         ACTION_ID_FLUENTBIT_CLIENT,
         ACTION_ID_FLUENTD_CLIENT,
-        ACTION_ID_VECTOR_CLIENT,
         ACTION_ID_SERVER,
         ACTION_ID_SIMULATOR,
+        ACTION_ID_VECTOR_CLIENT,
+        ACTION_KEY_LOG_NAME,
+        ACTION_KEY_METADATA,
+        ACTION_KEY_RECORD_NAME,
         ACTION_KIND_BACKGROUND_START,
         ACTION_KIND_DEMO_CONSUMERS_START,
         ACTION_KIND_DEMO_CONSUMERS_STOP,
@@ -212,11 +221,8 @@ except ImportError:
         ACTION_KIND_SIMULATOR_START,
         ACTION_KIND_STOP_ALL_RECORDED,
         ACTION_KIND_STOP_RECORDED,
-        ACTION_KEY_LOG_NAME,
-        ACTION_KEY_METADATA,
-        ACTION_KEY_RECORD_NAME,
-        ARG_CONFIG_PATH,
         APP_ENABLE_DEV_FEATURES_ENV,
+        ARG_CONFIG_PATH,
         CLI_COMPONENT_LOG_FILENAME,
         CLI_DEMO_CONFIG_PATH,
         CLI_DEMO_FLAG_ENV,
@@ -226,11 +232,11 @@ except ImportError:
         CLI_SETTING_DEMO_CONFIG_PATH,
         CLI_SETTING_ENABLE_PROCESS_TAIL,
         CLI_SETTINGS_FILENAME,
+        COMMAND_CLEAR_LOGS,
         COMMAND_CLI_CONFIG,
         COMMAND_CLI_CONFIG_CHANGE,
         COMMAND_CLI_CONFIG_SUMMARY,
         COMMAND_CLI_CONFIG_VIEW,
-        COMMAND_CLEAR_LOGS,
         COMMAND_CONFIG,
         COMMAND_DEMO,
         COMMAND_DEV_CONTAINERS,
@@ -240,8 +246,8 @@ except ImportError:
         COMMAND_DEV_VERSION_BUMP,
         COMMAND_DISABLE_PROCESS_TAIL,
         COMMAND_ENABLE_PROCESS_TAIL,
-        COMMAND_EXITED_TEMPLATE,
         COMMAND_EXIT,
+        COMMAND_EXITED_TEMPLATE,
         COMMAND_HELP,
         COMMAND_LIST,
         COMMAND_QUIT,
@@ -251,13 +257,13 @@ except ImportError:
         CONFIG_KEY_CONFIG_PATH,
         DEFAULT_CATALOG_WEB_PORT,
         DEFAULT_SERVER_PORT,
-        DEMO_CONSUMERS_SELECTION,
         DEMO_CONSUMER_CLIENT_CONFIG_KEYS,
+        DEMO_CONSUMERS_SELECTION,
         DEMO_PROFILE_KEY_ELASTIC_AGENT,
         DEMO_PROFILE_KEY_ELASTIC_HEARTBEAT,
-        DEMO_PROFILE_KEY_VECTOR,
         DEMO_PROFILE_KEY_FLUENTBIT,
         DEMO_PROFILE_KEY_FLUENTD,
+        DEMO_PROFILE_KEY_VECTOR,
         ENABLED_FLAG_VALUE,
         GUIDED_ACTION_ALIASES,
         GUIDED_INTENTS,
@@ -265,10 +271,10 @@ except ImportError:
         GUIDED_STOP_ACTION_ORDER,
         HELP_TEXT,
         HTTP_READY_FAILURE_STATUS_THRESHOLD,
-        INTERACTIVE_PROMPT,
         INTENT_RESTART,
         INTENT_START,
         INTENT_STOP,
+        INTERACTIVE_PROMPT,
         LABEL_ALL_CLIENTS,
         LABEL_ALL_MANAGED_PROCESSES,
         LABEL_BROKER,
@@ -276,21 +282,22 @@ except ImportError:
         LABEL_CONFIG_SERVICE,
         LABEL_FLUENTBIT_CLIENT,
         LABEL_FLUENTD_CLIENT,
-        LABEL_VECTOR_CLIENT,
         LABEL_SERVER,
         LABEL_SIMULATOR,
+        LABEL_VECTOR_CLIENT,
         LOCALHOST_ADDRESS,
+        OPAMP_CONFIG_PATH_ENV,
         PROCESS_READY_POLL_INTERVAL_SECONDS,
         PROCESS_READY_TIMEOUT_SECONDS,
         PROCESS_START_CHECK_DELAY_SECONDS,
         PROCESS_STOP_POLL_INTERVAL_SECONDS,
         PROCESS_STOP_TIMEOUT_SECONDS,
-        OPAMP_CONFIG_PATH_ENV,
         PYTHONPATH_ENV,
         SCRIPT_KEYWORD,
         SIMULATOR_RECORD_PREFIX,
         STARTUP_FAILURE_MARKERS,
         TRUE_VALUES,
+        VERSION_FLAG,
     )
     from script_mode import (  # type: ignore[no-redef]
         _resolve_script_path,
@@ -4521,6 +4528,10 @@ def main(argv: list[str] | None = None) -> int:
     if args[0] in {"-h", "--help", COMMAND_HELP}:
         logger.info("CLI help requested argv=%s", args)
         print(HELP_TEXT)
+        return 0
+    if args[0] == VERSION_FLAG:
+        logger.debug("CLI version requested")
+        print(f"{COMPONENT_NAME} {component_version_text()}")
         return 0
 
     raw_command = _command_text_from_args(args)

@@ -95,6 +95,14 @@ def test_help_command_prints_usage() -> None:
     assert "opamp-cli dev-version-bump" in completed.stdout
 
 
+def test_version_command_prints_packaged_version() -> None:
+    """The source entrypoint should expose the same packaged version used by releases."""
+    completed = _run_cli("--version")
+
+    assert completed.returncode == 0
+    assert completed.stdout.strip() == "opamp-cli 0.6.0"
+
+
 def test_status_command_reports_runtime_paths() -> None:
     completed = _run_cli("status")
 

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -133,7 +134,12 @@ def test_catalog_launch_config_path_enables_catalog(tmp_path: Path, monkeypatch)
         "opamp": {
             "config_catalog": {
                 "enabled": False,
-                "sources": [{"folder": "config-service/json-definitions", "extensions": [".json"]}],
+                "sources": [
+                    {
+                        "folder": "config-service/src/config_service/json-definitions",
+                        "extensions": [".json"],
+                    }
+                ],
             }
         }
     }
@@ -337,6 +343,7 @@ def test_launch_smart_log_viewer_prints_url_and_config(
     assert f"with config: {config_dir.resolve()}" in output
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows PATH separator behavior")
 def test_smart_log_viewer_process_env_merges_persisted_path(monkeypatch) -> None:
     monkeypatch.setattr(
         cli_main.process_tail.os,
