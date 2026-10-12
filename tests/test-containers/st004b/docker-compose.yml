@@ -1,0 +1,86 @@
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: opamp-st004b
+
+x-runtime: &runtime
+  build:
+    context: ../../..
+    dockerfile: tests/test-containers/st004b/Dockerfile
+  image: opamp-st004b-runtime:latest
+  environment: &runtime-environment
+    OPAMP_REPO: /workspace/source
+    ST004B_PROFILE: "${ST004B_PROFILE:-no-auth}"
+  volumes:
+    - ../../..:/workspace/source:ro
+    - ./config:/scenario-config:ro
+    - ../../../dist/test-reports/st004b:/evidence
+
+services:
+  jwt-issuer:
+    <<: *runtime
+    command: ["python", "/usr/local/bin/st004b-jwt-issuer", "--host", "0.0.0.0", "--port", "8090"]
+    ports:
+      - "${ST004B_ISSUER_PORT:-18085}:8090"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=2).read()"]
+      interval: 2s
+      timeout: 2s
+      retries: 40
+
+  provider:
+    <<: *runtime
+    command: ["/usr/local/bin/st004b-provider-entrypoint"]
+    depends_on:
+      jwt-issuer:
+        condition: service_healthy
+    environment:
+      <<: *runtime-environment
+      OPAMP_AUTH_STATIC_TOKEN: "${ST004B_OPAMP_TOKEN:-st004b-opamp-token}"
+      UI_AUTH_STATIC_TOKEN: "${ST004B_UI_TOKEN:-st004b-ui-token}"
+      OPAMP_AUTH_JWT_ISSUER: "http://jwt-issuer:8090"
+      OPAMP_AUTH_JWT_JWKS_URL: "http://jwt-issuer:8090/.well-known/jwks.json"
+      OPAMP_AUTH_JWT_AUDIENCE: "st004b-audience" # gitleaks:allow -- public JWT claim, not a credential
+      OPAMP_AUTH_JWT_LEEWAY_SECONDS: "0"
+      UI_AUTH_JWT_ISSUER: "http://jwt-issuer:8090"
+      UI_AUTH_JWT_JWKS_URL: "http://jwt-issuer:8090/.well-known/jwks.json"
+      UI_AUTH_JWT_AUDIENCE: "st004b-audience" # gitleaks:allow -- public JWT claim, not a credential
+      UI_AUTH_JWT_LEEWAY_SECONDS: "0"
+    ports:
+      - "${ST004B_PROVIDER_PORT:-18084}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; connection=socket.create_connection(('127.0.0.1', 8080), 2); connection.close()"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+
+  consumer-valid:
+    <<: *runtime
+    command: ["/usr/local/bin/st004b-consumer-entrypoint"]
+    depends_on:
+      provider:
+        condition: service_healthy
+    environment:
+      <<: *runtime-environment
+      APP_ENABLE_DEV_FEATURES: "true"
+      ST004B_CONSUMER_ROLE: valid
+
+  consumer-invalid:
+    <<: *runtime
+    command: ["/usr/local/bin/st004b-consumer-entrypoint"]
+    depends_on:
+      provider:
+        condition: service_healthy
+    environment:
+      <<: *runtime-environment
+      APP_ENABLE_DEV_FEATURES: "true"
+      ST004B_CONSUMER_ROLE: invalid
