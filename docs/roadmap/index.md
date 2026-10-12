@@ -67,6 +67,9 @@ Consider providing support for additional agent types, including:
 - [OpenObserve](https://openobserve.ai/)
 - [Datadog](https://www.datadoghq.com/)
 - Remaining [Elastic Beats](https://www.elastic.co/beats/)
+- [OpenObserve](https://openobserve.ai/pipelines/) Full stack solution 
+- [Loggie]{https://github.com/loggie-io/loggie} -  CNCF listed 
+- Generic basic agent which each step of the life cycle runs a script
 
 
 
@@ -94,6 +97,12 @@ We should conmsider whether the deployment of the observability tool and its cod
 
 Look into using [sigstore](https://openssf.org/blog/2023/11/21/sigstore-simplifying-code-signing-for-open-source-ecosystems/) to sign the deployable artefacts.
 
+## SBOM refresh
+Enhance the CLI tooling so that the version bump also drives:
+- the SBOM regeneration
+- minification of the UI is actioned
+- OpenAPI doc spec generated
+
 ### PyPI incorporation
 
 Add project to [PyPI](https://pypi.org/). Need to consider whether it's a single PyPI project or several with different parts e.g. Consumer(s), Server, plugs
@@ -104,6 +113,7 @@ The wheel deinstallation process should also clean up log files and other artefa
 
 ### Automated (multi-cloud) regression setup
 
+Progress the Azure setup, look at OCI implementation as  well.
 
 
 # Enhanced Tooling
@@ -111,4 +121,32 @@ The wheel deinstallation process should also clean up log files and other artefa
 Incorporate additions to help validate configuration of the agents such as:
 
 - [Log Simulator](https://github.com/mp3monster/LogGenerator)
-- New Metrics and traces simulation
+- New Metrics and traces simulation Complete the remote config process
+
+
+Introduce to the provider a configuration value called allow-remote-config - this is a boolean configuration value, with a default of true.
+When allow-remote-config is true, then enable the enhanced part of the configuration tab, and the flag for this agent indicates remote config files are allowed (this will be temporarily hardwired to true)
+
+The Enhanced part of the Configuration tab in the provider UI will provide a list of remote configuration files. If the catalog service is deployed then provide a 'select configs' button should be provided. When pressed it will open the catalog UI in a popup window, and will set the callaback to the server to configure this agent's config files. 
+
+The catalog service needs an enhancement so it can be given a callback address which is invoked by a button that is displayed when a callback is provided. The callback will pass back a list of the tickbox selected files in the order in which they where selected. The returned list will then be displayed in the enhanced part of the configuration ui and the catalog is closed.
+
+# Enhance the security aspect of the process
+
+- Dependency vulnerability scanning:
+  - Python: `pip-audit` / `safety`.
+  - JavaScript: `npm audit` plus Dependabot/Renovate updates.
+- SAST:
+  - Python: `bandit`, `semgrep` rules for Quart patterns.
+  - JavaScript: `eslint` (+ security plugin), `semgrep` JS/DOM/XSS rules.
+
+  
+  ## Component-Specific Testing Strategy
+
+| Component                                | Primary Risk Areas                                  | Recommended Tests                                            |
+| ---------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------ |
+| `config-service` UI (JS)                 | XSS, unsafe DOM writes, brittle event flows         | Playwright happy/error paths, Vitest unit tests, eslint+security rules, mutation tests on helper logic |
+| `config-service` Quart API               | authz gaps, path traversal, input validation bypass | pytest API tests, schema validation tests, fuzz tests for YAML/JSON payloads, negative auth tests |
+| `provider` / `consumer` / `agent_broker` | trust boundaries, message tampering, replay         | contract tests, signature/replay tests, malformed message tests, timeout/failure-injection tests |
+| `shared` schemas/models                  | inconsistent validation, unsafe defaults            | schema compatibility tests, required-field regression tests, version downgrade/upgrade tests |
+| Container/runtime                        | vulnerable base images, over-privileged runtime     | Trivy/Grype scans, non-root runtime checks, minimal package checks, seccomp/apparmor profile verification |

@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Provider Authentication
 
 This project supports optional bearer-token authentication for provider endpoints:
@@ -216,3 +230,23 @@ Any rejected authorization attempt is logged at warning level with:
 - rejection reason
 
 This is intended for operational visibility and troubleshooting.
+
+## Container Verification
+
+Provider authentication is exercised by two complementary local container
+harnesses:
+
+- [`tests/test-containers/st004`](../tests/test-containers/st004/readme.md)
+  verifies Keycloak client credentials, audience validation, consumer
+  registration, and authenticated UI/API/tool/MCP access.
+- [`tests/test-containers/st004b`](../tests/test-containers/st004b/readme.md)
+  verifies the no-auth baseline, independent static-token scopes, malformed and
+  expired JWTs, wrong issuer/audience, unsigned JWT rejection, MCP disablement,
+  authorization diagnostics, and TLS trust behavior.
+
+Run the complete authorization and TLS matrix with:
+
+```bash
+tests/test-containers/st004/scripts/run_st004.sh keycloak
+tests/test-containers/st004b/scripts/run_st004b.sh all
+```

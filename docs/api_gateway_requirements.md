@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # API Gateway Recommendations
 
 This guide defines a recommended baseline for fronting the provider with an API gateway (for example Kong), and how to adjust OpAMP auth configuration when clients are remote or external to a controlled environment.
@@ -37,6 +51,25 @@ If any of these are reachable directly from untrusted networks, a gateway policy
 8. Auditability:
    - Log auth decisions, route, source IP, and upstream status.
    - Alert on repeated 401/403 bursts and unusual request volume.
+
+## Browser-Origin And Service-Origin Controls
+
+No browser header or token proves that a request was created by the project UI. A user or
+automation client with the same valid session and authorization can reproduce browser requests.
+Use origin-related controls as layers rather than as a substitute for authentication and
+authorization:
+
+1. Session-authenticated browser routes should use session-bound CSRF protection for mutating
+   requests.
+2. Strict CORS allowlists and `Origin`/`Referer` checks are useful early filters, but those
+   headers are not an identity boundary for non-browser clients.
+3. High-risk mutations may add a short-lived nonce and timestamp to detect replay. Any signing
+   material delivered to a browser must still be treated as extractable by the user controlling
+   that browser.
+4. Machine-to-machine routes should use a distinct authorization scope and, where appropriate,
+   mTLS or another workload identity mechanism.
+5. UI, automation, agent, and MCP routes should remain partitioned so rate limits, request-shape
+   validation, audit policy, and incident response can differ by caller class.
 
 ## Environment Profiles and Config Amendments
 
