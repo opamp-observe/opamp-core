@@ -46,6 +46,7 @@ dist/test-reports/regression-pack/
 | `st002` | Runs the ST-002 provider/consumer simulator socket and HTTP container scenarios. |
 | `st004` | Runs the ST-004 provider/consumer Keycloak authorization container scenario. |
 | `st004b` | Runs the ST-004B no-auth, static-token scope-separation, MCP-disabled, JWT-negative, and TLS profiles. |
+| `st007` | Runs credentials-manager unit/API coverage, definition validation, assignment and reconciliation, sensitive-storage separation, assigned-only provider delivery to two live simulators, unavailable-provider JSONL fallback, and the browser author/assign/apply workflow. |
 | `st009` | Runs launcher safety and failure tests plus a real ten-simulator provider scale and clean-disconnect scenario. |
 | `st010` | Runs CLI lifecycle/config tests, builds and clean-installs all wheels, builds sdists, generates SBOMs, and checks installed help/version commands. |
 | `st011` | Runs provider MCP gates/protocol/auth, target config generation, and broker discovery/proxy behavior with local Slack and LLM doubles. |
@@ -67,6 +68,7 @@ Generated build and evidence artifacts are kept under:
 
 - `dist/consumer/`
 - `dist/test-reports/component-wheel-deployment/`
+- `dist/test-reports/st007/`
 - `config-service/dist/`
 - `dist/test-reports/`
 

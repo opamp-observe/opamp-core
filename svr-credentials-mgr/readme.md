@@ -375,3 +375,14 @@ node --check src/svr_credentials_manager_service/html/functions.js
 node --check src/svr_credentials_manager_service/html/app.js
 node --check src/svr_credentials_manager_service/html/bindings.js
 ```
+
+The project-level ST-007 container adds live provider and simulator delivery, unavailable-provider
+fallback, storage-separation, reconciliation, and browser workflow coverage. From the repository
+root, run:
+
+```powershell
+py -3.11 tests/test-containers/run_regression_pack.py --only st007
+```
+
+See [the ST-007 container guide](../tests/test-containers/st007/readme.md) for the complete coverage
+matrix, direct Docker commands, retained evidence, and troubleshooting guidance.

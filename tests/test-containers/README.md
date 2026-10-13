@@ -28,6 +28,7 @@ This folder holds Docker-based test harnesses used by the project test workflow.
 - `opamp-wheel-lab/` - interactive shell-first container with Fluent Bit + Fluentd preinstalled for deploying and testing project wheel files.
 - `st004/` - Keycloak/JWT provider authorization, route protection, and valid/invalid consumer scenario.
 - `st004b/` - no-auth, static-token scope separation, MCP disablement, JWT negative cases, and TLS completion profiles for ST-004.
+- `st007/` - credentials-manager CRUD, validation, mapping reconciliation, live provider delivery, fallback JSONL, storage separation, and browser workflow.
 - `st009/` - consumer simulator safety, scripted failure behavior, and ten-client provider scale scenario.
 - `st010/` - CLI lifecycle plus wheel, sdist, SBOM, version, and isolated installation scenario.
 - `st011/` - provider MCP, MCP client configuration, and broker integration scenario using local Slack/LLM doubles.

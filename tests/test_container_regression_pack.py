@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 MODULE_NAME = "opamp_container_regression_pack"
-SCENARIO_IDS = ("st004b", "st009", "st010", "st011")
+SCENARIO_IDS = ("st004b", "st007", "st009", "st010", "st011")
 
 
 def _load_regression_pack_module():

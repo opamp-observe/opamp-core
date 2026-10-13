@@ -112,6 +112,7 @@ def _ensure_regression_directories(repo_root: Path) -> None:
         repo_root / "dist" / "test-reports" / "vector-plugin-e2e" / "consumer-vector",
         repo_root / "dist" / "test-reports" / "config-service-ui-playwright-batch",
         repo_root / "dist" / "test-reports" / "st004b",
+        repo_root / "dist" / "test-reports" / "st007",
         repo_root / "dist" / "test-reports" / "st009",
         repo_root / "dist" / "test-reports" / "st010",
         repo_root / "dist" / "test-reports" / "st011",
@@ -135,6 +136,7 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
         repo_root / "dist/test-reports/opamp-consumer-deployment"
     )
     config_service_ui_image = "config-service-ui-playwright-batch:latest"
+    st007_image = "opamp-st007-test:latest"
     st009_image = "opamp-st009-test:latest"
     st010_image = "opamp-st010-test:latest"
     st011_image = "opamp-st011-test:latest"
@@ -376,6 +378,39 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                         repo_root / "tests/test-containers/st004b/scripts/run_st004b.sh"
                     ),
                     "all",
+                ),
+            ),
+        ),
+        RegressionTest(
+            test_id="st007",
+            description=(
+                "Runs credentials-manager CRUD, validation, assignment, reconciliation, "
+                "live delivery, fallback delivery, sensitive-storage, and browser workflows."
+            ),
+            commands=(
+                (
+                    "docker",
+                    "build",
+                    "-f",
+                    str(repo_root / "tests/test-containers/st007/Dockerfile"),
+                    "-t",
+                    st007_image,
+                    str(repo_root),
+                ),
+                (
+                    "docker",
+                    "run",
+                    "--rm",
+                    "--ipc=host",
+                    "-e",
+                    "OPAMP_REPO=/workspace/opamp",
+                    "-e",
+                    "RESULTS_DIR=/host-output",
+                    "-v",
+                    f"{repo_root}:/workspace/opamp:ro",
+                    "-v",
+                    f"{repo_root / 'dist/test-reports/st007'}:/host-output",
+                    st007_image,
                 ),
             ),
         ),
