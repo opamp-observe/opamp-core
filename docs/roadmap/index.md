@@ -42,6 +42,10 @@ Would need to include:
 
 - Best practice analysis for all the different agent types
 - [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/)
+- Extend the version-aware documentation scraper, catalog reconciliation, incomplete-page
+  diagnostics, and schema generation workflow to Fluentd. The implementation should retain the
+  source-adapter boundary so later agent types can reuse the same reconciliation and reporting
+  pipeline without inheriting Fluent Bit-specific page assumptions.
 
 
 
@@ -85,6 +89,7 @@ Reference configurations to illustrate (and use the CLI to launch)
 # Automation and Deployment
 
 ## Incorporate a deployment function in the server that will allow the user to:
+
 - SSH to a client and deploy an agent configuration,
 - deploy the observer/supervisor,
 - trigger the installation or update of the observability too e.g. Fluent Bit
@@ -115,14 +120,11 @@ The wheel deinstallation process should also clean up log files and other artefa
 
 Progress the Azure setup, look at OCI implementation as  well.
 
-
 # Enhanced Tooling
 
 Incorporate additions to help validate configuration of the agents such as:
-
 - [Log Simulator](https://github.com/mp3monster/LogGenerator)
 - New Metrics and traces simulation Complete the remote config process
-
 
 Introduce to the provider a configuration value called allow-remote-config - this is a boolean configuration value, with a default of true.
 When allow-remote-config is true, then enable the enhanced part of the configuration tab, and the flag for this agent indicates remote config files are allowed (this will be temporarily hardwired to true)
@@ -130,6 +132,19 @@ When allow-remote-config is true, then enable the enhanced part of the configura
 The Enhanced part of the Configuration tab in the provider UI will provide a list of remote configuration files. If the catalog service is deployed then provide a 'select configs' button should be provided. When pressed it will open the catalog UI in a popup window, and will set the callaback to the server to configure this agent's config files. 
 
 The catalog service needs an enhancement so it can be given a callback address which is invoked by a button that is displayed when a callback is provided. The callback will pass back a list of the tickbox selected files in the order in which they where selected. The returned list will then be displayed in the enhanced part of the configuration ui and the catalog is closed.
+
+## Complete remote configuration lifecycle coverage
+
+Extend the remote-configuration regression scenarios beyond transport scaffolding and simulated
+happy paths. Coverage should include:
+
+- configuration-status exchanges, including accepted, applied, rejected, and failed terminal
+  states;
+- real configuration-file mutation with validation, atomic backup, restoration, and rollback;
+- malformed and unsupported configuration rejection with actionable provider and consumer
+  diagnostics;
+- interrupted and partially applied update recovery; and
+- at least one real supported agent process in addition to simulator-based coverage.
 
 # Enhance the security aspect of the process
 
@@ -139,7 +154,6 @@ The catalog service needs an enhancement so it can be given a callback address w
 - SAST:
   - Python: `bandit`, `semgrep` rules for Quart patterns.
   - JavaScript: `eslint` (+ security plugin), `semgrep` JS/DOM/XSS rules.
-
   
   ## Component-Specific Testing Strategy
 
