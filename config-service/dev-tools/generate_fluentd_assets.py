@@ -11,6 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Generate canonical packaged Fluentd catalogs and service definitions."""
+
+# Documentation defaults are configuration payload values, not network bind operations.
+# ruff: noqa: S104
+
 from __future__ import annotations
 
 import json
@@ -21,9 +26,8 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-JSON_DEFINITIONS_DIR = REPO_ROOT / "config-service" / "json-definitions"
-SRC_JSON_DEFINITIONS_DIR = REPO_ROOT / "config-service" / "src" / "config_service" / "json-definitions"
 SRC_ROOT = REPO_ROOT / "config-service" / "src"
+JSON_DEFINITIONS_DIR = SRC_ROOT / "config_service" / "json-definitions"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
@@ -1099,18 +1103,15 @@ def _write_catalog_artifact(directory: Path, engine_dir: str, version: str, payl
 
 
 def main() -> None:
-    output_dirs = (JSON_DEFINITIONS_DIR, SRC_JSON_DEFINITIONS_DIR)
-    for directory in output_dirs:
-        directory.mkdir(parents=True, exist_ok=True)
+    JSON_DEFINITIONS_DIR.mkdir(parents=True, exist_ok=True)
     for version in ("1.19", "1.16", "1.8"):
         catalog_payload = build_catalog(version)
         service_payload = build_service_definition(version)
-        for directory in output_dirs:
-            _write_catalog_artifact(directory, "fluentd", version, catalog_payload)
-            write_json(
-                directory / f"fluentd-{version}-service-options.json",
-                service_payload,
-            )
+        _write_catalog_artifact(JSON_DEFINITIONS_DIR, "fluentd", version, catalog_payload)
+        write_json(
+            JSON_DEFINITIONS_DIR / f"fluentd-{version}-service-options.json",
+            service_payload,
+        )
 
 
 if __name__ == "__main__":

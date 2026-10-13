@@ -11,6 +11,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Enrich generated Fluent Bit plugin catalogs for use by config-service.
+
+This module is the post-processing stage of the Fluent Bit asset-generation
+pipeline. ``generate_fluentbit_assets.py`` first gathers versioned plugin
+metadata from the Fluent Bit documentation, then calls :func:`update_catalog`
+here to add metadata that cannot be derived reliably from individual plugin
+pages. That enrichment includes shared processor definitions, router fields,
+and canonical plugin names.
+
+The resulting catalog manifests and per-plugin shards are source metadata for
+the wider OpAMP solution. Config-service loads them to build its browser editor,
+validate user configurations, and render native Fluent Bit YAML. The runtime
+schema and documentation generators also consume the enriched catalogs, so this
+module keeps those generated views aligned with the editor's model.
+
+The script can also be run directly to reprocess existing local catalogs in
+the canonical packaged source tree under ``src/config_service``.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -21,12 +40,13 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFINITIONS_DIR = REPO_ROOT / "config-service" / "json-definitions"
-SRC_DEFINITIONS_DIR = REPO_ROOT / "config-service" / "src" / "config_service" / "json-definitions"
 SRC_ROOT = REPO_ROOT / "config-service" / "src"
+DEFINITIONS_DIR = SRC_ROOT / "config_service" / "json-definitions"
+# Allow this developer script to import config-service directly from a source checkout.
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from config_service.fluentbit_docs_support import normalize_plugin_map  # noqa: E402
 from config_service.json_artifacts import (  # noqa: E402
     KEY_FILE,
     KEY_PAYLOAD,
@@ -34,7 +54,6 @@ from config_service.json_artifacts import (  # noqa: E402
     load_json_artifact,
     write_manifest_json_artifact,
 )
-from config_service.fluentbit_docs_support import normalize_plugin_map  # noqa: E402
 
 LOG_LEVELS = ["off", "trace", "debug", "info", "warn", "error"]
 DEFAULT_TIMEOUT = 20
@@ -52,6 +71,33 @@ def field(
     validation_rule: dict[str, Any] | None = None,
     enum_options: list[str] | None = None,
 ) -> dict[str, Any]:
+    """Build one catalog field descriptor used by the editor and validators.
+
+    Parameters
+    ----------
+    name:
+        Native Fluent Bit property name represented by the field.
+    description:
+        Human-readable explanation shown by catalog-driven interfaces.
+    reference:
+        Fluent Bit documentation URL that defines the property.
+    data_type:
+        Logical editor type used to choose controls and schema conversion.
+    required:
+        Whether configurations must provide the property.
+    default:
+        Optional default copied into generated catalog metadata.
+    validation_rule:
+        Optional structured constraint consumed by validation and schema generation.
+    enum_options:
+        Optional choices used by enum controls and schema generation.
+
+    Returns
+    -------
+    dict[str, Any]
+        A catalog field payload with optional values omitted when not configured.
+
+    """
     payload: dict[str, Any] = {
         "name": name,
         "required": required,
@@ -75,6 +121,27 @@ def processor_def(
     fields: list[dict[str, Any]],
     supports_condition: bool = False,
 ) -> dict[str, Any]:
+    """Build a shared processor descriptor for one telemetry signal.
+
+    Parameters
+    ----------
+    title:
+        Fluent Bit processor name written into YAML.
+    doc_url:
+        Upstream documentation page for the processor.
+    description:
+        Summary presented by catalog-driven UI and documentation.
+    fields:
+        Processor options constructed with :func:`field`.
+    supports_condition:
+        Whether this processor can include a conditional processing block.
+
+    Returns
+    -------
+    dict[str, Any]
+        Processor metadata ready for placement under ``common.processors``.
+
+    """
     return {
         "title": title,
         "doc_url": doc_url,
@@ -85,6 +152,19 @@ def processor_def(
 
 
 def condition_object(reference: str) -> dict[str, Any]:
+    """Describe the reusable conditional block supported by newer processors.
+
+    Parameters
+    ----------
+    reference:
+        Fluent Bit documentation URL for conditional processing semantics.
+
+    Returns
+    -------
+    dict[str, Any]
+        Catalog metadata for the condition operator and rule list.
+
+    """
     return {
         "title": "condition",
         "description": "Optional conditional processing block for logs processors.",
@@ -112,6 +192,25 @@ def condition_object(reference: str) -> dict[str, Any]:
 
 
 def processors_definition(version: str) -> dict[str, Any]:
+    """Create version-aware processor metadata for logs, metrics, and traces.
+
+    Parameters
+    ----------
+    version:
+        Fluent Bit version whose feature compatibility should be represented.
+
+    Returns
+    -------
+    dict[str, Any]
+        Shared processor catalog attached to ``common.processors``.
+
+    Notes
+    -----
+    Fluent Bit 3.2.10 does not receive conditional processor metadata. Keeping
+    that distinction here prevents the UI from emitting unsupported YAML while
+    allowing newer catalogs to expose the feature.
+
+    """
     base_ref = "https://docs.fluentbit.io/manual/data-pipeline/processors"
     content_ref = "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier"
     labels_ref = "https://docs.fluentbit.io/manual/data-pipeline/processors/labels"
@@ -355,10 +454,33 @@ def processors_definition(version: str) -> dict[str, Any]:
 
 
 def _version_requires_input_tags(version: str) -> bool:
+    """Return whether input tags must be explicit for the selected catalog version.
+
+    Parameters
+    ----------
+    version:
+        Fluent Bit semantic version read from the catalog.
+
+    """
     return str(version).startswith(("3.", "4."))
 
 
 def _router_reference(payload: dict[str, Any], version: str) -> str:
+    """Resolve the best upstream router documentation URL for a catalog.
+
+    Parameters
+    ----------
+    payload:
+        Loaded catalog whose plugin documentation URLs reveal the manual layout.
+    version:
+        Fluent Bit version used when no suitable plugin URL is available.
+
+    Returns
+    -------
+    str
+        Version-appropriate router documentation URL.
+
+    """
     plugins = payload.get("plugins", {})
     if isinstance(plugins, dict):
         for section in ("inputs", "filters", "outputs"):
@@ -381,6 +503,22 @@ def _router_reference(payload: dict[str, Any], version: str) -> str:
 
 
 def _ensure_router_fields(payload: dict[str, Any], version: str) -> None:
+    """Add or repair routing fields required by the configuration editor.
+
+    Parameters
+    ----------
+    payload:
+        Mutable Fluent Bit catalog containing input, filter, and output plugins.
+    version:
+        Fluent Bit version controlling input-tag requirements and documentation.
+
+    Notes
+    -----
+    Inputs receive ``tag`` metadata, while filters and outputs receive ``match``
+    and ``match_regex`` metadata. Existing fields are preserved and repaired so
+    rerunning the generator is idempotent.
+
+    """
     plugins = payload.get("plugins", {})
     if not isinstance(plugins, dict):
         return
@@ -442,6 +580,14 @@ def _ensure_router_fields(payload: dict[str, Any], version: str) -> None:
 
 
 def _clear_legacy_flat_parts(path: Path) -> None:
+    """Remove obsolete flat catalog fragments before writing sharded manifests.
+
+    Parameters
+    ----------
+    path:
+        Top-level catalog path whose old sibling fragments should be removed.
+
+    """
     for stale_path in path.parent.glob(f"{path.stem}.*{path.suffix}"):
         stale_path.unlink(missing_ok=True)
 
@@ -453,6 +599,26 @@ def _normalize_plugin_names(
     logger: logging.Logger,
     page_cache: dict[str, str],
 ) -> None:
+    """Rekey plugin maps to the canonical Fluent Bit configuration names.
+
+    Parameters
+    ----------
+    payload:
+        Mutable catalog containing plugin maps grouped by pipeline section.
+    timeout:
+        Maximum documentation lookup time in seconds.
+    logger:
+        Logger receiving normalization counts and collision diagnostics.
+    page_cache:
+        Shared documentation cache that avoids repeated network requests.
+
+    Notes
+    -----
+    Documentation page names and native Fluent Bit ``Name`` values can differ.
+    Normalizing here ensures editor output uses names accepted by Fluent Bit;
+    collisions are left visible rather than silently overwriting a plugin.
+
+    """
     plugins = payload.get("plugins", {})
     if not isinstance(plugins, dict):
         return
@@ -491,8 +657,31 @@ def update_catalog(
     logger: logging.Logger | None = None,
     page_cache: dict[str, str] | None = None,
 ) -> None:
+    """Enrich and rewrite one Fluent Bit catalog as deterministic shards.
+
+    Parameters
+    ----------
+    path:
+        Top-level catalog JSON artifact to load and rewrite.
+    timeout:
+        Maximum documentation lookup time used during plugin-name normalization.
+    logger:
+        Optional logger override for generation diagnostics.
+    page_cache:
+        Optional shared documentation cache reused across catalog versions.
+
+    Notes
+    -----
+    The operation loads either a direct JSON payload or an existing manifest,
+    enriches the assembled catalog, clears stale layouts, writes one shard per
+    plugin, and replaces the top-level artifact with a manifest. Stable public
+    filenames let registries keep pointing to the same catalog across rebuilds.
+
+    """
     active_logger = logger or LOGGER
     active_page_cache = page_cache if page_cache is not None else {}
+
+    # Enrich the fully assembled catalog before splitting it back into shards.
     data = load_json_artifact(path)
     version = str(data.get("fluent_bit_version"))
     _normalize_plugin_names(data, timeout=timeout, logger=active_logger, page_cache=active_page_cache)
@@ -501,6 +690,7 @@ def update_catalog(
     _ensure_router_fields(data, version)
 
     version_dir = path.parent / "fluent-bit" / version
+    # Remove previous shard layouts so deleted or renamed plugins cannot linger.
     shutil.rmtree(version_dir, ignore_errors=True)
     _clear_legacy_flat_parts(path)
 
@@ -508,6 +698,7 @@ def update_catalog(
     plugins = dict(base_payload.get("plugins", {}))
     base_payload["plugins"] = plugins
     top_level_parts: list[dict[str, Any]] = []
+    # Each section manifest points at small per-plugin files for fast selective loading.
     for section in ("inputs", "filters", "outputs"):
         section_plugins = dict(plugins.get(section, {}))
         nested_manifest = write_manifest_json_artifact(
@@ -541,6 +732,14 @@ def update_catalog(
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse optional Fluent Bit version filters from the command line.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed arguments whose ``versions`` member is a list or ``None``.
+
+    """
     parser = argparse.ArgumentParser(
         description="Add Fluent Bit processor and router metadata to plugin catalogs.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -555,6 +754,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def _available_versions() -> list[str]:
+    """Discover catalog versions currently available in the source artifact tree.
+
+    Returns
+    -------
+    list[str]
+        Sorted Fluent Bit version tokens extracted from catalog filenames.
+
+    """
     versions: set[str] = set()
     for path in DEFINITIONS_DIR.glob("fluent-bit-*-all-plugins-catalog.json"):
         token = path.name.removeprefix("fluent-bit-").removesuffix("-all-plugins-catalog.json")
@@ -564,16 +771,14 @@ def _available_versions() -> list[str]:
 
 
 def main() -> None:
+    """Reprocess selected catalogs in the canonical packaged artifact tree."""
     args = parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
     page_cache: dict[str, str] = {}
     versions = args.versions or _available_versions()
     for version in versions:
         filename = f"fluent-bit-{version}-all-plugins-catalog.json"
         update_catalog(DEFINITIONS_DIR / filename, logger=LOGGER, page_cache=page_cache)
-        src_path = SRC_DEFINITIONS_DIR / filename
-        if src_path.exists():
-            update_catalog(src_path, logger=LOGGER, page_cache=page_cache)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "tools": [
+    {
+      "id": "fluentbit_assets",
+      "command_group": "fluent-resources",
+      "command": "generate-fluentbit-assets",
+      "description": "Generate, register, or remove versioned Fluent Bit catalogs and schemas",
+      "script": "dev-tools/generate_fluentbit_assets.py",
+      "exclusive_groups": [
+        {
+          "id": "operation",
+          "prompt": "Fluent Bit asset operation",
+          "allow_none": true,
+          "none_label": "Generate the current stable Fluent Bit release"
+        }
+      ],
+      "arguments": [
+        {
+          "destination": "versions",
+          "flags": ["--version"],
+          "action": "append",
+          "help": "Fluent Bit version to generate; repeat for multiple versions; omit for current stable",
+          "prompt": "Fluent Bit version(s), comma-separated",
+          "exclusive_group": "operation",
+          "selection_label": "Generate one or more named versions"
+        },
+        {
+          "destination": "remove_version",
+          "flags": ["--remove-version"],
+          "help": "Fluent Bit version to remove from canonical artifacts and registries",
+          "prompt": "Fluent Bit version to remove",
+          "exclusive_group": "operation",
+          "selection_label": "Remove one named version"
+        },
+        {
+          "destination": "replacement_default",
+          "flags": ["--replacement-default"],
+          "help": "Registered replacement when removing the current default version",
+          "prompt": "Replacement default version (optional)",
+          "guided_for": ["remove_version"]
+        },
+        {
+          "destination": "source",
+          "flags": ["--source"],
+          "help": "Documentation source; auto tries GitHub and then the website",
+          "prompt": "Documentation source",
+          "choices": ["auto", "website", "github"],
+          "default": "auto",
+          "guided_for": ["component-default", "versions"]
+        },
+        {
+          "destination": "github_ref",
+          "flags": ["--github-ref"],
+          "help": "Optional GitHub branch, tag, or commit used for documentation",
+          "prompt": "GitHub ref (optional)",
+          "guided_for": ["component-default", "versions"]
+        },
+        {
+          "destination": "timeout",
+          "flags": ["--timeout"],
+          "help": "HTTP timeout in seconds",
+          "prompt": "HTTP timeout in seconds",
+          "value_type": "integer",
+          "default": 20,
+          "guided_for": ["component-default", "versions"]
+        },
+        {
+          "destination": "no_register",
+          "flags": ["--no-register"],
+          "action": "store_true",
+          "help": "Do not update the packaged catalog registry",
+          "prompt": "Skip catalog registry updates?",
+          "default": false,
+          "guided_for": ["component-default", "versions"]
+        },
+        {
+          "destination": "no_schemas",
+          "flags": ["--no-schemas"],
+          "action": "store_true",
+          "help": "Do not compile runtime schemas after writing catalogs",
+          "prompt": "Skip runtime schema generation?",
+          "default": false,
+          "guided_for": ["component-default", "versions"]
+        },
+        {
+          "destination": "previous_version",
+          "flags": ["--previous-version"],
+          "help": "Explicit local catalog used to reconcile missing metadata",
+          "prompt": "Previous Fluent Bit version (optional)",
+          "guided_for": ["component-default", "versions"]
+        },
+        {
+          "destination": "no_inherit",
+          "flags": ["--no-inherit"],
+          "action": "store_true",
+          "help": "Do not carry undetermined metadata forward from an earlier catalog",
+          "prompt": "Disable previous-version metadata inheritance?",
+          "default": false,
+          "guided_for": ["component-default", "versions"]
+        },
+        {
+          "destination": "summary_dir",
+          "flags": ["--summary-dir"],
+          "help": "Directory receiving JSON and Markdown summary reports",
+          "prompt": "Summary directory (optional)"
+        },
+        {
+          "destination": "backup_dir",
+          "flags": ["--backup-dir"],
+          "help": "Directory receiving the mandatory pre-change ZIP backup",
+          "prompt": "Backup directory (optional)"
+        }
+      ]
+    },
+    {
+      "id": "fluentbit_markdown",
+      "command_group": "fluent-resources",
+      "command": "generate-fluentbit-markdown",
+      "description": "Generate Fluent Bit schema and plugin-attribute Markdown references",
+      "script": "dev-tools/generate_fluentbit_markdown.py",
+      "arguments": [
+        {
+          "destination": "versions",
+          "flags": ["--version"],
+          "action": "append",
+          "required": true,
+          "help": "Fluent Bit version to document; repeat for multiple versions",
+          "prompt": "Fluent Bit version(s), comma-separated"
+        },
+        {
+          "destination": "skip_schema_reference",
+          "flags": ["--skip-schema-reference"],
+          "action": "store_true",
+          "help": "Skip schema quick-reference generation",
+          "prompt": "Skip schema quick-reference generation?",
+          "default": false
+        },
+        {
+          "destination": "skip_attribute_reference",
+          "flags": ["--skip-attribute-reference"],
+          "action": "store_true",
+          "help": "Skip plugin attribute-reference generation",
+          "prompt": "Skip plugin attribute-reference generation?",
+          "default": false
+        }
+      ]
+    }
+  ]
+}

@@ -11,10 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Generate Fluent Bit schema and attribute-reference Markdown documents."""
+
 from __future__ import annotations
 
 import argparse
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -24,52 +25,30 @@ CONFIG_SERVICE_ROOT = REPO_ROOT / "config-service"
 QUICK_REFERENCE_DIR = CONFIG_SERVICE_ROOT / "dev-tools" / "quick-references"
 SCHEMA_SCRIPT = QUICK_REFERENCE_DIR / "generate_fluentbit_schema_quick_reference.py"
 ATTRIBUTE_SCRIPT = QUICK_REFERENCE_DIR / "generate_fluentbit_plugin_attribute_reference.py"
-CLI_DEV_TOOL_SPEC = {
-    "id": "fluentbit_markdown",
-    "label": "Generate Fluent Bit markdown",
-    "description": "Generate schema and attribute markdown references from local Fluent Bit artifacts.",
-    "script_relpath": "config-service/dev-tools/generate_fluentbit_markdown.py",
-    "arguments": [
-        {
-            "name": "versions",
-            "flag": "--version",
-            "prompt": "Fluent Bit version(s), comma-separated",
-            "required": True,
-            "multiple": True,
-            "default": "5.0.7",
-        },
-        {
-            "name": "generate_schema_reference",
-            "prompt": "Generate schema quick reference",
-            "kind": "bool",
-            "default": True,
-            "args_when_false": ["--skip-schema-reference"],
-        },
-        {
-            "name": "generate_attribute_reference",
-            "prompt": "Generate plugin attribute reference",
-            "kind": "bool",
-            "default": True,
-            "args_when_false": ["--skip-attribute-reference"],
-        },
-    ],
-}
-
-
-def cli_dev_tool_spec() -> dict:
-    return json.loads(json.dumps(CLI_DEV_TOOL_SPEC))
-
-
 def _run(script: Path, *, versions: list[str]) -> None:
+    """Run one quick-reference generator for every requested Fluent Bit version.
+
+    Parameters
+    ----------
+    script:
+        Generator entry point executed through the active Python interpreter.
+    versions:
+        Fluent Bit versions passed as repeated ``--version`` options.
+
+    """
     command = [sys.executable, str(script)]
     for version in versions:
         command.extend(["--version", version])
-    subprocess.run(command, check=True, cwd=str(REPO_ROOT))
+    subprocess.run(command, check=True, cwd=str(REPO_ROOT))  # noqa: S603
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse selected versions and reference types from command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Generate Fluent Bit markdown quick references from local schemas and catalog JSON.",
+        description=(
+            "Generate Fluent Bit markdown quick references from local schemas "
+            "and catalog JSON."
+        ),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -93,6 +72,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the selected schema and attribute-reference generators."""
     args = parse_args()
     if not args.skip_schema_reference:
         _run(SCHEMA_SCRIPT, versions=args.versions)

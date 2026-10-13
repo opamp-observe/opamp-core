@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Compile registered catalogs into the canonical packaged runtime schema tree."""
+
 from __future__ import annotations
 
 import argparse
@@ -26,10 +28,22 @@ SRC_ROOT = ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+# Developer tools import the source package after establishing the checkout path.
+# pylint: disable=wrong-import-position
+from config_service.json_artifacts import (  # noqa: E402
+    KEY_FILE,
+    KEY_OPERATION,
+    KEY_PAYLOAD,
+    KEY_POINTER,
+    OPERATION_APPEND,
+    write_manifest_json_artifact,
+)
+from config_service.services.catalog_service import CatalogService  # noqa: E402
+from config_service.services.schema_service import SchemaService  # noqa: E402
 
-CONFIG_DIR = ROOT / "config"
-OUTPUT_DIR = ROOT / "json-schemas"
-SRC_OUTPUT_DIR = SRC_ROOT / "config_service" / "json-schemas"
+PACKAGE_ROOT = SRC_ROOT / "config_service"
+CONFIG_DIR = PACKAGE_ROOT / "config"
+OUTPUT_DIR = PACKAGE_ROOT / "json-schemas"
 PLUGIN_SECTIONS = ("inputs", "filters", "outputs")
 PIPELINE_PROPS_PATH = (
     "properties",
@@ -41,6 +55,7 @@ PIPELINE_PROPS_PATH = (
 
 
 def _pipeline_properties(schema: dict[str, Any]) -> dict[str, Any]:
+    """Return the nested pipeline-property mapping from a compiled schema."""
     container: dict[str, Any] | Any = schema
     for segment in PIPELINE_PROPS_PATH:
         container = container[segment]
@@ -48,16 +63,19 @@ def _pipeline_properties(schema: dict[str, Any]) -> dict[str, Any]:
 
 
 def _plugin_variant_name(variant: dict[str, Any]) -> str:
+    """Return the Fluent plugin name encoded in one schema variant."""
     return str(variant["properties"]["name"]["const"])
 
 
 def _clear_legacy_flat_parts(directory: Path, filename: str) -> None:
+    """Remove obsolete flat schema shards before writing the current layout."""
     manifest_path = directory / filename
     for stale_path in directory.glob(f"{manifest_path.stem}.*{manifest_path.suffix}"):
         stale_path.unlink(missing_ok=True)
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    """Write one formatted JSON payload, creating its parent directory."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
@@ -70,6 +88,7 @@ def _plugin_variant_payload(
     variant: dict[str, Any],
     shared_processors_written: set[Path],
 ) -> dict[str, Any]:
+    """Extract shared processor schemas and return the plugin shard payload."""
     if config_type != "fluentbit" or section not in {"inputs", "outputs"}:
         return variant
 
@@ -78,7 +97,6 @@ def _plugin_variant_payload(
     if not isinstance(properties, dict) or not isinstance(processors_schema, dict):
         return variant
 
-    plugin_name = _plugin_variant_name(variant)
     shared_processors_path = version_dir / "processors.json"
     if shared_processors_path not in shared_processors_written:
         _write_json(shared_processors_path, processors_schema)
@@ -89,16 +107,15 @@ def _plugin_variant_payload(
     return base_variant
 
 
-def _write_schema_artifact(directory: Path, config_type: str, version: str, schema: dict[str, Any]) -> None:
-    from config_service.json_artifacts import (
-        KEY_FILE,
-        KEY_OPERATION,
-        KEY_PAYLOAD,
-        KEY_POINTER,
-        OPERATION_APPEND,
-        write_manifest_json_artifact,
-    )
-
+def _write_schema_artifact(
+    directory: Path,
+    config_type: str,
+    version: str,
+    schema: dict[str, Any],
+) -> None:
+    """Split one compiled schema into its canonical manifest and shard files."""
+    # Each intermediate value describes one independently persisted schema shard.
+    # pylint: disable=too-many-locals
     filename = f"{config_type}-{version}-config-schema.json"
     manifest_path = directory / filename
     version_dir = directory / config_type / version
@@ -160,15 +177,12 @@ def generate_runtime_schemas(
     config_types: list[str] | None = None,
     versions: list[str] | None = None,
 ) -> None:
-    from config_service.services.catalog_service import CatalogService
-    from config_service.services.schema_service import SchemaService
-
+    """Compile selected registered catalog versions into packaged schema artifacts."""
     catalog_service = CatalogService(CONFIG_DIR / "catalog-registry.json")
     catalog_service.load_all_catalogs()
     schema_service = SchemaService()
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    SRC_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     requested_types = set(config_types or catalog_service.get_supported_config_types())
     requested_versions = set(versions or [])
     for config_type in catalog_service.get_supported_config_types():
@@ -180,10 +194,10 @@ def generate_runtime_schemas(
             catalog = catalog_service.get_catalog(version, config_type=config_type)
             schema = schema_service.compile_schema(catalog, strict_mode=True)
             _write_schema_artifact(OUTPUT_DIR, config_type, version, schema)
-            _write_schema_artifact(SRC_OUTPUT_DIR, config_type, version, schema)
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse catalog type and version filters for schema generation."""
     parser = argparse.ArgumentParser(
         description="Generate runtime JSON Schemas from registered catalogs.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -204,6 +218,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Compile runtime schemas requested through the command line."""
     args = parse_args()
     generate_runtime_schemas(
         config_types=args.config_types,
