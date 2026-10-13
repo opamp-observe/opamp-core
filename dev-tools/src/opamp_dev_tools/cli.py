@@ -13,9 +13,14 @@
 
 """CLI entrypoint for the OpAMP developer tools component."""
 
+# The command registry intentionally stays centralized so direct and guided modes
+# share one parser and one dispatch contract.
+# pylint: disable=too-many-lines
+
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -26,6 +31,17 @@ from .certificates import (
     configure_keycloak,
     ensure_provider_tls_config,
     generate_self_signed_certificate,
+)
+from .command_help import DEFAULT_PROGRAM_NAME, render_command_hierarchy
+from .component_tools import (
+    DEFAULT_OPERATION_ID,
+    ComponentToolArgument,
+    ComponentToolSpec,
+    component_tool_from_args,
+    discover_component_tools,
+    register_component_tool_parser,
+    run_component_tool,
+    tools_for_group,
 )
 from .components import (
     build_artifacts,
@@ -38,9 +54,16 @@ from .components import (
     run_e2e_tests,
     select_components,
 )
-from .config_sync import sync_config_service_json_assets
 from .container_images import CONTAINER_RUNTIME_CHOICES, clean_project_images
+from .fluentbit_changes import report_fluentbit_changes
+from .fluentbit_online import (
+    DEFAULT_DOCUMENTATION_SOURCE,
+    DEFAULT_ONLINE_TIMEOUT_SECONDS,
+    DOCUMENTATION_SOURCES,
+)
+from .generated_folders import purge_cache_and_egg_folders
 from .hooks import apply_precommit_logic
+from .interactive_completion import prompt_with_completion
 from .javascript_complexity import (
     DEFAULT_MAX_COMPLEXITY,
     run_javascript_complexity_checks,
@@ -88,9 +111,17 @@ SIMPLE_BUILD_COMMANDS = frozenset(
 INTERACTIVE_ACTION_RUN = "run"
 INTERACTIVE_ACTION_RETURN_TO_MAIN = "return-to-main"
 INTERACTIVE_ACTION_EXIT = "exit"
+FLUENT_RESOURCES_COMMAND_GROUP = "fluent-resources"
+HELP_COMMAND = "help"
+PURGE_CACHE_EGG_COMMAND = "purge-cache-egg"
+REPORT_FLUENTBIT_CHANGES_COMMAND = "report-fluentbit-changes"
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
 
 
-def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentParser:
+def build_parser(  # pylint: disable=too-many-locals,too-many-statements
+    default_repo_root: Path | None = None,
+) -> argparse.ArgumentParser:
     """Build the argparse command tree for direct and guided CLI usage.
 
     Parameters
@@ -106,6 +137,7 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
     available_components = [
         component.key for component in discover_build_components(resolved_default_repo_root)
     ]
+    component_tools = discover_component_tools(resolved_default_repo_root)
     parser = argparse.ArgumentParser(
         description="Developer CLI utility for OpAMP repository workflows."
     )
@@ -124,17 +156,15 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
 
     dev_parser = command_parsers.add_parser("dev", help="Developer maintenance commands")
     dev_subparsers = dev_parser.add_subparsers(dest="dev_command", required=True)
-    dev_subparsers.add_parser("validate-schemas", help="Validate config-service JSON definitions and schemas")
+    dev_subparsers.add_parser(
+        "validate-schemas", help="Validate config-service JSON definitions and schemas"
+    )
     set_parser = dev_subparsers.add_parser("set", help="Set repository-maintained values")
     set_subparsers = set_parser.add_subparsers(dest="set_command", required=True)
-    version_parser = set_subparsers.add_parser("version", help="Prompt for and set a new repository version")
-    version_parser.add_argument("--version", help="Version in MAJOR.MINOR.PATCH format")
-    sync_parser = dev_subparsers.add_parser("sync", help="Synchronize repository-managed assets")
-    sync_subparsers = sync_parser.add_subparsers(dest="sync_command", required=True)
-    sync_subparsers.add_parser(
-        "config-service-json",
-        help="Mirror config-service JSON definitions and schemas from src into packaged copies",
+    version_parser = set_subparsers.add_parser(
+        "version", help="Prompt for and set a new repository version"
     )
+    version_parser.add_argument("--version", help="Version in MAJOR.MINOR.PATCH format")
     apply_parser = dev_subparsers.add_parser("apply", help="Apply repository automation")
     apply_subparsers = apply_parser.add_subparsers(dest="apply_command", required=True)
     apply_subparsers.add_parser("precommit-logic", help="Configure repository git hooks")
@@ -162,6 +192,15 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
         "--dry-run",
         action="store_true",
         help="List matching images without removing them",
+    )
+    purge_folders_parser = dev_subparsers.add_parser(
+        PURGE_CACHE_EGG_COMMAND,
+        help="Remove generated *.cache, *.egg, and *.egg-info folders",
+    )
+    purge_folders_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="List matching folders without removing them",
     )
     upload_wheels_parser = dev_subparsers.add_parser(
         "upload-wheels",
@@ -288,16 +327,46 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
         help="Show selected wheels and cloud destinations without uploading",
     )
 
+    fluent_resources_parser = command_parsers.add_parser(
+        FLUENT_RESOURCES_COMMAND_GROUP,
+        help="Manage Fluent configuration resources and catalog reports",
+    )
+    fluent_resources_subparsers = fluent_resources_parser.add_subparsers(
+        dest="fluent_resources_command",
+        required=True,
+    )
+    fluentbit_changes_parser = fluent_resources_subparsers.add_parser(
+        REPORT_FLUENTBIT_CHANGES_COMMAND,
+        help="Report plugins and attributes added between Fluent Bit catalogs",
+    )
+    _add_fluentbit_changes_arguments(fluentbit_changes_parser)
+    for component_tool in tools_for_group(
+        component_tools,
+        FLUENT_RESOURCES_COMMAND_GROUP,
+    ):
+        if component_tool.command in fluent_resources_subparsers.choices:
+            LOGGER.debug(
+                "ignored component command conflicting with core command group=%s command=%s",
+                component_tool.command_group,
+                component_tool.command,
+            )
+            continue
+        register_component_tool_parser(fluent_resources_subparsers, component_tool)
+
     build_parser_cmd = command_parsers.add_parser("build", help="Build, test, and generate outputs")
     build_subparsers = build_parser_cmd.add_subparsers(dest="build_command", required=True)
 
-    artefact_parser = build_subparsers.add_parser("artefact", help="Build wheel and source artefacts")
+    artefact_parser = build_subparsers.add_parser(
+        "artefact", help="Build wheel and source artefacts"
+    )
     _add_named_or_all_parsers(
         artefact_parser,
         noun="component",
         available_components=available_components,
     )
-    artefact_parser.add_argument("--no-isolation", action="store_true", help="Pass --no-isolation to python -m build")
+    artefact_parser.add_argument(
+        "--no-isolation", action="store_true", help="Pass --no-isolation to python -m build"
+    )
 
     sbom_parser = build_subparsers.add_parser("sbom", help="Generate SBOMs")
     _add_named_or_all_parsers(
@@ -305,7 +374,9 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
         noun="component",
         available_components=available_components,
     )
-    sbom_parser.add_argument("--no-isolation", action="store_true", help="Pass --no-isolation to python -m build")
+    sbom_parser.add_argument(
+        "--no-isolation", action="store_true", help="Pass --no-isolation to python -m build"
+    )
 
     secure_parser = build_subparsers.add_parser("secure", help="Run security checks")
     _add_named_or_all_parsers(
@@ -360,7 +431,9 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
             "Repeat to override the default JavaScript/TypeScript source target set."
         ),
     )
-    build_subparsers.add_parser("docs", help="Regenerate markdown quick references from JSON artifacts")
+    build_subparsers.add_parser(
+        "docs", help="Regenerate markdown quick references from JSON artifacts"
+    )
     build_subparsers.add_parser("diagrams", help="Render Mermaid diagrams to images")
     release_assets_parser = build_subparsers.add_parser(
         "release-assets",
@@ -374,7 +447,9 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
         "generate",
         help="Guide the user through self-signed certificate creation",
     )
-    generate_parser.add_argument("--cert-file", help="Certificate output path relative to repo root")
+    generate_parser.add_argument(
+        "--cert-file", help="Certificate output path relative to repo root"
+    )
     generate_parser.add_argument("--key-file", help="Private key output path relative to repo root")
     generate_parser.add_argument("--common-name", help="Certificate common name")
     generate_parser.add_argument("--days", type=int, help="Certificate validity period in days")
@@ -414,6 +489,10 @@ def build_parser(default_repo_root: Path | None = None) -> argparse.ArgumentPars
         help="Provider TLS trust mode",
     )
     cert_subparsers.add_parser("keycloak", help="Guide the user through local Keycloak setup")
+    command_parsers.add_parser(
+        HELP_COMMAND,
+        help="Show the complete developer CLI command hierarchy",
+    )
     return parser
 
 
@@ -481,6 +560,9 @@ def _run_parsed_command(args: argparse.Namespace) -> int:
 
     """
     repo_root = Path(args.repo_root).expanduser().resolve()
+    if args.command_group == HELP_COMMAND:
+        _print_command_hierarchy(repo_root)
+        return 0
     tool_root = repo_root / "dev-tools"
     command_slug = _command_slug_from_args(args)
     runtime = CommandRuntime(repo_root=repo_root, tool_root=tool_root, command_slug=command_slug)
@@ -512,22 +594,37 @@ def _dispatch(args: argparse.Namespace, runtime: CommandRuntime) -> bool:
     """
     if args.command_group == "dev":
         return _dispatch_dev_command(args, runtime)
+    if args.command_group == FLUENT_RESOURCES_COMMAND_GROUP:
+        return _dispatch_fluent_resources_command(args, runtime)
     if args.command_group == "build":
         return _dispatch_build_command(args, runtime)
     if args.command_group == "certificate":
         return _dispatch_certificate_command(args, runtime)
-
     raise RuntimeError("unsupported command group")
 
 
-def _dispatch_dev_command(args: argparse.Namespace, runtime: CommandRuntime) -> bool:
+def _print_command_hierarchy(repo_root: Path) -> None:
+    """Print the parser-derived developer CLI command hierarchy.
+
+    Parameters
+    ----------
+    repo_root:
+        Repository root used for component-aware parser construction.
+
+    """
+    parser = build_parser(repo_root)
+    print(render_command_hierarchy(parser, program_name=DEFAULT_PROGRAM_NAME))
+
+
+def _dispatch_dev_command(  # pylint: disable=too-many-return-statements
+    args: argparse.Namespace,
+    runtime: CommandRuntime,
+) -> bool:
     """Dispatch one developer-maintenance command."""
     if args.dev_command == "validate-schemas":
         return validate_config_service_schemas(runtime)
     if args.dev_command == "set" and args.set_command == "version":
         return set_repository_version(runtime, version=args.version)
-    if args.dev_command == "sync" and args.sync_command == "config-service-json":
-        return sync_config_service_json_assets(runtime)
     if args.dev_command == "apply" and args.apply_command == "precommit-logic":
         return apply_precommit_logic(runtime)
     if args.dev_command == "clean-images":
@@ -538,6 +635,8 @@ def _dispatch_dev_command(args: argparse.Namespace, runtime: CommandRuntime) -> 
             force=args.force,
             dry_run=args.dry_run,
         )
+    if args.dev_command == PURGE_CACHE_EGG_COMMAND:
+        return purge_cache_and_egg_folders(runtime, dry_run=args.dry_run)
     if args.dev_command == "upload-wheels":
         return upload_latest_wheels(
             runtime,
@@ -573,6 +672,42 @@ def _dispatch_dev_command(args: argparse.Namespace, runtime: CommandRuntime) -> 
             ),
         )
     raise RuntimeError("unsupported dev command")
+
+
+def _dispatch_fluent_resources_command(
+    args: argparse.Namespace,
+    runtime: CommandRuntime,
+) -> bool:
+    """Dispatch one Fluent configuration resource command.
+
+    Parameters
+    ----------
+    args:
+        Parsed arguments for the selected Fluent resource workflow.
+    runtime:
+        Shared command runtime used by the selected workflow.
+
+    """
+    if args.fluent_resources_command == REPORT_FLUENTBIT_CHANGES_COMMAND:
+        return report_fluentbit_changes(
+            runtime,
+            current_version=args.current_version,
+            previous_version=args.previous_version,
+            output_dir=args.output_dir,
+            online=args.online,
+            documentation_source=args.source,
+            github_ref=args.github_ref,
+            timeout=args.timeout,
+        )
+    component_tool = component_tool_from_args(args)
+    if component_tool is not None:
+        return run_component_tool(
+            runtime,
+            python_exe=args.python,
+            args=args,
+            tool=component_tool,
+        )
+    raise RuntimeError("unsupported Fluent resources command")
 
 
 def _dispatch_build_command(args: argparse.Namespace, runtime: CommandRuntime) -> bool:
@@ -727,41 +862,48 @@ def _prompt_for_command_tokens(repo_root: Path) -> tuple[str, list[str]]:
         prompts that offer named component execution.
 
     """
-    available_components = [
-        component.key for component in discover_build_components(repo_root)
-    ]
+    available_components = [component.key for component in discover_build_components(repo_root)]
     print("No command was provided. Choose a command group to continue.")
     command_group = _prompt_for_selection(
         "Command groups",
         [
             ("dev", "Developer maintenance commands"),
+            (
+                FLUENT_RESOURCES_COMMAND_GROUP,
+                "Manage Fluent configuration resources and catalog reports",
+            ),
             ("build", "Build, test, and generate outputs"),
             ("certificate", "Certificate and auth helpers"),
+            (HELP_COMMAND, "Show the complete developer CLI command hierarchy"),
         ],
     )
     if command_group is None:
         return INTERACTIVE_ACTION_EXIT, []
     if command_group == "dev":
         command_tokens = _prompt_for_dev_tokens()
+    elif command_group == FLUENT_RESOURCES_COMMAND_GROUP:
+        command_tokens = _prompt_for_fluent_resources_tokens(repo_root)
     elif command_group == "build":
         command_tokens = _prompt_for_build_tokens(available_components)
-    else:
+    elif command_group == "certificate":
         command_tokens = _prompt_for_certificate_tokens()
+    else:
+        command_tokens = [HELP_COMMAND]
     if command_tokens is None:
         return INTERACTIVE_ACTION_RETURN_TO_MAIN, []
     return INTERACTIVE_ACTION_RUN, command_tokens
 
 
-def _prompt_for_dev_tokens() -> list[str] | None:
+def _prompt_for_dev_tokens() -> list[str] | None:  # pylint: disable=too-many-return-statements
     """Prompt for one developer maintenance command token sequence."""
     command = _prompt_for_selection(
         "Dev commands",
         [
             ("validate-schemas", "Validate config-service JSON definitions and schemas"),
             ("set version", "Prompt for and set a new repository version"),
-            ("sync config-service-json", "Mirror config-service JSON definitions and schemas"),
             ("apply precommit-logic", "Configure repository git hooks"),
             ("clean-images", "Remove project-managed Docker or Podman images"),
+            (PURGE_CACHE_EGG_COMMAND, "Remove generated cache and Python egg folders"),
             ("upload-wheels", "Publish wheels from local, AWS, or Azure to GitHub"),
             ("push-to-cloud", "Push the latest local wheels to AWS or Azure"),
         ],
@@ -772,15 +914,154 @@ def _prompt_for_dev_tokens() -> list[str] | None:
         return ["dev", "validate-schemas"]
     if command == "set version":
         return ["dev", "set", "version"]
-    if command == "sync config-service-json":
-        return ["dev", "sync", "config-service-json"]
     if command == "apply precommit-logic":
         return ["dev", "apply", "precommit-logic"]
     if command == "clean-images":
         return _prompt_for_clean_images_tokens()
+    if command == PURGE_CACHE_EGG_COMMAND:
+        return _prompt_for_purge_cache_egg_tokens()
     if command == "upload-wheels":
         return _prompt_for_upload_wheels_tokens()
     return _prompt_for_push_to_cloud_tokens()
+
+
+def _prompt_for_fluent_resources_tokens(repo_root: Path) -> list[str] | None:
+    """Prompt for one core or component-owned Fluent resource command.
+
+    Parameters
+    ----------
+    repo_root:
+        Repository root searched for optional component tool manifests.
+
+    """
+    component_tools = tools_for_group(
+        discover_component_tools(repo_root),
+        FLUENT_RESOURCES_COMMAND_GROUP,
+    )
+    component_tools = [
+        tool for tool in component_tools if tool.command != REPORT_FLUENTBIT_CHANGES_COMMAND
+    ]
+    component_tools_by_command = {tool.command: tool for tool in component_tools}
+    command_options = [
+        (
+            REPORT_FLUENTBIT_CHANGES_COMMAND,
+            "Report additions using local catalogs or live Fluent Bit documentation",
+        ),
+    ]
+    command_options.extend(
+        (tool.command, f"{tool.description} ({tool.component_name})")
+        for tool in component_tools
+    )
+    command = _prompt_for_selection(
+        "Fluent resource commands",
+        command_options,
+    )
+    if command is None:
+        return None
+    if command == REPORT_FLUENTBIT_CHANGES_COMMAND:
+        return _prompt_for_fluentbit_changes_tokens()
+    return _prompt_for_component_tool_tokens(component_tools_by_command[command])
+
+
+def _prompt_for_component_tool_tokens(tool: ComponentToolSpec) -> list[str] | None:
+    """Collect guided arguments for one discovered component-owned command.
+
+    Parameters
+    ----------
+    tool:
+        Validated component tool specification whose prompts should be rendered.
+
+    """
+    tokens = [tool.command_group, tool.command]
+    selected_operations: set[str] = set()
+    for exclusive_group in tool.exclusive_groups:
+        group_arguments = [
+            argument
+            for argument in tool.arguments
+            if argument.exclusive_group == exclusive_group.identifier
+        ]
+        operation_options = [
+            (argument.destination, argument.selection_label or argument.help_text)
+            for argument in group_arguments
+        ]
+        if exclusive_group.allow_none:
+            operation_options.insert(
+                0,
+                (DEFAULT_OPERATION_ID, exclusive_group.none_label),
+            )
+        selection = _prompt_for_selection(exclusive_group.prompt, operation_options)
+        if selection is None:
+            return None
+        selected_operations.add(selection)
+
+    for argument in tool.arguments:
+        if (
+            argument.exclusive_group
+            and argument.destination not in selected_operations
+        ):
+            continue
+        if argument.guided_for and not selected_operations.intersection(argument.guided_for):
+            continue
+        argument_tokens = _prompt_for_component_argument(argument)
+        if argument_tokens is None:
+            return None
+        tokens.extend(argument_tokens)
+    return tokens
+
+
+def _prompt_for_component_argument(argument: ComponentToolArgument) -> list[str] | None:
+    """Prompt for one discovered component argument and return command tokens.
+
+    Parameters
+    ----------
+    argument:
+        Validated argument specification controlling the prompt and token shape.
+
+    """
+    if argument.action == "store_true":
+        enabled = _prompt_yes_no(argument.prompt, default=bool(argument.default))
+        return [argument.flags[0]] if enabled else []
+    if argument.choices:
+        return _prompt_for_component_choice(argument)
+    default_suffix = f" [{argument.default}]" if argument.default not in {None, ""} else ""
+    response = input(f"{argument.prompt}{default_suffix}: ").strip()
+    while argument.required and not response:
+        print(f"{argument.prompt} is required.")
+        response = input(f"{argument.prompt}: ").strip()
+    if not response:
+        return []
+    values = (
+        [value.strip() for value in response.split(",") if value.strip()]
+        if argument.action == "append"
+        else [response]
+    )
+    tokens: list[str] = []
+    for value in values:
+        tokens.extend([argument.flags[0], value])
+    return tokens
+
+
+def _prompt_for_component_choice(argument: ComponentToolArgument) -> list[str] | None:
+    """Prompt for one discovered choice argument and preserve component defaults.
+
+    Parameters
+    ----------
+    argument:
+        Argument specification containing the accepted scalar choices.
+
+    """
+    options = [(choice, "") for choice in argument.choices]
+    if argument.default not in {None, ""}:
+        options.insert(
+            0,
+            (DEFAULT_OPERATION_ID, f"Use component default ({argument.default})"),
+        )
+    selection = _prompt_for_selection(argument.prompt, options)
+    if selection is None:
+        return None
+    if selection == DEFAULT_OPERATION_ID:
+        return []
+    return [argument.flags[0], selection]
 
 
 def _prompt_for_clean_images_tokens() -> list[str] | None:
@@ -804,6 +1085,35 @@ def _prompt_for_clean_images_tokens() -> list[str] | None:
         tokens.append("--force")
     if _prompt_yes_no("Dry run only?", default=False):
         tokens.append("--dry-run")
+    return tokens
+
+
+def _prompt_for_purge_cache_egg_tokens() -> list[str]:
+    """Prompt for generated cache and Python egg folder cleanup options."""
+    tokens = ["dev", PURGE_CACHE_EGG_COMMAND]
+    if _prompt_yes_no("Dry run only?", default=False):
+        tokens.append("--dry-run")
+    return tokens
+
+
+def _prompt_for_fluentbit_changes_tokens() -> list[str]:
+    """Prompt for optional Fluent Bit catalog comparison versions and output."""
+    online = _prompt_yes_no("Build the current catalog from online documentation?", default=False)
+    current_version_prompt = (
+        "Online version [current stable release]: " if online else "Current version [newest]: "
+    )
+    current_version = input(current_version_prompt).strip()
+    previous_version = input("Previous version [nearest earlier]: ").strip()
+    output_dir = input("Output directory [config-service/reports/fluentbit]: ").strip()
+    tokens = [FLUENT_RESOURCES_COMMAND_GROUP, REPORT_FLUENTBIT_CHANGES_COMMAND]
+    if online:
+        tokens.append("--online")
+    if current_version:
+        tokens.extend(["--current-version", current_version])
+    if previous_version:
+        tokens.extend(["--previous-version", previous_version])
+    if output_dir:
+        tokens.extend(["--output-dir", output_dir])
     return tokens
 
 
@@ -960,6 +1270,57 @@ def _prompt_for_certificate_tokens() -> list[str] | None:
     return ["certificate", command]
 
 
+def _add_fluentbit_changes_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add shared Fluent Bit catalog comparison options to a command parser.
+
+    Parameters
+    ----------
+    parser:
+        Fluent resource subparser that receives the comparison options.
+
+    """
+    parser.add_argument(
+        "--online",
+        action="store_true",
+        help="Build the current catalog from upstream documentation without saving it",
+    )
+    parser.add_argument(
+        "--current-version",
+        default="",
+        help=(
+            "Version to inspect; defaults to the current upstream release with --online, "
+            "otherwise the newest retained local catalog"
+        ),
+    )
+    parser.add_argument(
+        "--previous-version",
+        default="",
+        help="Baseline version; defaults to the nearest earlier local catalog",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="",
+        help="Report directory; defaults to config-service/reports/fluentbit",
+    )
+    parser.add_argument(
+        "--source",
+        choices=DOCUMENTATION_SOURCES,
+        default=DEFAULT_DOCUMENTATION_SOURCE,
+        help="Online documentation source; auto tries GitHub then the published website",
+    )
+    parser.add_argument(
+        "--github-ref",
+        default="",
+        help="Optional Fluent Bit documentation Git ref override for --online",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=DEFAULT_ONLINE_TIMEOUT_SECONDS,
+        help="Per-request timeout in seconds for --online",
+    )
+
+
 def _prompt_for_named_or_all_tokens(
     command: str,
     available_components: list[str],
@@ -1040,7 +1401,9 @@ def _prompt_for_selection(
             suffix = f" - {description}" if description else ""
             print(f"  {index}. {value}{suffix}")
         print("  q. quit")
-        response = input("Select an option: ").strip()
+        completion_options = [value for value, _description in options]
+        completion_options.extend(["q", "quit", "exit"])
+        response = prompt_with_completion("Select an option: ", completion_options).strip()
         if not response:
             print("Please choose one of the listed options.")
             continue
@@ -1223,8 +1586,8 @@ def _command_slug_from_args(args: argparse.Namespace) -> str:
     tokens = [
         getattr(args, "command_group", ""),
         getattr(args, "dev_command", ""),
+        getattr(args, "fluent_resources_command", ""),
         getattr(args, "set_command", ""),
-        getattr(args, "sync_command", ""),
         getattr(args, "apply_command", ""),
         getattr(args, "build_command", ""),
         getattr(args, "scope", ""),

@@ -15,11 +15,10 @@
 
 from __future__ import annotations
 
-import os
+import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 try:
     import tomllib
@@ -132,6 +131,7 @@ def build_artifacts(
     runtime.ensure_python_module(python_exe=python_exe, module_name="build", pip_package="build")
     dist_root = runtime.repo_root / "dist"
     for component in components:
+        _clean_component_build_tree(component)
         if no_isolation:
             _ensure_build_backend_requirements(
                 runtime,
@@ -158,6 +158,7 @@ def build_component_wheel(
 ) -> Path:
     """Build one component wheel and return the resulting wheel path."""
     runtime.ensure_python_module(python_exe=python_exe, module_name="build", pip_package="build")
+    _clean_component_build_tree(component)
     if no_isolation:
         _ensure_build_backend_requirements(
             runtime,
@@ -187,7 +188,7 @@ def build_component_wheel(
     return wheels[-1]
 
 
-def build_sboms(
+def build_sboms(  # pylint: disable=too-many-locals,import-outside-toplevel
     runtime: CommandRuntime,
     *,
     components: list[BuildComponent],
@@ -204,7 +205,12 @@ def build_sboms(
         write_wheel_artifact_sbom,
     )
 
-    build_artifacts(runtime, components=components, python_exe=python_exe, no_isolation=no_isolation)
+    build_artifacts(
+        runtime,
+        components=components,
+        python_exe=python_exe,
+        no_isolation=no_isolation,
+    )
     issue_found = False
     dist_root = repo_root / "dist"
     sbom_root = dist_root / "sbom"
@@ -288,7 +294,10 @@ def run_e2e_tests(runtime: CommandRuntime, *, python_exe: str) -> bool:
 
     """
     ensure_pytest_dependencies(runtime, python_exe=python_exe)
-    runtime.run([python_exe, "-m", "pytest", "-s", "tests/test_socket_e2e.py"], cwd=runtime.repo_root)
+    runtime.run(
+        [python_exe, "-m", "pytest", "-s", "tests/test_socket_e2e.py"],
+        cwd=runtime.repo_root,
+    )
     return False
 
 
@@ -385,6 +394,25 @@ def _clean_dir(path: Path) -> None:
             child.unlink()
 
 
+def _clean_component_build_tree(component: BuildComponent) -> None:
+    """Remove one component's local build tree before packaging.
+
+    This prevents deleted or renamed source modules from surviving in a stale
+    ``build/lib`` directory and being copied into a later wheel.
+
+    Parameters
+    ----------
+    component:
+        Build component whose exact local ``build`` path should be cleared.
+
+    """
+    build_directory = component.path / "build"
+    if build_directory.is_symlink() or build_directory.is_file():
+        build_directory.unlink()
+    elif build_directory.is_dir():
+        shutil.rmtree(build_directory)
+
+
 def _discover_fluentbit_versions(repo_root: Path) -> list[str]:
     source_dir = repo_root / "config-service" / "json-definitions"
     versions: set[str] = set()
@@ -418,7 +446,11 @@ def _ensure_build_backend_requirements(
     requirements = build_system.get("requires")
     if not isinstance(requirements, list):
         return
-    normalized_requirements = [str(requirement).strip() for requirement in requirements if str(requirement).strip()]
+    normalized_requirements = [
+        str(requirement).strip()
+        for requirement in requirements
+        if str(requirement).strip()
+    ]
     if not normalized_requirements:
         return
     runtime.info(

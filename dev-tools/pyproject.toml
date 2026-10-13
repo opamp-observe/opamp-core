@@ -21,10 +21,11 @@ version = "0.4.0"
 description = "Developer CLI utility for building, validating, and maintaining OpAMP components"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 authors = [{ name = "Phil Wilkins" }]
 keywords = ["opamp", "developer-tools", "containers", "release-automation"]
 dependencies = [
+  "prompt_toolkit>=3.0",
   "tomli>=2; python_version < '3.11'",
 ]
 

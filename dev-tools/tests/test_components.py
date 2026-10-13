@@ -116,6 +116,9 @@ class _RuntimeStub:
 def test_build_artifacts_installs_build_backend_requires_for_no_isolation(tmp_path: Path) -> None:
     component_root = tmp_path / "agent_broker"
     component_root.mkdir()
+    stale_build_file = component_root / "build" / "lib" / "removed_module.py"
+    stale_build_file.parent.mkdir(parents=True)
+    stale_build_file.write_text("stale", encoding="utf-8")
     (component_root / "pyproject.toml").write_text(
         "\n".join(
             [
@@ -159,6 +162,7 @@ def test_build_artifacts_installs_build_backend_requires_for_no_isolation(tmp_pa
         str(tmp_path / "dist" / "agent_broker"),
     ]
     assert "--no-isolation" in runtime.commands[1]
+    assert not stale_build_file.exists()
 
 
 def test_build_pdf_uses_dev_tools_manual_builder(tmp_path: Path) -> None:
