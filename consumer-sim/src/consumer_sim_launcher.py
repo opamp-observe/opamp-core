@@ -43,8 +43,8 @@ from opamp_consumer_sim.resources import (
     ensure_user_default_config,
     read_packaged_text,
     source_component_root,
-    source_resource_path,
     source_repo_root,
+    source_resource_path,
     user_state_root,
 )
 
@@ -83,6 +83,8 @@ STATUS_SHUTTING_DOWN = "shuttingdown"
 
 ENV_SIM_PROCESS_RECORD_FILE = "OPAMP_SIM_PROCESS_RECORD_FILE"
 ENV_SIM_PROCESS_RECORD_NAME = "OPAMP_SIM_PROCESS_RECORD_NAME"
+ENV_APP_ENABLE_DEV_FEATURES = "APP_ENABLE_DEV_FEATURES"
+ENABLED_ENV_VALUES = frozenset({"1", "on", "true", "yes"})
 
 GRACEFUL_SHUTDOWN_WAIT_SECONDS = 90.0
 TERMINATE_WAIT_SECONDS = 5.0
@@ -110,6 +112,16 @@ def _resolve_launcher_config_path() -> pathlib.Path:
     if override:
         return pathlib.Path(override).expanduser().resolve()
     return _default_config_path()
+
+
+def _require_dev_features() -> None:
+    """Block simulator startup unless the explicit development feature flag is enabled."""
+    configured_value = str(os.getenv(ENV_APP_ENABLE_DEV_FEATURES, "") or "").strip().lower()
+    if configured_value not in ENABLED_ENV_VALUES:
+        raise RuntimeError(
+            "consumer-sim startup requires APP_ENABLE_DEV_FEATURES=true; "
+            "no simulator processes were launched"
+        )
 
 
 def _json_path(path_parts: list[Any]) -> str:
@@ -535,6 +547,7 @@ def _write_state_file(
 
 def _start_instances(config_path: pathlib.Path) -> None:  # pylint: disable=too-many-locals
     """Start all configured consumer instances and record their process IDs."""
+    _require_dev_features()
     payload = _load_launcher_payload(config_path)
     _validate_payload_against_schema(payload, config_path=config_path)
     state_file = _state_file_path(config_path, payload)
