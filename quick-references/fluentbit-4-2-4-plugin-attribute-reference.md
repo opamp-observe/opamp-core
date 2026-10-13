@@ -1,7 +1,7 @@
 # Fluent Bit 4.2.4 Plugin Attribute Reference
 
 Generated from the local catalog JSON only.
-- `config-service\json-definitions\fluent-bit-4.2.4-all-plugins-catalog.json`
+- `config-service\src\config_service\json-definitions\fluent-bit-4.2.4-all-plugins-catalog.json`
 
 Scope: this reference includes the field-based `inputs`, `filters`, and `outputs` plugin groups from the catalog JSON. The `custom_plugins` block is not tabulated because it does not provide per-attribute documentation links in the same structure.
 
