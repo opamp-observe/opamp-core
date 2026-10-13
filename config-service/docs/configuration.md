@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Configuration Reference
 
 ## Overview
@@ -8,11 +22,11 @@
 4. Quart component entrypoint registration
 
 ## Files
-- Standalone config-tool settings: `config-service/config/config-service.json`
-- Catalog registry: `config-service/config/catalog-registry.json`
-- Validation registry: `config-service/config/validation-rules-registry.json`
-- Service registry: `config-service/config/service-registry.json`
-- Parser registry: `config-service/config/parser-registry.json`
+- Standalone config-tool settings: `config-service/src/config_service/config/config-service.json`
+- Catalog registry: `config-service/src/config_service/config/catalog-registry.json`
+- Validation registry: `config-service/src/config_service/config/validation-rules-registry.json`
+- Service registry: `config-service/src/config_service/config/service-registry.json`
+- Parser registry: `config-service/src/config_service/config/parser-registry.json`
 
 ## Environment variables
 - `CONFIG_TOOL_CONFIG_PATH`
@@ -43,7 +57,7 @@
   - `UI_AUTH_JWT_LEEWAY_SECONDS`
 
 ## Catalog registry format
-Path: `config-service/config/catalog-registry.json`
+Path: `config-service/src/config_service/config/catalog-registry.json`
 
 Example:
 ```json
@@ -55,14 +69,14 @@ Example:
   },
   "catalogs_by_type": {
     "fluentbit": {
-      "3.2.10": "config-service/json-definitions/fluent-bit-3.2.10-all-plugins-catalog.json",
-      "4.2.4": "config-service/json-definitions/fluent-bit-4.2.4-all-plugins-catalog.json",
-      "5.0.4": "config-service/json-definitions/fluent-bit-5.0.4-all-plugins-catalog.json"
+      "3.2.10": "json-definitions/fluent-bit-3.2.10-all-plugins-catalog.json",
+      "4.2.4": "json-definitions/fluent-bit-4.2.4-all-plugins-catalog.json",
+      "5.0.4": "json-definitions/fluent-bit-5.0.4-all-plugins-catalog.json"
     },
     "fluentd": {
-      "1.8": "config-service/json-definitions/fluentd-1.8-all-plugins-catalog.json",
-      "1.16": "config-service/json-definitions/fluentd-1.16-all-plugins-catalog.json",
-      "1.19": "config-service/json-definitions/fluentd-1.19-all-plugins-catalog.json"
+      "1.8": "json-definitions/fluentd-1.8-all-plugins-catalog.json",
+      "1.16": "json-definitions/fluentd-1.16-all-plugins-catalog.json",
+      "1.19": "json-definitions/fluentd-1.19-all-plugins-catalog.json"
     }
   }
 }
@@ -75,14 +89,14 @@ Rules:
 
 The registry continues to point at the top-level manifest file. Those manifests may
 assemble per-version shard directories such as:
-1. `config-service/json-definitions/fluent-bit/3.2.10/inputs/`
-2. `config-service/json-definitions/fluent-bit/3.2.10/filters/`
-3. `config-service/json-definitions/fluent-bit/3.2.10/outputs/`
-4. `config-service/json-definitions/fluentd/1.19/inputs/`
-5. `config-service/json-schemas/fluentbit/5.0.4/outputs/`
+1. `config-service/src/config_service/json-definitions/fluent-bit/3.2.10/inputs/`
+2. `config-service/src/config_service/json-definitions/fluent-bit/3.2.10/filters/`
+3. `config-service/src/config_service/json-definitions/fluent-bit/3.2.10/outputs/`
+4. `config-service/src/config_service/json-definitions/fluentd/1.19/inputs/`
+5. `config-service/src/config_service/json-schemas/fluentbit/5.0.4/outputs/`
 
 ## Service registry format
-Path: `config-service/config/service-registry.json`
+Path: `config-service/src/config_service/config/service-registry.json`
 
 Example:
 ```json
@@ -94,14 +108,14 @@ Example:
   },
   "service_definitions_by_type": {
     "fluentbit": {
-      "3.2.10": "config-service/json-definitions/fluent-bit-3.2.10-service-options.json",
-      "4.2.4": "config-service/json-definitions/fluent-bit-4.2.4-service-options.json",
-      "5.0.4": "config-service/json-definitions/fluent-bit-5.0.4-service-options.json"
+      "3.2.10": "json-definitions/fluent-bit-3.2.10-service-options.json",
+      "4.2.4": "json-definitions/fluent-bit-4.2.4-service-options.json",
+      "5.0.4": "json-definitions/fluent-bit-5.0.4-service-options.json"
     },
     "fluentd": {
-      "1.8": "config-service/json-definitions/fluentd-1.8-service-options.json",
-      "1.16": "config-service/json-definitions/fluentd-1.16-service-options.json",
-      "1.19": "config-service/json-definitions/fluentd-1.19-service-options.json"
+      "1.8": "json-definitions/fluentd-1.8-service-options.json",
+      "1.16": "json-definitions/fluentd-1.16-service-options.json",
+      "1.19": "json-definitions/fluentd-1.19-service-options.json"
     }
   }
 }
@@ -116,7 +130,7 @@ Rules:
    3. `options[]` metadata for UI and validation typing.
 
 ## Parser registry format
-Path: `config-service/config/parser-registry.json`
+Path: `config-service/src/config_service/config/parser-registry.json`
 
 Example:
 ```json
@@ -127,9 +141,9 @@ Example:
   },
   "parser_definitions_by_type": {
     "fluentbit": {
-      "3.2.10": "config-service/json-definitions/fluent-bit-3.2.10-parser-options.json",
-      "4.2.4": "config-service/json-definitions/fluent-bit-4.2.4-parser-options.json",
-      "5.0.4": "config-service/json-definitions/fluent-bit-5.0.4-parser-options.json"
+      "3.2.10": "json-definitions/fluent-bit-3.2.10-parser-options.json",
+      "4.2.4": "json-definitions/fluent-bit-4.2.4-parser-options.json",
+      "5.0.4": "json-definitions/fluent-bit-5.0.4-parser-options.json"
     }
   }
 }
@@ -144,7 +158,7 @@ Rules:
    3. `parser_formats` keyed by parser format (`json`, `regex`, `ltsv`, `logfmt`, and so on)
 
 ## Validation registry format
-Path: `config-service/config/validation-rules-registry.json`
+Path: `config-service/src/config_service/config/validation-rules-registry.json`
 
 Key sections:
 1. `default_profile`
@@ -164,7 +178,7 @@ Behavior:
 ## Listen port resolution
 `config-service` resolves its standalone listen port in this order:
 1. Environment variable `CONFIG_SERVICE_WEB_PORT`
-2. `config-tool.web_port` in `config-service/config/config-service.json`
+2. `config-tool.web_port` in `config-service/src/config_service/config/config-service.json`
 3. Legacy `config_service.web_port` in the JSON config file referenced by `OPAMP_CONFIG_PATH`
 4. `provider.webui_port` in that same fallback JSON config file
 5. Default `8080`
@@ -172,12 +186,12 @@ Behavior:
 ## Standalone log level resolution
 `config-service` resolves its standalone Python log level in this order:
 1. Environment variable `CONFIG_TOOL_LOG_LEVEL`
-2. `config-tool.log_level` in `config-service/config/config-service.json`
+2. `config-tool.log_level` in `config-service/src/config_service/config/config-service.json`
 3. `provider.log_level` in the JSON config file referenced by `OPAMP_CONFIG_PATH`
 4. Default `INFO`
 
 Default config file path:
-- `config-service/config/config-service.json`
+- `config-service/src/config_service/config/config-service.json`
 
 Fallback config path:
 - `config/opamp.json`
@@ -311,7 +325,7 @@ Read-only mode:
 ## UI CSS integration (OpAMP look and feel)
 The browser UI can load shared OpAMP stylesheets using:
 1. Environment variable `CONFIG_SERVICE_UI_BASE_CSS_PATH` for the primary stylesheet.
-2. JSON config key `config-tool.ui_base_css_path` in `config-service/config/config-service.json`.
+2. JSON config key `config-tool.ui_base_css_path` in `config-service/src/config_service/config/config-service.json`.
 3. Environment variable `CONFIG_SERVICE_UI_CSS_OVERRIDE_PATH` for one additional override path.
 4. Environment variable `CONFIG_SERVICE_UI_CSS_OVERRIDES` for multiple additional override paths.
 5. App config override key `CONFIG_SERVICE_UI_CSS_OVERRIDES` (list or comma-separated string).

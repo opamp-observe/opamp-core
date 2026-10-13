@@ -41,7 +41,7 @@ if str(SRC_ROOT) not in sys.path:
 
 from config_service.json_artifacts import load_json_schema_artifact  # noqa: E402
 
-DEFAULT_SOURCE_DIR = CONFIG_SERVICE_ROOT / "json-schemas"
+DEFAULT_SOURCE_DIR = CONFIG_SERVICE_ROOT / "src" / "config_service" / "json-schemas"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "quick-references"
 
 SECTION_TITLES = {

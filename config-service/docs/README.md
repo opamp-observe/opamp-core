@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Config-Service User Documentation
 
 This folder contains user-facing documentation for running, configuring, and extending `config-service`.
@@ -14,8 +28,9 @@ This folder contains user-facing documentation for running, configuring, and ext
 9. [Standalone Packaging](./standalone-packaging.md)
 10. [UI Testing](./ui-testing.md)
 11. [Developer Tools](./dev-tools.md)
-12. [Test Cases](./TEST_CASES.md)
-13. [UI Framework Decision](./ui-framework-decision.md)
+12. [Fluent Bit Documentation Scraper](./fluentbit_scraper.md)
+13. [Test Cases](./TEST_CASES.md)
+14. [UI Framework Decision](./ui-framework-decision.md)
 
 ## What this service provides
 - Versioned Fluent Bit catalog loading from config.
@@ -29,11 +44,15 @@ This folder contains user-facing documentation for running, configuring, and ext
 - Developer tooling for schema generation, reference generation, SBOM generation, and quality checks.
 
 ## Generated artifacts
-- Fluent Bit and Fluentd version catalogs: `config-service/json-definitions/`
-- Per-version catalog shards: `config-service/json-definitions/fluent-bit/<version>/` and `config-service/json-definitions/fluentd/<version>/`
-- Versioned service/system option definitions: `config-service/json-definitions/`
-- Generated runtime JSON Schemas: `config-service/json-schemas/`
-- Per-version schema shards: `config-service/json-schemas/<config_type>/<version>/`
+- Fluent Bit and Fluentd version catalogs: `config-service/src/config_service/json-definitions/`
+- Per-version catalog shards: `config-service/src/config_service/json-definitions/fluent-bit/<version>/` and `config-service/src/config_service/json-definitions/fluentd/<version>/`
+- Versioned service/system option definitions: `config-service/src/config_service/json-definitions/`
+- Generated runtime JSON Schemas: `config-service/src/config_service/json-schemas/`
+- Per-version schema shards: `config-service/src/config_service/json-schemas/<config_type>/<version>/`
+
+The packaged source tree is canonical; generators do not maintain duplicate top-level artifact
+trees. The Fluent Bit generator backs up packaged configuration to `config-service/backups/`
+before changing it.
 
 ## Primary runtime entry points
 - Backend app: `config-service/src/config_service/app.py`

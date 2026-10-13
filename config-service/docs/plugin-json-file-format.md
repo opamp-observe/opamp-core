@@ -1,12 +1,27 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Plugin JSON File Format
 
 ## Purpose
 `config-service` uses two related JSON formats for plugin metadata:
 
-1. Source plugin definition files under `config-service/json-definitions/<engine>/<version>/<section>/`
-2. Generated runtime schema shard files under `config-service/json-schemas/<config_type>/<version>/<section>/`
+1. Source plugin definition files under `config-service/src/config_service/json-definitions/<engine>/<version>/<section>/`
+2. Generated runtime schema shard files under `config-service/src/config_service/json-schemas/<config_type>/<version>/<section>/`
 
-For packaged/runtime copies, the same trees also exist under `config-service/src/config_service/...`.
+The packaged `config-service/src/config_service` tree is the single source used by repository
+tools and installed runtime code.
 
 This guide explains what each attribute means, which ones are mandatory, how data types are interpreted, and how validation works.
 
@@ -26,8 +41,8 @@ These two trees serve different purposes and should not be edited interchangeabl
 
 | Tree | Role | Edit directly? | Used for |
 | --- | --- | --- | --- |
-| `config-service/json-definitions/...` | Source metadata authored by maintainers | Yes | UI field metadata, required flags, validation hints, schema compilation |
-| `config-service/json-schemas/...` | Generated runtime JSON Schema artifacts | Usually no | Schema-driven rendering, schema inspection, generated references |
+| `config-service/src/config_service/json-definitions/...` | Source metadata authored by maintainers | Yes | UI field metadata, required flags, validation hints, schema compilation |
+| `config-service/src/config_service/json-schemas/...` | Generated runtime JSON Schema artifacts | Usually no | Schema-driven rendering, schema inspection, generated references |
 
 ### `json-definitions`
 Use `json-definitions` when you want to change what a plugin means.
@@ -62,9 +77,9 @@ If you are asking “what schema was generated from the catalog?”, inspect `js
 ## Source plugin definition files
 Typical examples:
 
-1. `config-service/json-definitions/fluent-bit/5.0.4/inputs/tail.json`
-2. `config-service/json-definitions/fluent-bit/5.0.4/outputs/s3.json`
-3. `config-service/json-definitions/fluentd/1.19/outputs/copy.json`
+1. `config-service/src/config_service/json-definitions/fluent-bit/5.0.4/inputs/tail.json`
+2. `config-service/src/config_service/json-definitions/fluent-bit/5.0.4/outputs/s3.json`
+3. `config-service/src/config_service/json-definitions/fluentd/1.19/outputs/copy.json`
 
 ### Top-level attributes
 | Attribute | Type | Mandatory | Meaning |
@@ -184,9 +199,9 @@ Important nuance:
 ## Generated runtime schema shard files
 Typical examples:
 
-1. `config-service/json-schemas/fluentbit/5.0.4/inputs/tail.json`
-2. `config-service/json-schemas/fluentbit/5.0.4/outputs/s3.json`
-3. `config-service/json-schemas/fluentd/1.19/outputs/copy.json`
+1. `config-service/src/config_service/json-schemas/fluentbit/5.0.4/inputs/tail.json`
+2. `config-service/src/config_service/json-schemas/fluentbit/5.0.4/outputs/s3.json`
+3. `config-service/src/config_service/json-schemas/fluentd/1.19/outputs/copy.json`
 
 These files are JSON Schema fragments for one plugin variant.
 

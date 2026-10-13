@@ -14,20 +14,63 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
+
+import pytest
 
 SRC_ROOT = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from config_service.fluentbit_docs_support import (
+from config_service.fluentbit_docs_support import (  # noqa: E402
+    KEY_TAG_NAME,
     build_catalog_from_docs,
     extract_expected_name,
+    fetch_url_text,
     parse_gitbook_redirects,
     parse_markdown_table,
+    resolve_current_stable_version,
     rows_to_fields,
 )
+
+LATEST_VERSION = "5.1.3"
+
+
+def test_fetch_url_text_rejects_non_http_schemes() -> None:
+    """Documentation retrieval must not allow local or custom URL schemes."""
+    with pytest.raises(ValueError, match="Unsupported documentation URL scheme"):
+        fetch_url_text("file:///tmp/fluent-bit.md", timeout=10)
+
+
+def test_resolve_current_stable_version_normalizes_github_release_tag() -> None:
+    """The latest-release resolver should accept a semantic GitHub tag."""
+
+    def fetch_release(_url: str, *, timeout: int) -> str:
+        """Return one deterministic GitHub release payload for the resolver."""
+        assert timeout == 17
+        return json.dumps({KEY_TAG_NAME: f"v{LATEST_VERSION}"})
+
+    assert (
+        resolve_current_stable_version(timeout=17, text_fetcher=fetch_release)
+        == LATEST_VERSION
+    )
+
+
+def test_resolve_current_stable_version_rejects_invalid_release_payloads() -> None:
+    """Invalid JSON, response shapes, and tags should produce actionable errors."""
+    payloads = ["not-json", "[]", "{}", json.dumps({KEY_TAG_NAME: "next"})]
+
+    for payload in payloads:
+
+        def fetch_release(_url: str, *, timeout: int, response: str = payload) -> str:
+            """Return the current invalid fixture without making a network call."""
+            assert timeout == 20
+            return response
+
+        with pytest.raises(ValueError, match="latest-release|semantic tag_name"):
+            resolve_current_stable_version(timeout=20, text_fetcher=fetch_release)
 
 
 def test_extract_expected_name_supports_config_block_and_log_patterns() -> None:

@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Catalog Management
 
 ## Purpose
@@ -7,14 +21,17 @@ Catalogs define plugin metadata used for:
 3. Field typing and validation rule hints
 
 ## Catalog location
-- `config-service/json-definitions/*.json`
-- `config-service/json-definitions/fluent-bit/<version>/`
-- `config-service/json-definitions/fluentd/<version>/`
-- Registered in `config-service/config/catalog-registry.json`
-- Service/system option definitions are registered in `config-service/config/service-registry.json`
-- Parser definitions are registered in `config-service/config/parser-registry.json`
-- Generated runtime schemas are written to `config-service/json-schemas/*.json`
-- Generated runtime schema shards live under `config-service/json-schemas/<config_type>/<version>/`
+- `config-service/src/config_service/json-definitions/*.json`
+- `config-service/src/config_service/json-definitions/fluent-bit/<version>/`
+- `config-service/src/config_service/json-definitions/fluentd/<version>/`
+- Registered in `config-service/src/config_service/config/catalog-registry.json`
+- Service/system option definitions are registered in `config-service/src/config_service/config/service-registry.json`
+- Parser definitions are registered in `config-service/src/config_service/config/parser-registry.json`
+- Generated runtime schemas are written to `config-service/src/config_service/json-schemas/*.json`
+- Generated runtime schema shards live under `config-service/src/config_service/json-schemas/<config_type>/<version>/`
+
+This packaged source tree is canonical. Developer generators do not write duplicate top-level
+`config-service/json-definitions` or `config-service/json-schemas` trees.
 
 Large catalog and schema files are stored as manifest files. The public top-level file
 name remains stable, but the manifest now points to:
@@ -77,8 +94,8 @@ This lets the UI and schema layer:
 
 ## Fluent Bit parser metadata
 Fluent Bit parser definitions are versioned separately from plugin catalogs:
-1. Parser definition files live under `config-service/json-definitions/fluent-bit-*-parser-options.json`
-2. They are registered in `config-service/config/parser-registry.json`
+1. Parser definition files live under `config-service/src/config_service/json-definitions/fluent-bit-*-parser-options.json`
+2. They are registered in `config-service/src/config_service/config/parser-registry.json`
 3. Input plugin fields that point at parsers use `references_parser: true`
 
 This lets the UI build a dedicated Parsers section and lets validation match parser references against:
@@ -86,8 +103,8 @@ This lets the UI build a dedicated Parsers section and lets validation match par
 2. known built-in Fluent Bit parser names for that version
 
 ## Add a new version
-1. Add the top-level JSON catalog manifest under `config-service/json-definitions/`
-2. Add the matching per-version shard directory under `config-service/json-definitions/<engine>/<version>/`
+1. Add the top-level JSON catalog manifest under `config-service/src/config_service/json-definitions/`
+2. Add the matching per-version shard directory under `config-service/src/config_service/json-definitions/<engine>/<version>/`
 3. Add version entry under the correct engine in `catalog-registry.json`
 4. Add matching service definition entry in `service-registry.json`
 5. Add matching parser definition entry in `parser-registry.json` when the engine supports parser definitions
@@ -99,12 +116,12 @@ This lets the UI build a dedicated Parsers section and lets validation match par
 
 For large `all-plugins-catalog.json` files, keep the top-level file as the registry
 target and place the generated shards in version folders such as:
-1. `config-service/json-definitions/fluent-bit/3.2.10/inputs/tail.json`
-2. `config-service/json-definitions/fluent-bit/3.2.10/filters/grep.json`
-3. `config-service/json-definitions/fluent-bit/3.2.10/outputs/stdout.json`
-4. `config-service/json-schemas/fluentbit/3.2.10/inputs/tail.json`
-5. `config-service/json-schemas/fluentbit/3.2.10/outputs/stdout.json`
-6. `config-service/json-schemas/fluentbit/3.2.10/processors.json`
+1. `config-service/src/config_service/json-definitions/fluent-bit/3.2.10/inputs/tail.json`
+2. `config-service/src/config_service/json-definitions/fluent-bit/3.2.10/filters/grep.json`
+3. `config-service/src/config_service/json-definitions/fluent-bit/3.2.10/outputs/stdout.json`
+4. `config-service/src/config_service/json-schemas/fluentbit/3.2.10/inputs/tail.json`
+5. `config-service/src/config_service/json-schemas/fluentbit/3.2.10/outputs/stdout.json`
+6. `config-service/src/config_service/json-schemas/fluentbit/3.2.10/processors.json`
 
 This keeps editors responsive while preserving the registry path.
 
@@ -114,12 +131,12 @@ Fluent Bit schema plugin shards may either:
 
 ## Fluentd artifacts
 Generated Fluentd catalog and service files currently live at:
-1. `config-service/json-definitions/fluentd-1.8-all-plugins-catalog.json`
-2. `config-service/json-definitions/fluentd-1.16-all-plugins-catalog.json`
-3. `config-service/json-definitions/fluentd-1.19-all-plugins-catalog.json`
-4. `config-service/json-definitions/fluentd-1.8-service-options.json`
-5. `config-service/json-definitions/fluentd-1.16-service-options.json`
-6. `config-service/json-definitions/fluentd-1.19-service-options.json`
+1. `config-service/src/config_service/json-definitions/fluentd-1.8-all-plugins-catalog.json`
+2. `config-service/src/config_service/json-definitions/fluentd-1.16-all-plugins-catalog.json`
+3. `config-service/src/config_service/json-definitions/fluentd-1.19-all-plugins-catalog.json`
+4. `config-service/src/config_service/json-definitions/fluentd-1.8-service-options.json`
+5. `config-service/src/config_service/json-definitions/fluentd-1.16-service-options.json`
+6. `config-service/src/config_service/json-definitions/fluentd-1.19-service-options.json`
 
 These are generated by:
 1. `config-service/dev-tools/generate_fluentd_assets.py`

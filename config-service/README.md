@@ -67,3 +67,9 @@ In addition to the core functionality, the `opamp-dev-cli` provides additional s
 - Python backend package: `src/config_service`
 - developer tools: `dev-tools` (utilities to help prepare a configuration doc set used by the Config Service)
 - user documentation: `docs`
+
+The Fluent Bit catalog scraper and its previous-version reconciliation behavior are documented in
+[Fluent Bit Documentation Scraper](./docs/fluentbit_scraper.md).
+Generated configuration artifacts have one canonical source tree under `src/config_service`.
+Before the Fluent Bit generator changes that tree, it creates an atomic ZIP snapshot in
+`backups` (or the directory selected with `--backup-dir`).

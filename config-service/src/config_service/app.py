@@ -11,6 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Run the standalone config-service application and register its HTTP routes."""
+
+# Repository checkout imports intentionally follow the shared-package path bootstrap below.
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import argparse
@@ -25,6 +30,12 @@ from quart import Quart, Response, jsonify, redirect, request, send_from_directo
 ROOT_PATH = Path(__file__).resolve().parents[3]
 if str(ROOT_PATH) not in sys.path:
     sys.path.insert(0, str(ROOT_PATH))
+
+from shared.observability import attach_observability
+from shared.opamp_config import ComponentEntryPoint
+from shared.opamp_config import (
+    register_component_entry_points as shared_register_component_entry_points,
+)
 
 from config_service.agent_validation.service import ExternalAgentValidationService
 from config_service.auth_integration import evaluate_ui_http_auth
@@ -56,11 +67,6 @@ from config_service.services.service_definition_service import ServiceDefinition
 from config_service.services.ui_document_service import UiDocumentService
 from config_service.services.validation_service import ValidationService
 from config_service.services.yaml_render_service import YamlRenderService
-from shared.opamp_config import (
-    ComponentEntryPoint,
-    register_component_entry_points as shared_register_component_entry_points,
-)
-from shared.observability import attach_observability
 
 APP_CONFIG_KEY_MODE = "CONFIG_SERVICE_MODE"
 APP_CONFIG_KEY_READ_ONLY = "CONFIG_SERVICE_READ_ONLY"
@@ -101,12 +107,11 @@ PLACEHOLDER_PROVIDER_UI_LINK_ATTRS = "__CONFIG_SERVICE_PROVIDER_UI_LINK_ATTRS__"
 
 
 def _config_service_root() -> Path:
+    """Resolve packaged assets before considering a legacy repository-level tree."""
     module_dir = Path(__file__).resolve().parent
     source_root = module_dir.parents[1]
-    if (source_root / "config").is_dir() and (source_root / "json-definitions").is_dir():
-        return source_root
-    for candidate in (module_dir, Path(sys.prefix) / "config_service"):
-        if (candidate / "config").is_dir():
+    for candidate in (module_dir, source_root, Path(sys.prefix) / "config_service"):
+        if (candidate / "config").is_dir() and (candidate / "json-definitions").is_dir():
             return candidate
     return source_root
 
@@ -379,7 +384,12 @@ def main() -> None:
         epilog=f"Documentation: {CONFIG_SERVICE_DOCS_URL}",
     )
     parser.add_argument("--config-path", type=str, help="Path to config-service JSON configuration file")
-    parser.add_argument("--host", type=str, default="0.0.0.0", help="Bind address")
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="0.0.0.0",  # noqa: S104 - standalone service intentionally accepts remote UI clients
+        help="Bind address",
+    )
     parser.add_argument("--port", type=int, help="Override listen port")
     args = parser.parse_args()
 

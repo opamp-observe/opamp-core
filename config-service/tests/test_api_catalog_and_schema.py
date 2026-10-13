@@ -16,6 +16,9 @@
 Test-case reference: config-service/docs/TEST_CASES.md
 """
 
+# Ruff's security assertion rule does not apply to pytest test assertions.
+# ruff: noqa: S101
+
 from __future__ import annotations
 
 import json
@@ -182,20 +185,19 @@ async def test_health_and_versions() -> None:
     assert "missing_match_selector" in issue_body["codes"]
 
 def test_fluent_bit_catalogs_have_no_other_yaml_keyword_plugin_name_conflicts() -> None:
+    """Allow only the intentional ``null`` output name in every local catalog version."""
     base = CONFIG_SERVICE_ROOT / "json-definitions"
+    catalog_paths = sorted(base.glob("fluent-bit-*-all-plugins-catalog.json"))
     conflicts: list[tuple[str, str, str]] = []
-    for path in sorted(base.glob("fluent-bit-*-all-plugins-catalog.json")):
+    for path in catalog_paths:
         body = load_json_artifact(path)
         for section, plugins in body.get("plugins", {}).items():
             for plugin_name in plugins.keys():
                 if plugin_name in YAML_KEYWORD_LITERALS:
                     conflicts.append((path.name, section, plugin_name))
 
-    assert conflicts == [
-        ("fluent-bit-3.2.10-all-plugins-catalog.json", "outputs", "null"),
-        ("fluent-bit-4.2.4-all-plugins-catalog.json", "outputs", "null"),
-        ("fluent-bit-5.0.4-all-plugins-catalog.json", "outputs", "null"),
-    ]
+    expected_conflicts = [(path.name, "outputs", "null") for path in catalog_paths]
+    assert conflicts == expected_conflicts
 
 def test_fluent_bit_catalogs_include_router_fields_for_all_plugins() -> None:
     base = CONFIG_SERVICE_ROOT / "json-definitions"

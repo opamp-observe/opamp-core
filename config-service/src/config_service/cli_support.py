@@ -41,7 +41,17 @@ ENTRY_SEPARATOR = "\n\n\n\n"
 
 @dataclass(frozen=True)
 class CliConfigFileReport:
-    """One human-readable report block for a processed config file."""
+    """One human-readable report block for a processed config file.
+
+    Attributes
+    ----------
+    source_path:
+        Resolved configuration file represented by the report.
+    lines:
+        Ordered human-readable result lines excluding the file heading.
+    has_issues:
+        Whether parsing or validation produced at least one issue.
+    """
 
     source_path: Path
     lines: tuple[str, ...]
@@ -55,7 +65,13 @@ class CliConfigFileReport:
 
 @dataclass(frozen=True)
 class CliConfigBatchReport:
-    """Collection of file reports rendered with wide spacing between entries."""
+    """Collection of file reports rendered with wide spacing between entries.
+
+    Attributes
+    ----------
+    reports:
+        Ordered immutable reports for every configuration file processed.
+    """
 
     reports: tuple[CliConfigFileReport, ...]
 
@@ -71,10 +87,39 @@ class CliConfigBatchReport:
         return ENTRY_SEPARATOR.join(report.render().rstrip() for report in self.reports) + "\n"
 
 
+# The orchestrator intentionally owns one focused service for each config-processing concern.
+# pylint: disable=too-many-instance-attributes
 class CliConfigSupport:
-    """Thin orchestrator around config-service services for local CLI use."""
+    """Thin orchestrator around config-service services for local CLI use.
+
+    Attributes
+    ----------
+    repo_root:
+        Resolved repository root used to locate configuration registries.
+    catalog_service:
+        Catalog registry loader and version lookup service.
+    parser_definition_service:
+        Fluent Bit parser-definition registry service.
+    rules_registry_service:
+        Validation-rule registry used to construct the rule engine.
+    validation_service:
+        Semantic configuration validation service.
+    ui_document_service:
+        Header metadata parser and renderer shared with the browser UI.
+    fluentbit_yaml_config_service:
+        Fluent Bit YAML parser.
+    fluentd_config_service:
+        Fluentd configuration parser.
+    """
 
     def __init__(self, *, repo_root: Path) -> None:
+        """Construct config-processing services from one repository root.
+
+        Parameters
+        ----------
+        repo_root:
+            Repository or package root containing config-service registries.
+        """
         self.repo_root = repo_root.resolve()
         config_dir = self._config_dir()
         self.catalog_service = CatalogService(config_dir / "catalog-registry.json")
@@ -94,7 +139,10 @@ class CliConfigSupport:
         self.fluentd_config_service = FluentdConfigService()
 
     def _config_dir(self) -> Path:
-        packaged_config_dir = self.repo_root / "config-service" / "src" / "config_service" / "config"
+        """Resolve packaged, monorepo, or standalone configuration directories."""
+        packaged_config_dir = (
+            self.repo_root / "config-service" / "src" / "config_service" / "config"
+        )
         if packaged_config_dir.is_dir():
             return packaged_config_dir
         monorepo_config_dir = self.repo_root / "config-service" / "config"

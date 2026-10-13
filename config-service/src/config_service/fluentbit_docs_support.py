@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
+# Copyright 2026 mp3monster.org
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Retrieve and parse Fluent Bit documentation into Config Service catalogs."""
 
 from __future__ import annotations
 
 import copy
+import json
 import logging
 import re
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
@@ -38,7 +54,11 @@ SIZE_PATTERN = re.compile(r"^\d+(?:[kKmMgG](?:[bB])?|[bB])?$")
 DURATION_PATTERN = re.compile(r"^\d+(ns|us|ms|s|m|h|d)?$")
 GENERIC_DESCRIPTION_TEMPLATE = "Fluent Bit {kind} plugin: {title}."
 USER_AGENT = "Mozilla/5.0 (compatible; config-service-fluentbit-docs/1.0)"
+FLUENTBIT_LATEST_RELEASE_URL = "https://api.github.com/repos/fluent/fluent-bit/releases/latest"
+KEY_TAG_NAME = "tag_name"
+SEMANTIC_VERSION_PATTERN = re.compile(r"^v?(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)$")
 LOGGER = logging.getLogger("fluentbit_docs_support")
+LOGGER.setLevel(logging.DEBUG)
 
 
 @dataclass(frozen=True)
@@ -253,9 +273,53 @@ def utc_timestamp() -> str:
 
 
 def fetch_url_text(url: str, *, timeout: int) -> str:
-    request = Request(url, headers={"User-Agent": USER_AGENT})
-    with urlopen(request, timeout=timeout) as response:
+    """Retrieve one HTTP(S) documentation resource as UTF-8 text.
+
+    Parameters
+    ----------
+    url:
+        Absolute HTTP(S) URL permitted for documentation retrieval.
+    timeout:
+        Maximum number of seconds to wait for the response.
+
+    """
+    parsed_url = urlparse(url)
+    if parsed_url.scheme not in {"http", "https"}:
+        raise ValueError(f"Unsupported documentation URL scheme '{parsed_url.scheme}'")
+    request = Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310
+    with urlopen(request, timeout=timeout) as response:  # noqa: S310
         return response.read().decode("utf-8", errors="ignore")
+
+
+def resolve_current_stable_version(
+    *,
+    timeout: int,
+    text_fetcher: Callable[..., str] = fetch_url_text,
+) -> str:
+    """Resolve the current stable Fluent Bit version from the GitHub releases API.
+
+    Parameters
+    ----------
+    timeout:
+        HTTP timeout passed to the supplied text loader.
+    text_fetcher:
+        Injectable HTTP text loader used by tests and normal documentation retrieval.
+
+    """
+    release_text = text_fetcher(FLUENTBIT_LATEST_RELEASE_URL, timeout=timeout)
+    try:
+        release_payload = json.loads(release_text)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Fluent Bit latest-release response is not valid JSON") from exc
+    if not isinstance(release_payload, Mapping):
+        raise ValueError("Fluent Bit latest-release response must be a JSON object")
+    tag_name = release_payload.get(KEY_TAG_NAME)
+    if not isinstance(tag_name, str):
+        raise ValueError("Fluent Bit latest release did not provide a semantic tag_name")
+    version_match = SEMANTIC_VERSION_PATTERN.fullmatch(tag_name.strip())
+    if version_match is None:
+        raise ValueError("Fluent Bit latest release did not provide a semantic tag_name")
+    return version_match.group(1)
 
 
 def fetch_page_text(url: str, *, timeout: int) -> str:
