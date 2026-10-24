@@ -14,6 +14,10 @@ limitations under the License.
 
 # Standalone Packaging
 
+This page is the developer and release-engineering reference for producing the
+Config Editor package. Operators installing a released wheel should use the
+[Product Installation Guide](../../docs/installation.md#install-the-config-editor-only).
+
 ## Standalone config file
 The standalone service now prefers:
 1. `config-service/src/config_service/config/config-service.json`

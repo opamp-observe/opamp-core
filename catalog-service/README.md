@@ -1,6 +1,25 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # catalog-service
 
 Standalone package for the OpAMP configuration catalog backend and Python-served UI.
+
+For product installation of the standalone catalog or the catalog embedded in
+the provider, use the
+[Product Installation Guide](../docs/installation.md#install-the-config-catalog).
+This page retains component behavior and source-checkout details for developers.
 
 This component ships:
 - the `catalog_service` Python package
@@ -59,7 +78,7 @@ opamp-cli --help
 
 ## Freestanding Example Config
 
-Use [catalog-service.freestanding.example.json](/mnt/d/dev/opamp/catalog-service/config/catalog-service.freestanding.example.json)
+Use [catalog-service.freestanding.example.json](config/catalog-service.freestanding.example.json)
 as a starting point for a standalone deployment that scans folders outside the provider runtime.
 
 The example assumes a local layout like:

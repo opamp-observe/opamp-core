@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # OpAMP Documentation Hub
 
 This repository contains a small but fairly complete OpAMP-oriented platform built around a provider,
@@ -14,6 +28,12 @@ Use this page as the documentation landing page for understanding:
 When the provider is running, the UI `Latest docs` links use `http://localhost:8080/doc-set`.
 That route redirects to the URL configured in `provider.latest_docs_url`, which defaults to the
 published landing-page preview for this documentation set.
+
+For a product-oriented deployment, start with the
+[Product Installation Guide](installation.md). It covers standalone and
+embedded server-side scenarios, released wheel installation, repository and
+cloud automation, CLI tooling, and the handoff to consumer-side installation.
+The build material below is aimed at developers and release engineers.
 
 ## Build and packaging overview
 
@@ -34,7 +54,9 @@ Common build output locations:
 
 - `dist/provider/`
 - `dist/consumer/`
+- `dist/config-service/`
 - `dist/catalog/`
+- `dist/client-config-generator-service/`
 - `dist/cli/`
 - `dist/consumer-sim/`
 - `dist/sbom/`
