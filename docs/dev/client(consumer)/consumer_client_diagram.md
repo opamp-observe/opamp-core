@@ -24,6 +24,7 @@ classDiagram
       +add_agent_version()
       +get_agent_description()
       +get_agent_capabilities()
+      +finalize_async()
       +finalize()
     }
 
@@ -42,6 +43,7 @@ classDiagram
       +add_agent_version()
       +_heartbeat_loop()
       +send_disconnect()
+      +finalize_async()
       +finalize()
     }
 
@@ -51,7 +53,7 @@ classDiagram
       +terminate_agent_process()
       +restart_agent_process()
       +send_disconnect()
-      +finalize()
+      +finalize_async()
     }
 
     class ClientSupervisorMixin
