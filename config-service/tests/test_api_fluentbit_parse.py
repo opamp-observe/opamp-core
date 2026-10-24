@@ -19,22 +19,23 @@ Test-case reference: config-service/docs/TEST_CASES.md
 from __future__ import annotations
 
 import json
-import logging
 import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from config_service.app import create_app
-from config_service.runtime_config import (
-    ENV_CONFIG_TOOL_CONFIG_PATH,
-    resolve_log_level_name,
-    resolve_read_only,
-    resolve_ui_base_css_path,
-    resolve_web_port,
-)
+
+
+def test_fluentbit_yaml_loader_does_not_change_safe_loader_scalar_types() -> None:
+    """The Fluent Bit loader should not modify PyYAML's process-wide safe loader."""
+    loaded = yaml.safe_load("enabled: true\nmissing: null\n")
+
+    assert loaded == {"enabled": True, "missing": None}
+
 
 @pytest.mark.asyncio
 async def test_parse_fluentbit_yaml_maps_native_routes_to_internal_route() -> None:

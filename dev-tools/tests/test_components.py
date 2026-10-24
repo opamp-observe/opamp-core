@@ -11,17 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Copyright 2026 mp3monster.org
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Tests for component discovery, building, and test orchestration."""
 
 from __future__ import annotations
 
@@ -38,6 +28,7 @@ from opamp_dev_tools.components import (
 
 
 def test_discover_build_components_finds_known_projects() -> None:
+    """Known packaged projects should be discovered while excluded paths are ignored."""
     repo_root = Path(__file__).resolve().parents[2]
     component_keys = {component.key for component in discover_build_components(repo_root)}
     assert "cli" in component_keys
@@ -75,7 +66,13 @@ class _RuntimeStub:
         self.info_messages: list[str] = []
         self.module_checks: list[tuple[str, str, str | None]] = []
 
-    def ensure_python_module(self, *, python_exe: str, module_name: str, pip_package: str | None = None) -> None:
+    def ensure_python_module(
+        self,
+        *,
+        python_exe: str,
+        module_name: str,
+        pip_package: str | None = None,
+    ) -> None:
         """Record module dependency checks requested by the helper.
 
         Parameters
@@ -114,6 +111,7 @@ class _RuntimeStub:
 
 
 def test_build_artifacts_installs_build_backend_requires_for_no_isolation(tmp_path: Path) -> None:
+    """No-isolation builds should install their declared backend and clear stale output."""
     component_root = tmp_path / "agent_broker"
     component_root.mkdir()
     stale_build_file = component_root / "build" / "lib" / "removed_module.py"
@@ -166,6 +164,7 @@ def test_build_artifacts_installs_build_backend_requires_for_no_isolation(tmp_pa
 
 
 def test_build_pdf_uses_dev_tools_manual_builder(tmp_path: Path) -> None:
+    """PDF builds should invoke the developer-tools manual builder."""
     runtime = _RuntimeStub(tmp_path)
 
     issues_found = build_pdf(
@@ -188,7 +187,10 @@ def test_build_pdf_uses_dev_tools_manual_builder(tmp_path: Path) -> None:
     ]
 
 
-def test_run_component_tests_installs_pytest_dependencies_for_python_tests(tmp_path: Path) -> None:
+def test_run_component_tests_installs_pytest_dependencies_for_python_tests(
+    tmp_path: Path,
+) -> None:
+    """Component tests should ensure pytest dependencies and retain JUnit output."""
     component_root = tmp_path / "provider"
     tests_dir = component_root / "tests"
     tests_dir.mkdir(parents=True)
@@ -212,10 +214,22 @@ def test_run_component_tests_installs_pytest_dependencies_for_python_tests(tmp_p
         ("python", "pytest_cov", "pytest-cov"),
         ("python", "pytest_asyncio", "pytest-asyncio"),
     ]
-    assert runtime.commands == [["python", "-m", "pytest", "-s"]]
+    assert runtime.commands == [
+        [
+            "python",
+            "-m",
+            "pytest",
+            "-s",
+            (
+                "--junitxml="
+                f"{tmp_path / 'dev-tools' / 'runtime' / 'test-results' / 'provider' / 'pytest.xml'}"
+            ),
+        ]
+    ]
 
 
 def test_run_e2e_tests_installs_pytest_dependencies(tmp_path: Path) -> None:
+    """End-to-end tests should ensure pytest dependencies and retain JUnit output."""
     runtime = _RuntimeStub(tmp_path)
 
     issues_found = run_e2e_tests(
@@ -229,4 +243,16 @@ def test_run_e2e_tests_installs_pytest_dependencies(tmp_path: Path) -> None:
         ("python", "pytest_cov", "pytest-cov"),
         ("python", "pytest_asyncio", "pytest-asyncio"),
     ]
-    assert runtime.commands == [["python", "-m", "pytest", "-s", "tests/test_socket_e2e.py"]]
+    assert runtime.commands == [
+        [
+            "python",
+            "-m",
+            "pytest",
+            "-s",
+            (
+                "--junitxml="
+                f"{tmp_path / 'dev-tools' / 'runtime' / 'test-results' / 'e2e' / 'pytest.xml'}"
+            ),
+            "tests/test_socket_e2e.py",
+        ]
+    ]

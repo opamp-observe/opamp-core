@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ruff: noqa: S101, S108
+
 """Config-service YAML rendering API test coverage.
 
 Test-case reference: config-service/docs/TEST_CASES.md
@@ -19,7 +21,6 @@ Test-case reference: config-service/docs/TEST_CASES.md
 from __future__ import annotations
 
 import json
-import logging
 import sys
 from pathlib import Path
 
@@ -29,13 +30,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from config_service.app import create_app
-from config_service.runtime_config import (
-    ENV_CONFIG_TOOL_CONFIG_PATH,
-    resolve_log_level_name,
-    resolve_read_only,
-    resolve_ui_base_css_path,
-    resolve_web_port,
-)
+
 
 @pytest.mark.asyncio
 async def test_render_yaml_includes_parsers_before_pipeline() -> None:
@@ -244,7 +239,7 @@ async def test_render_can_include_rendered_include_files_without_mutation() -> N
     include_render = body["included_files"][0]
     assert include_render["include_path"] == "child.yaml"
     assert "parsers:" in include_render["yaml"]
-    assert "name: null" in include_render["yaml"]
+    assert 'name: "null"' in include_render["yaml"]
 
     assert root_config == root_before
     assert included_documents == includes_before

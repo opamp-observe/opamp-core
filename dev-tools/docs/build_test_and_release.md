@@ -45,6 +45,33 @@ The all-component security path runs the repository security gate. Named paths
 use the selected component's configured checks. Test commands use component
 metadata to select the appropriate unit and UI workflows.
 
+Python test commands retain JUnit output under
+`dev-tools/runtime/test-results/<component>/pytest.xml`; the end-to-end suite uses the `e2e`
+scope. Component pytest configuration also writes `coverage.xml` in the component directory.
+
+Playwright suites retain an HTML report, JUnit XML, and failure evidence beneath each component's
+`test-results/` directory. Config-service Vitest runs retain
+`config-service/test-results/vitest-junit.xml`.
+
+Security runs retain one report set beneath
+`dev-tools/runtime/security-reports/<scope>/`, where the scope is `repository` or the selected
+component name:
+
+- `pytest.xml` for the tests included in the security gate;
+- `ruff.sarif` and `semgrep.sarif` for static-analysis findings;
+- `bandit.json` for the report-only Python security comparison;
+- `detect-secrets.json` for secret-scan candidates; and
+- `pip-audit.json` for dependency vulnerability results.
+
+Ruff, secret detection, dependency auditing, and tests are blocking. Semgrep and Bandit findings
+are report-only while the checked-in rules and overlap are evaluated, although scanner execution
+failures remain blocking. Independent security steps continue after a failure so every available
+report is retained, then the command returns one consolidated failure. Every CLI invocation also
+prints the timestamped issue and error log paths written beneath `dev-tools/runtime/logs`.
+
+See the repository [testing and result review guide](../../docs/dev/testing.md) for the complete
+workflow and review order.
+
 ## Documentation and UI outputs
 
 ```bash

@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 mp3monster.org
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Development Tooling
 
 This page is the repository-level tooling inventory for local development. Use
@@ -75,6 +89,23 @@ The repository also contains `pyrightconfig.json` and `.flake8`; those files
 document supported checker configuration even though the current setup command
 does not install Pyright or Flake8.
 
+## Test and Security Workflow
+
+Use the developer CLI for consistent component discovery and retained results:
+
+```bash
+opamp-dev-cli build test named provider
+opamp-dev-cli build test all
+opamp-dev-cli build test e2e
+opamp-dev-cli build secure named provider
+opamp-dev-cli build secure all
+```
+
+The security command combines the configured tests with Ruff security rules,
+`detect-secrets`, `pip-audit`, and reviewed Semgrep rules. It also produces a Bandit report for
+comparison with Ruff. See [Testing and Result Review](testing.md) for test scope, blocking policy,
+browser commands, and the exact JUnit, coverage, HTML, SARIF, and JSON result locations.
+
 ## Node And Browser Tooling
 
 `setup-venv` runs `npm install` in these package directories when Node and npm
@@ -121,6 +152,8 @@ The most important developer-facing flags are:
 | `APP_ENABLE_DEV_FEATURES=true` | Exposes dev-only workflows such as Fluent Bit generator utilities and PID lookup. |
 | `OPAMP_CONTAINER_RUNTIME=<podman-or-docker>` | Selects the container runtime for CLI-managed development containers. |
 | `OPAMP_CONFIG_PATH=<path>` | Selects the effective OpAMP config for provider/consumer workflows. |
+| `PLAYWRIGHT_WATCH=true` | Runs Playwright with a visible browser, one worker, and complete trace/video/screenshot recording. |
+| `PLAYWRIGHT_SLOW_MO_MS=250` | Sets the delay between Playwright browser operations in watch mode. |
 
 ## Generated State
 
