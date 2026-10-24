@@ -17,8 +17,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import sys
-import threading
 from typing import TYPE_CHECKING, cast
 
 import httpx
@@ -33,6 +31,7 @@ if TYPE_CHECKING:
 
 PROCESS_TRACKING_SUPERVISOR = "supervisor"
 PROCESS_TRACKING_OBSERVER = "observer"
+DEFAULT_DISCONNECT_TIMEOUT_SECONDS = 1.0
 
 
 def _normalize_process_tracking(value: str | None) -> str:
@@ -73,37 +72,15 @@ class _BaseClientProcessLifecycle:
                 "Failed to send disconnect message - %s", err
             )
 
-    def finalize(self) -> None:
-        """Finalize client lifecycle with async disconnect fallback."""
+    async def finalize_async(self) -> None:
+        """Stop heartbeats and await the final best-effort disconnect send."""
         if self._owner._finalize_started:
             return
         self._owner._finalize_started = True
         if getattr(self._owner, "data", None) is not None:
             self._owner.data.allow_heartbeat = False
-        try:
-            loop = asyncio.get_running_loop()
-            logging.getLogger(__name__).debug("finalize - got loop")
-        except RuntimeError:
-
-            def _runner() -> None:
-                """Run best-effort async disconnect send inside a dedicated thread."""
-                try:
-                    logging.getLogger(__name__).debug(
-                        "About to send disconnect message"
-                    )
-                    asyncio.run(self._owner._send_disconnect_with_timeout())
-                except Exception as err:
-                    logging.getLogger(__name__).error(
-                        "Failed to send disconnect message, error is:\n %s", err
-                    )
-                    return
-
-            thread = threading.Thread(target=_runner, daemon=True)
-            thread.start()
-        else:
-            if loop.is_closed():
-                return
-            loop.create_task(self._owner._send_disconnect_with_timeout())
+        logging.getLogger(__name__).debug("Sending final disconnect message")
+        await self._owner._send_disconnect_with_timeout()
 
 
 class ClientRuntimeMixin:
@@ -196,30 +173,44 @@ class ClientRuntimeMixin:
         """Implements `OpAMPClientInterface.send_disconnect` with best-effort send."""
         await self._runtime_lifecycle().send_disconnect()
 
-    async def _send_disconnect_with_timeout(self, timeout_seconds: float = 1.0) -> None:
+    async def _send_disconnect_with_timeout(
+        self,
+        timeout_seconds: float = DEFAULT_DISCONNECT_TIMEOUT_SECONDS,
+    ) -> None:
         """Best-effort disconnect send with a short timeout."""
         try:
-            logging.getLogger(__name__).warning("_send_disconnect_with_timeout exiting")
+            logging.getLogger(__name__).debug("Sending disconnect message with timeout")
             await asyncio.wait_for(self.send_disconnect(), timeout=timeout_seconds)
         except Exception as err:  # pragma: no cover - error path varies by env
             logging.getLogger(__name__).error("Disconnect send timed out-- %s", err)
 
-        logging.getLogger(__name__).warning("_send_disconnect_with_timeout exiting")
+        logging.getLogger(__name__).debug("Disconnect send completed")
+
+    async def finalize_async(self) -> None:
+        """Stop runtime work and await the final disconnect attempt."""
+        await self._runtime_lifecycle().finalize_async()
 
     def finalize(self) -> None:
-        """Implements `OpAMPClientInterface.finalize` with async-loop fallback."""
-        self._runtime_lifecycle().finalize()
+        """Finalize from synchronous code without starting an unmanaged thread.
+
+        Async callers should await :meth:`finalize_async` so shutdown completion is
+        explicit. When called inside an active event loop, this compatibility method
+        schedules the same awaitable shutdown on that loop.
+        """
+        try:
+            event_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(self.finalize_async())
+            return
+        event_loop.create_task(self.finalize_async())
 
     def __del__(self) -> None:
-        """Attempt graceful disconnect/finalize during object destruction."""
+        """Stop local heartbeat work without starting network I/O during destruction."""
         try:
             if getattr(self, "data", None) is not None:
                 self.data.allow_heartbeat = False
-            if sys.is_finalizing():
-                return
-            self.finalize()
-        except Exception:
-            return
+        except (AttributeError, RuntimeError):
+            pass
 
     def _heartbeat_key(self, path: str) -> str:
         """Return the last URL path component as the dictionary key."""

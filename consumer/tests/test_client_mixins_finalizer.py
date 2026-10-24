@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ruff: noqa: S101
+
 from __future__ import annotations
 
 from types import SimpleNamespace
 from typing import cast
 
-import opamp_consumer.client_mixins as client_mixins
 from opamp_consumer.client_runtime_mixin import ClientRuntimeMixin
 
 
@@ -27,26 +28,15 @@ class _FakeFinalizerTarget:
         self.finalize_calls = 0
 
     def finalize(self) -> None:
+        """Record any unsafe attempt to start cleanup during destruction."""
         self.finalize_calls += 1
 
 
-def test_del_skips_finalize_while_interpreter_finalizing(monkeypatch) -> None:
-    """`__del__` should not attempt finalize while interpreter teardown is active."""
+def test_del_stops_heartbeat_without_starting_finalize() -> None:
+    """Object destruction should perform local cleanup without network-capable work."""
     target = _FakeFinalizerTarget()
-    monkeypatch.setattr(client_mixins.sys, "is_finalizing", lambda: True)
 
-    client_mixins.ClientRuntimeMixin.__del__(cast(ClientRuntimeMixin, target))
+    ClientRuntimeMixin.__del__(cast(ClientRuntimeMixin, target))
 
     assert target.data.allow_heartbeat is False
     assert target.finalize_calls == 0
-
-
-def test_del_calls_finalize_when_not_finalizing(monkeypatch) -> None:
-    """`__del__` should still call finalize during normal object destruction."""
-    target = _FakeFinalizerTarget()
-    monkeypatch.setattr(client_mixins.sys, "is_finalizing", lambda: False)
-
-    client_mixins.ClientRuntimeMixin.__del__(cast(ClientRuntimeMixin, target))
-
-    assert target.data.allow_heartbeat is False
-    assert target.finalize_calls == 1

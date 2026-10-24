@@ -14,12 +14,13 @@ import asyncio
 import logging
 
 import httpx
+import pytest
+
 import opamp_consumer.abstract_client as abstract_client
-import opamp_consumer.client_observer_mixin as client_observer_mixin
 import opamp_consumer.client_mixins as client_mixins
+import opamp_consumer.client_observer_mixin as client_observer_mixin
 import opamp_consumer.fluentbit.client as client
 import opamp_consumer.process_utils as process_utils
-import pytest
 from opamp_consumer.config import ConsumerConfig
 from opamp_consumer.exceptions import AgentException
 from opamp_consumer.proto import opamp_pb2
@@ -273,7 +274,7 @@ def test_fluentbit_hot_reload_posts_to_local_agent_api(monkeypatch) -> None:
 
     assert instance.hot_reload() is True
     assert captured == {
-        "url": "http://localhost:2020/api/v2/reload",
+        "url": "http://127.0.0.1:2020/api/v2/reload",
         "timeout": 5.0,
     }
 

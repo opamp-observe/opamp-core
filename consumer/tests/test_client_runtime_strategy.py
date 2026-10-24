@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ruff: noqa: S101
+
 from __future__ import annotations
 
 import asyncio
@@ -24,6 +26,8 @@ from opamp_consumer.client_runtime_mixin import ClientRuntimeMixin
 from opamp_consumer.client_supervisor_mixin import ClientSupervisorMixin
 from opamp_consumer.config import ConsumerConfig
 from opamp_consumer.proto import opamp_pb2
+
+_EVENT_LOOP_CYCLE_SECONDS = 0
 
 
 class _RuntimeStrategyHarness(ClientRuntimeMixin):
@@ -116,14 +120,16 @@ class _FakeLifecycle:
         self.restart_calls += 1
         return True
 
-    def finalize(self) -> None:
+    async def finalize_async(self) -> None:
+        """Record awaited lifecycle finalization."""
         self.finalize_calls += 1
 
     async def send_disconnect(self) -> None:
         self.disconnect_calls += 1
 
 
-def test_runtime_methods_delegate_to_selected_lifecycle() -> None:
+@pytest.mark.asyncio
+async def test_runtime_methods_delegate_to_selected_lifecycle() -> None:
     """Runtime lifecycle entrypoints should delegate to the resolved strategy."""
     harness = _RuntimeStrategyHarness("supervisor")
     lifecycle = _FakeLifecycle()
@@ -132,14 +138,60 @@ def test_runtime_methods_delegate_to_selected_lifecycle() -> None:
     assert harness.launch_agent_process() is True
     harness.terminate_agent_process()
     assert harness.restart_agent_process() is True
-    harness.finalize()
-    asyncio.run(harness.send_disconnect())
+    await harness.finalize_async()
+    await harness.send_disconnect()
 
     assert lifecycle.launch_calls == 1
     assert lifecycle.terminate_calls == 1
     assert lifecycle.restart_calls == 1
     assert lifecycle.finalize_calls == 1
     assert lifecycle.disconnect_calls == 1
+
+
+def test_sync_finalize_completes_without_background_thread() -> None:
+    """Synchronous finalization should finish its disconnect before returning."""
+    harness = _RuntimeStrategyHarness("supervisor")
+    lifecycle = _FakeLifecycle()
+    harness._runtime_process_lifecycle = cast(Any, lifecycle)
+
+    harness.finalize()
+
+    assert lifecycle.finalize_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_sync_finalize_schedules_cleanup_on_active_loop() -> None:
+    """Compatibility finalization should use the caller's active event loop."""
+    harness = _RuntimeStrategyHarness("supervisor")
+    lifecycle = _FakeLifecycle()
+    harness._runtime_process_lifecycle = cast(Any, lifecycle)
+
+    harness.finalize()
+    await asyncio.sleep(_EVENT_LOOP_CYCLE_SECONDS)
+
+    assert lifecycle.finalize_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_finalize_async_is_idempotent_and_stops_heartbeat(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Awaited finalization should stop heartbeats and send disconnect once."""
+    harness = _RuntimeStrategyHarness("supervisor")
+    disconnect_calls = 0
+
+    async def record_disconnect() -> None:
+        """Record the lifecycle's final disconnect attempt."""
+        nonlocal disconnect_calls
+        disconnect_calls += 1
+
+    monkeypatch.setattr(harness, "_send_disconnect_with_timeout", record_disconnect)
+
+    await harness.finalize_async()
+    await harness.finalize_async()
+
+    assert harness.data.allow_heartbeat is False
+    assert disconnect_calls == 1
 
 
 class _HandlerProvider:
