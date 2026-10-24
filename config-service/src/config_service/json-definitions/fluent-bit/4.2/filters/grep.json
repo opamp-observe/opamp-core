@@ -1,0 +1,60 @@
+{
+  "title": "Grep",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/grep",
+  "fields": [
+    {
+      "name": "exclude",
+      "required": false,
+      "description": "Exclude records where the content of KEY matches the regular expression.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/grep#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "logical_op",
+      "required": false,
+      "description": "Specify a logical operator: AND, OR or legacy. In legacy mode the behaviour is either AND or OR depending on whether the grep is including (uses AND) or excluding (uses OR). Available from 2.1 or higher.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/grep#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "legacy"
+    },
+    {
+      "name": "regex",
+      "required": false,
+      "description": "Keep records where the content of KEY matches the regular expression.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/grep#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "regex_string"
+      }
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/grep#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Value Format",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Grep."
+}

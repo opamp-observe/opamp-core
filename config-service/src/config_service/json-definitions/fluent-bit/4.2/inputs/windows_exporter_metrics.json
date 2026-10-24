@@ -1,0 +1,263 @@
+{
+  "title": "Windows exporter metrics",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/windows-exporter-metrics",
+  "fields": [
+    {
+      "name": "scrape_interval",
+      "required": false,
+      "description": "The rate at which metrics are collected from the host operating system",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "5s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "we.logical_disk.allow_disk_regex",
+      "required": false,
+      "description": "Specify the regex for logical disk metrics to allow collection of.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "\"/.+/\"",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "regex_string"
+      }
+    },
+    {
+      "name": "we.logical_disk.deny_disk_regex",
+      "required": false,
+      "description": "Specify the regex for logical disk metrics to prevent collection of/ignore.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "NULL",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "regex_string"
+      }
+    },
+    {
+      "name": "we.net.allow_nic_regex",
+      "required": false,
+      "description": "Specify the regex for network metrics captured by the name of the NIC, by default captures all NICs but to exclude adjust the regex.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "\"/.+/\"",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "regex_string"
+      }
+    },
+    {
+      "name": "we.service.where",
+      "required": false,
+      "description": "Specify the WHERE clause for retrieving service metrics.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "we.service.include",
+      "required": false,
+      "description": "Specify the key value pairs for the include condition for the WHERE clause of service metrics.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "we.service.exclude",
+      "required": false,
+      "description": "Specify the key value pairs for the exclude condition for the WHERE clause of service metrics.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "we.process.allow_process_regex",
+      "required": false,
+      "description": "Specify the regex covering the process metrics to collect.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "\"/.+/\"",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "regex_string"
+      }
+    },
+    {
+      "name": "we.process.deny_process_regex",
+      "required": false,
+      "description": "Specify the regex for process metrics to prevent collection of/ignore.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "regex_string"
+      }
+    },
+    {
+      "name": "collector.cpu.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which cpu metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.net.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which net metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.logical_disk.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which logical_disk metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.cs.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which cs metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.os.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which os metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.thermalzone.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which thermalzone metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.cpu_info.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which cpu_info metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.logon.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which logon metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.system.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which system metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.service.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which service metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.memory.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which memory metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.paging_file.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which paging_file metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "collector.process.scrape_interval",
+      "required": false,
+      "description": "The rate in seconds at which process metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "0s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "metrics",
+      "required": false,
+      "description": "To specify which metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/windows-exporter-metrics#configuration",
+      "default": "cpu,cpu_info,os,net,logical_disk,cs,thermalzone,logon,system,service",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "no_configuration_parameters",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/windows-exporter-metrics#configuration-parameters",
+    "table_header": [],
+    "review_required": true,
+    "review_comment": "REVIEW REQUIRED: The documentation page did not expose the expected configuration parameter table. Fields from the previous catalog were retained where available; verify the page reference and table section before accepting this catalog."
+  },
+  "description": "Fluent Bit input plugin: Windows exporter metrics."
+}

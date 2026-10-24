@@ -1,0 +1,103 @@
+{
+  "title": "Lua",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/lua",
+  "fields": [
+    {
+      "name": "call",
+      "required": false,
+      "description": "The Lua function name that will be triggered to do filtering. It's assumed that the function is declared inside the script parameter.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/lua#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "code",
+      "required": false,
+      "description": "Inline Lua code instead of loading from a path defined in script.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/lua#configuration-parameters",
+      "data_type": "code",
+      "validation_rule": {
+        "kind": "code_syntax",
+        "language": "lua",
+        "parser": "luaparser"
+      }
+    },
+    {
+      "name": "enable_flb_null",
+      "required": false,
+      "description": "If enabled, null will be converted to flb_null in Lua. This helps prevent removing key/value since nil is a special value to remove key/value from map in Lua. Default value: false.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/lua#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      }
+    },
+    {
+      "name": "protected_mode",
+      "required": false,
+      "description": "If enabled, the Lua script will be executed in protected mode. It prevents Fluent Bit from crashing when an invalid Lua script is executed or the triggered Lua function throws exceptions. Default value: true.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/lua#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      }
+    },
+    {
+      "name": "script",
+      "required": false,
+      "description": "Path to the Lua script that will be used. This can be a relative path against the main configuration file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/lua#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "time_as_table",
+      "required": false,
+      "description": "By default, when the Lua script is invoked, the record timestamp is passed as a floating number, which might lead to precision loss when it's converted back. If you need timestamp precision, enabling this option will pass the timestamp as a Lua table with keys sec for seconds since epoch and nsec for nanoseconds.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/lua#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "type_array_key",
+      "required": false,
+      "description": "If these keys are matched, the fields are handled as array. If more than one key, delimit by space. The array can be empty.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/lua#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "type_int_key",
+      "required": false,
+      "description": "If these keys are matched, the fields are converted to integers. If more than one key, delimit by space.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/lua#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/lua#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Lua."
+}

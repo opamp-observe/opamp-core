@@ -1,0 +1,249 @@
+{
+  "title": "Kafka Producer",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka",
+  "fields": [
+    {
+      "name": "aws_msk_iam",
+      "required": false,
+      "description": "Enable AWS MSK IAM authentication. Requires Fluent Bit 4.0.4 or later.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "aws_msk_iam_cluster_arn",
+      "required": false,
+      "description": "Full ARN of the MSK cluster used for region extraction. Required when aws_msk_iam is enabled.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "brokers",
+      "required": false,
+      "description": "Single or multiple list of Kafka brokers. For example, 192.168.1.3:9092, 192.168.1.4:9092.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "client_id",
+      "required": false,
+      "description": "Client ID to use when connecting to Kafka.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "dynamic_topic",
+      "required": false,
+      "description": "Adds unknown topics (found in topic_key) to topics. Only a default topic needs to be configured in topics.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "format",
+      "required": false,
+      "description": "Specify data format. Available formats: avro (requires Avro encoder build option), gelf, json, msgpack, raw.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "json"
+    },
+    {
+      "name": "gelf_full_message_key",
+      "required": false,
+      "description": "Key to use as the long message for GELF format output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "gelf_host_key",
+      "required": false,
+      "description": "Key to use as the host for GELF format output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "gelf_level_key",
+      "required": false,
+      "description": "Key to use as the log level for GELF format output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "gelf_short_message_key",
+      "required": false,
+      "description": "Key to use as the short message for GELF format output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "gelf_timestamp_key",
+      "required": false,
+      "description": "Key to use as the timestamp for GELF format output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "group_id",
+      "required": false,
+      "description": "Consumer group ID.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "message_key",
+      "required": false,
+      "description": "Optional key to store the message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "message_key_field",
+      "required": false,
+      "description": "If set, the value of message_key_field in the record will indicate the message key. If not set or not found in the record, message_key is used if set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "queue_full_retries",
+      "required": false,
+      "description": "Number of local retries to enqueue data when the rdkafka queue is full. The interval between retries is 1 second. Set to 0 for unlimited retries.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 10
+    },
+    {
+      "name": "raw_log_key",
+      "required": false,
+      "description": "When using the raw format, the value of raw_log_key in the record is sent to Kafka as the payload.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "rdkafka.{property}",
+      "required": false,
+      "description": "{property} can be any librdkafka property.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "schema_id",
+      "required": false,
+      "description": "Avro schema ID. Requires the Avro encoder build option.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "schema_str",
+      "required": false,
+      "description": "Avro schema string. Requires the Avro encoder build option.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "timestamp_format",
+      "required": false,
+      "description": "Specify the timestamp format. Allowed values: double, iso8601 (seconds precision), iso8601_ns (nanoseconds precision).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "regex",
+        "pattern": "^\\\\d+(ns|us|ms|s|m|h|d)?$"
+      },
+      "default": "double"
+    },
+    {
+      "name": "timestamp_key",
+      "required": false,
+      "description": "Key to store the record timestamp.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "@timestamp"
+    },
+    {
+      "name": "topic_key",
+      "required": false,
+      "description": "If multiple topics exist, the value of topic_key in the record indicates the topic to use. If the value isn't present in topics, the first topic in the list is used.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "topics",
+      "required": false,
+      "description": "Single topic or comma-separated list of topics that Fluent Bit will use to send messages to Kafka. If multiple topics are set, the topic_key field in the record selects the topic.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      },
+      "default": "fluent-bit"
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/kafka#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Kafka Producer."
+}

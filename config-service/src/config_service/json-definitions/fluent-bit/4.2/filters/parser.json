@@ -1,0 +1,71 @@
+{
+  "title": "Parser",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/parser",
+  "fields": [
+    {
+      "name": "key_name",
+      "required": false,
+      "description": "Specify field name in record to parse.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/parser#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "parser",
+      "required": false,
+      "description": "Specify the parser name to interpret the field. Multiple parser entries are allowed (one per line).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/parser#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "references_parser": true
+    },
+    {
+      "name": "preserve_key",
+      "required": false,
+      "description": "Keep the original key_name field in the parsed result. If false, the field will be removed.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/parser#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "reserve_data",
+      "required": false,
+      "description": "Keep all other original fields in the parsed result. If false, all other original fields will be removed.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/parser#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/parser#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Parser."
+}

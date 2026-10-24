@@ -1,0 +1,86 @@
+{
+  "title": "Wasm",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/wasm",
+  "fields": [
+    {
+      "name": "accessible_paths",
+      "required": false,
+      "description": "Specify the allowlist of paths to be able to access paths from Wasm programs. Default: . (current directory).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/wasm#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "event_format",
+      "required": false,
+      "description": "Define event format to interact with Wasm programs: msgpack or json. Default: json.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/wasm#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "function_name",
+      "required": false,
+      "description": "Wasm function name that will be triggered to do filtering. It's assumed that the function is built inside the Wasm program specified previously.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/wasm#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "wasm_heap_size",
+      "required": false,
+      "description": "Size of the heap size of Wasm execution. Review unit sizes for allowed values.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/wasm#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      }
+    },
+    {
+      "name": "wasm_path",
+      "required": false,
+      "description": "Path to the built Wasm program that will be used. This can be a path relative to the main configuration file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/wasm#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "wasm_stack_size",
+      "required": false,
+      "description": "Size of the stack size of Wasm execution. Review unit sizes for allowed values.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/wasm#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      }
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/wasm#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Wasm."
+}

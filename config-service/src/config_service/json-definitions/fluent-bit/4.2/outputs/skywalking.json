@@ -1,0 +1,89 @@
+{
+  "title": "Apache SkyWalking",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/skywalking",
+  "fields": [
+    {
+      "name": "auth_token",
+      "required": false,
+      "description": "Authentication token if needed for Apache SkyWalking OAP.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/skywalking#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "host",
+      "required": false,
+      "description": "Hostname of Apache SkyWalking OAP.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/skywalking#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "TCP port of the Apache SkyWalking OAP.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/skywalking#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 12800
+    },
+    {
+      "name": "svc_inst_name",
+      "required": false,
+      "description": "Service instance name of Fluent Bit.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/skywalking#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "fluent-bit"
+    },
+    {
+      "name": "svc_name",
+      "required": false,
+      "description": "Service name that Fluent Bit belongs to.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/skywalking#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "sw-service"
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/skywalking#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/skywalking#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Apache SkyWalking."
+}

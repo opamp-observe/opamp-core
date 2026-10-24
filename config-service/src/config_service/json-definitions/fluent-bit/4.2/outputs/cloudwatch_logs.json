@@ -1,0 +1,282 @@
+{
+  "title": "Amazon CloudWatch",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch",
+  "fields": [
+    {
+      "name": "add_entity",
+      "required": false,
+      "description": "Add entity to PutLogEvent calls.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "alias",
+      "required": false,
+      "description": "Sets an alias, use for multiple instances of the same output plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "auto_create_group",
+      "required": false,
+      "description": "Automatically create the log group. Allowed values: true, false (case insensitive).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "auto_retry_requests",
+      "required": false,
+      "description": "Immediately retry failed requests to AWS services once. This option doesn't affect the normal Fluent Bit retry mechanism with backoff. Instead, it enables an immediate retry with no delay for networking errors, which can help improve throughput when there are transient/random networking issues.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "endpoint",
+      "required": false,
+      "description": "Specify a custom endpoint for the CloudWatch Logs API.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "external_id",
+      "required": false,
+      "description": "Specify an external ID for the STS API, can be used with the role_arn parameter if your role requires an external ID.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "extra_user_agent",
+      "required": false,
+      "description": "This option appends a string to the default user agent. AWS asks that you not manually set this field yourself, it's reserved for use in vended configurations, for example, EKS Container Insights.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_format",
+      "required": false,
+      "description": "An optional parameter that can be used to tell CloudWatch the format of the data. A value of json/emf enables CloudWatch to extract custom metrics embedded in a JSON payload.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_group_class",
+      "required": false,
+      "description": "Specifies the log storage class for new log groups when auto_create_group is set to true. You can't modify the storage class of existing log groups. Allowed values: STANDARD, INFREQUENT_ACCESS.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "STANDARD"
+    },
+    {
+      "name": "log_group_name",
+      "required": false,
+      "description": "The name of the CloudWatch log group that you want log records sent to.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_group_template",
+      "required": true,
+      "description": "Template for CW Log Group name using record accessor syntax. Plugin falls back to the log_group_name configured if needed.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_key",
+      "required": false,
+      "description": "By default, the whole log record will be sent to CloudWatch. If you specify a key name with this option, then only the value of that key will be sent to CloudWatch. For example, if you are using the Fluentd Docker log driver, you can specify log_key log and only the log message will be sent to CloudWatch.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_level",
+      "required": false,
+      "description": "Specifies the log level for output plugin. If not set here, plugin uses global log level in service section.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "info"
+    },
+    {
+      "name": "log_retention_days",
+      "required": false,
+      "description": "If set to a number greater than zero, and newly create log group's retention policy is set to this many days. Allowed values: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "log_stream_name",
+      "required": false,
+      "description": "The name of the CloudWatch log stream that you want log records sent to.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_stream_prefix",
+      "required": false,
+      "description": "Prefix for the log stream name. The tag is appended to the prefix to construct the full log stream name. Not compatible with the log_stream_name option.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_stream_template",
+      "required": true,
+      "description": "Template for CloudWatch Log Stream name using record accessor syntax. Plugin falls back to the log_stream_name or log_stream_prefix configured if needed.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_suppress_interval",
+      "required": false,
+      "description": "Suppresses log messages from output plugin that appear similar within a specified time interval. 0 no suppression.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Set a tag pattern to match records that output should process. Exact matches or wildcards (for example *).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Set a regular expression to match tags for output routing. This allows more flexible matching compared to wildcards.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "metric_dimensions",
+      "required": true,
+      "description": "Metric dimensions is a list of lists. If you have only one list of dimensions, put the values as a comma separated string. If you want to put list of lists, use the list as semicolon separated strings. If your value is d1,d2;d3, it will consider it as [[d1, d2],[d3]].",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "metric_namespace",
+      "required": false,
+      "description": "An optional string representing the CloudWatch namespace for the metrics. See the Metrics tutorial section for a full configuration.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "profile",
+      "required": false,
+      "description": "Option to specify an AWS Profile for credentials.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "region",
+      "required": false,
+      "description": "The AWS region to send logs to. China regions (cn-north-1, cn-northwest-1) and the AWS European Sovereign Cloud region (eusc-de-east-1) are supported; Fluent Bit automatically uses the correct endpoint suffix (.amazonaws.com.cn or .amazonaws.eu) and no custom endpoint is required.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "retry_limit",
+      "required": false,
+      "description": "Set retry limit for output plugin when delivery fails. Integer, no_limits, false, or off to disable, or no_retries to disable retries entirely.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "role_arn",
+      "required": false,
+      "description": "ARN of an IAM role to assume for cross account access.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "sts_endpoint",
+      "required": false,
+      "description": "Specify a custom STS endpoint for the AWS STS API.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.windows.certstore_name",
+      "required": false,
+      "description": "Sets the certificate store name on an output (Windows).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.windows.use_enterprise_store",
+      "required": false,
+      "description": "Sets whether using enterprise certificate store or not on an output (Windows).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/cloudwatch#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Amazon CloudWatch."
+}

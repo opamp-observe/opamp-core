@@ -1,0 +1,63 @@
+{
+  "title": "Type converter",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/type-converter",
+  "fields": [
+    {
+      "name": "float_key",
+      "required": false,
+      "description": "This parameter is for a float source.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/type-converter#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "int_key",
+      "required": false,
+      "description": "This parameter is for an integer source.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/type-converter#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "str_key",
+      "required": false,
+      "description": "This parameter is for a string source.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/type-converter#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "uint_key",
+      "required": false,
+      "description": "This parameter is for an unsigned integer source.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/type-converter#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/type-converter#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Type converter."
+}

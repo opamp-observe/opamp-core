@@ -1,0 +1,447 @@
+{
+  "title": "Tail",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail",
+  "fields": [
+    {
+      "name": "buffer_chunk_size",
+      "required": true,
+      "description": "Set the initial buffer size to read file data. This value is used to increase buffer size. The value must be according to the Unit Size specification.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "32k"
+    },
+    {
+      "name": "buffer_max_size",
+      "required": true,
+      "description": "Set the limit of the buffer size per monitored file. When a buffer needs to be increased, this value is used to restrict the memory buffer growth. If reading a file exceeds this limit, the file is removed from the monitored file list. The value must be according to the Unit Size specification.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "32k"
+    },
+    {
+      "name": "db",
+      "required": false,
+      "description": "Specify the database file to keep track of monitored files and offsets. Recommended to be unique per plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "db.compare_filename",
+      "required": false,
+      "description": "This option determines whether to review both inode and filename when retrieving stored file information from the database. true verifies both inode and filename, while false checks only the inode. To review the inode and filename in the database, refer see keep_state.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "db.journal_mode",
+      "required": false,
+      "description": "Sets the journal mode for databases (wal). Enabling wal provides higher performance. wal isn't compatible with shared network file systems.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "wal"
+    },
+    {
+      "name": "db.locking",
+      "required": false,
+      "description": "Specify that the database will be accessed only by Fluent Bit. Enabling this feature helps increase performance when accessing the database but restricts external tools from querying the content.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "db.sync",
+      "required": false,
+      "description": "Set a default synchronization (I/O) method. This flag affects how the internal SQLite engine does synchronization to disk. For more details about each option, see the SQLite documentation. Most scenarios will be fine with normal mode. If you need full synchronization after every write operation, set full mode. full has a high I/O performance cost. Values: extra, full, normal, off.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "enum",
+        "values": [
+          "Extra",
+          "Full",
+          "Normal",
+          "Off"
+        ]
+      },
+      "default": "normal",
+      "enum_options": [
+        "Extra",
+        "Full",
+        "Normal",
+        "Off"
+      ]
+    },
+    {
+      "name": "docker_mode",
+      "required": false,
+      "description": "If enabled, the plugin will recombine split Docker log lines before passing them to any parser. This mode can't be used at the same time as Multiline.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "docker_mode_flush",
+      "required": false,
+      "description": "Wait period time in seconds to flush queued unfinished split lines.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 4
+    },
+    {
+      "name": "docker_mode_parser",
+      "required": false,
+      "description": "Specify an optional parser for the first line of the Docker multiline mode. The parser name must be registered in the parsers.conf file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "references_parser": true
+    },
+    {
+      "name": "event_batch_size",
+      "required": false,
+      "description": "Set the maximum number of bytes to process per iteration for files monitored in event mode (files promoted from static to event-based monitoring). This prevents a single input plugin from consuming too many resources when large amounts of data is available.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "50M"
+    },
+    {
+      "name": "exclude_path",
+      "required": false,
+      "description": "Set one or multiple shell patterns separated by commas to exclude files matching certain criteria. For example, exclude_path *.gz,*.zip.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "exit_on_eof",
+      "required": false,
+      "description": "When reading a file, exit as soon as it reaches the end of the file. Used for bulk load and tests.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "file_cache_advise",
+      "required": false,
+      "description": "Set the posix_fadvise in POSIX_FADV_DONTNEED mode. This reduces the usage of the kernel file cache. This option is ignored if not running on Linux.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "generic.encoding",
+      "required": false,
+      "description": "Set the non-Unicode encoding of the file data. Supported values: ShiftJIS, UHC, GBK, GB18030, Big5, Win866, Win874, Win1250, Win1251, Win1252, Win1253, Win1254, Win1255, and Win1256.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "ignore_active_older_files",
+      "required": false,
+      "description": "Ignore files that are older than the value set in ignore_older even if the file is being ingested.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "ignore_older",
+      "required": false,
+      "description": "Ignores files older than ignore_older. Supports m, h, d (minutes, hours, days) syntax.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "Read all."
+    },
+    {
+      "name": "inotify_watcher",
+      "required": false,
+      "description": "Set to false to use file stat watcher instead of inotify.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "key",
+      "required": false,
+      "description": "When a message is unstructured (no parser applied), it's appended as a string under the key name log. This option lets you define an alternative name for that key.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "log"
+    },
+    {
+      "name": "mem_buf_limit",
+      "required": false,
+      "description": "Set a memory limit that the Tail plugin can use when appending data to the engine. If the limit is reached, it will be paused. When the data is flushed, it resumes.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      }
+    },
+    {
+      "name": "offset_key",
+      "required": false,
+      "description": "If enabled, Fluent Bit appends the offset of the current monitored file as part of the record. The value assigned becomes the key in the map.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      }
+    },
+    {
+      "name": "parser",
+      "required": false,
+      "description": "Specify the name of a parser to interpret the entry as a structured message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "references_parser": true
+    },
+    {
+      "name": "path",
+      "required": false,
+      "description": "Pattern specifying a specific log file or multiple ones through the use of common wildcards. Allows multiple patterns separated by commas.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "path_key",
+      "required": false,
+      "description": "If enabled, it appends the name of the monitored file as part of the record. The value assigned becomes the key in the map.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      }
+    },
+    {
+      "name": "progress_check_interval",
+      "required": false,
+      "description": "Set the interval for checking file progress. This is an advanced option for fine-tuning file monitoring behavior.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "2s"
+    },
+    {
+      "name": "progress_check_interval_nsec",
+      "required": false,
+      "description": "Set the nanosecond component of the progress check interval. This is an advanced option used in conjunction with progress_check_interval for sub-second precision.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "read_from_head",
+      "required": false,
+      "description": "For new discovered files on start (without a database offset/position), read the content from the head of the file, not tail.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "read_newly_discovered_files_from_head",
+      "required": false,
+      "description": "For newly discovered files after startup (without a database offset/position), read the content from the head of the file, not tail. This differs from read_from_head which only applies to files discovered at startup.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "refresh_interval",
+      "required": false,
+      "description": "The interval of refreshing the list of watched files in seconds.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 60
+    },
+    {
+      "name": "rotate_wait",
+      "required": false,
+      "description": "Specify the number of extra time in seconds to monitor a file once it's rotated in case some pending data is flushed.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 5
+    },
+    {
+      "name": "skip_empty_lines",
+      "required": false,
+      "description": "Skips empty lines in the log file from any further processing or output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "skip_long_lines",
+      "required": false,
+      "description": "When a monitored file reaches its buffer capacity due to a very long line (buffer_max_size), the default behavior is to stop monitoring that file. skip_long_lines alters that behavior and instructs Fluent Bit to skip long lines and continue processing other lines that fit into the buffer size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "static_batch_size",
+      "required": false,
+      "description": "Set the maximum number of bytes to process per iteration for the monitored static files (files that already exist upon Fluent Bit start).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "50M"
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Set a tag with regexextract fields that will be placed on lines read. For example, kube.<namespace_name>.<pod_name>.<container_name>.<container_id>. Tag expansion is supported: if the tag includes an asterisk (*), that asterisk will be replaced with the absolute path of the monitored file, with slashes replaced by dots. See Workflow of Tail + Kubernetes Filter.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tag_regex",
+      "required": false,
+      "description": "Set a regular expression to extract fields from the filename. For example: (?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-(?<container_id>[a-z0-9]{64})\\.log$.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "regex_string"
+      }
+    },
+    {
+      "name": "thread.ring_buffer.capacity",
+      "required": false,
+      "description": "Number of slots in the ring buffer for data entries when running in threaded mode. Each slot can hold one data entry.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1024
+    },
+    {
+      "name": "thread.ring_buffer.window",
+      "required": false,
+      "description": "Percentage threshold (1-100) of the ring buffer capacity at which a flush is triggered when running in threaded mode.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 5
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "truncate_long_lines",
+      "required": false,
+      "description": "When enabled, truncates lines that exceed the buffer capacity after input encoding conversion to UTF-8. Use this option when dealing with character encoding conversions that might expand the line length.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "unicode.encoding",
+      "required": false,
+      "description": "Set the Unicode character encoding of the file data. This parameter requests two-byte aligned chunk and buffer sizes. If data isn't aligned for two bytes, Fluent Bit will use two-byte alignment automatically to avoid character breakages on consuming boundaries. Supported values: UTF-16LE, UTF-16BE, and auto.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "watcher_interval",
+      "required": false,
+      "description": "Set the interval for the watcher that monitors symbolic link rotation. This is an advanced option for fine-tuning how often Fluent Bit checks if symbolic links have been rotated.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "2s"
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/tail#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Tail."
+}

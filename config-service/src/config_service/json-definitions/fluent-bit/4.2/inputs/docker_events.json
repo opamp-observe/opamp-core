@@ -1,0 +1,95 @@
+{
+  "title": "Docker events",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-events",
+  "fields": [
+    {
+      "name": "buffer_size",
+      "required": false,
+      "description": "The size of the buffer used to read docker events in bytes.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-events#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 8192
+    },
+    {
+      "name": "key",
+      "required": false,
+      "description": "When a message is unstructured (no parser applied), it's appended as a string under the key name message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "message"
+    },
+    {
+      "name": "parser",
+      "required": false,
+      "description": "Specify the name of a parser to interpret the entry as a structured message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "references_parser": true
+    },
+    {
+      "name": "reconnect.retry_interval",
+      "required": false,
+      "description": "The retry interval in seconds.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-events#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "reconnect.retry_limits",
+      "required": false,
+      "description": "The maximum number of retries allowed. The plugin tries to reconnect with docker socket when EOF is detected.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-events#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 5
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-events#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "unix_path",
+      "required": false,
+      "description": "The docker socket Unix path.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/var/run/docker.sock"
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-events#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Docker events."
+}

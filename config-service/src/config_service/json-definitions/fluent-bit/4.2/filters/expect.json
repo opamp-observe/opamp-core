@@ -1,0 +1,90 @@
+{
+  "title": "Expect",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/expect",
+  "fields": [
+    {
+      "name": "action",
+      "required": false,
+      "description": "Action to take when a rule doesn't match. Available options are warn, exit or result_key. On warn, a warning message is sent to the logging layer when a mismatch of the key* rules is found. Using exit makes Fluent Bit exit with status code 255. result_key adds a matching result to each record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/expect#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "warn"
+    },
+    {
+      "name": "key_exists",
+      "required": false,
+      "description": "Check if a key with a given name exists in the record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/expect#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "key_not_exists",
+      "required": false,
+      "description": "Check if a key doesn't exist in the record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/expect#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "key_val_eq",
+      "required": false,
+      "description": "Check that the value of the key equals the given value in the configuration.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/expect#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "key_val_is_not_null",
+      "required": false,
+      "description": "Check that the value of the key is NOT NULL.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/expect#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "key_val_is_null",
+      "required": false,
+      "description": "Check that the value of the key is NULL.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/expect#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "result_key",
+      "required": false,
+      "description": "Specify a key name for the matching result added when action is set to result_key.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/expect#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "matched"
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/expect#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Expect."
+}

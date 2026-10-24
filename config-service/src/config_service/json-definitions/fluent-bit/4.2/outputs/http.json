@@ -1,0 +1,121 @@
+{
+  "title": "OpenObserve",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve",
+  "fields": [
+    {
+      "name": "compress",
+      "required": false,
+      "description": "Recommended. Compresses the payload in GZIP format. OpenObserve recommends setting this to gzip for optimized log ingestion.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "format",
+      "required": false,
+      "description": "The format of the log payload. OpenObserve expects JSON.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "json"
+    },
+    {
+      "name": "host",
+      "required": false,
+      "description": "The OpenObserve server where you are sending logs.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "localhost"
+    },
+    {
+      "name": "http_passwd",
+      "required": false,
+      "description": "Password for HTTP authentication.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "http_user",
+      "required": false,
+      "description": "Username for HTTP authentication.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "include_tag_key",
+      "required": false,
+      "description": "If true, a tag is appended to the output. The key name is used in the tag_key property.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "json_date_format",
+      "required": false,
+      "description": "Optional. The format of the date in logs. OpenObserve supports ISO 8601.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "iso8601"
+    },
+    {
+      "name": "json_date_key",
+      "required": false,
+      "description": "Optional. The JSON key used for timestamps in the logs.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "timestamp"
+    },
+    {
+      "name": "tls",
+      "required": false,
+      "description": "Enable end-to-end security using TLS. Set to on to enable TLS communication with OpenObserve.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "on"
+    },
+    {
+      "name": "uri",
+      "required": false,
+      "description": "The API path used to send logs.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/api/default/default/_json"
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/openobserve#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: OpenObserve."
+}

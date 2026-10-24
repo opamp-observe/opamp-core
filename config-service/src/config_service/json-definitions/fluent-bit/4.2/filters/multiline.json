@@ -1,0 +1,108 @@
+{
+  "title": "Multiline",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace",
+  "fields": [
+    {
+      "name": "buffer",
+      "required": false,
+      "description": "Enable buffered mode. In buffered mode, the filter can concatenate multiple lines from inputs that ingest records one by one (like Forward), rather than in chunks, re-emitting them into the beginning of the pipeline (with the same tag) using the in_emitter instance. With buffer off, this filter won't work with most inputs, except Tail.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      }
+    },
+    {
+      "name": "debug_flush",
+      "required": false,
+      "description": "Enable debug logging for flush operations. Default: false.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "emitter_mem_buf_limit",
+      "required": false,
+      "description": "Set a limit on the amount of memory the emitter can consume if the outputs provide backpressure. The default for this limit is 10M. The pipeline will pause once the buffer exceeds the value of this setting. For example, if the value is set to 10M then the pipeline pauses if the buffer exceeds 10M. The pipeline will remain paused until the output drains the buffer under the 10M limit.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      }
+    },
+    {
+      "name": "emitter_name",
+      "required": false,
+      "description": "Name for the emitter input instance which re-emits the completed records at the beginning of the pipeline.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "emitter_storage.type",
+      "required": false,
+      "description": "The storage type for the emitter input instance. This option supports the values memory (default) and filesystem.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "flush_ms",
+      "required": false,
+      "description": "Flush time for pending multiline records. Default: 2000.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "mode",
+      "required": false,
+      "description": "Mode can be parser for regular expression concatenation, or partial_message to concatenate split Docker logs.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "multiline.key_content",
+      "required": false,
+      "description": "Key name that holds the content to process. A multiline parser definition can specify the key_content This option allows for overwriting that value for the purpose of the filter.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "multiline.parser",
+      "required": false,
+      "description": "Specify one or multiple Multiline Parser definitions to apply to the content. You can specify multiple multiline parsers to detect different formats by separating them with a comma.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "references_parser": true
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/multiline-stacktrace#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Multiline."
+}

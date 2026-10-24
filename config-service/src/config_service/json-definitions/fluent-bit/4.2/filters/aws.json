@@ -1,0 +1,184 @@
+{
+  "title": "AWS metadata",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata",
+  "fields": [
+    {
+      "name": "account_id",
+      "required": false,
+      "description": "The account ID for the current EC2 instance.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "ami_id",
+      "required": false,
+      "description": "The EC2 instance image ID.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "az",
+      "required": false,
+      "description": "The availability zone, such as us-east-1a.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "ec2_instance_id",
+      "required": false,
+      "description": "The EC2 instance ID.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "ec2_instance_type",
+      "required": false,
+      "description": "The EC2 instance type.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "enable_entity",
+      "required": false,
+      "description": "Enables entity prefix for fields used for constructing entity.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "hostname",
+      "required": false,
+      "description": "The hostname for the current EC2 instance.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "imds_version",
+      "required": false,
+      "description": "Specify which version of the instance metadata service to use. Valid values are v1 and v2.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "v2"
+    },
+    {
+      "name": "private_ip",
+      "required": false,
+      "description": "The EC2 instance private IP.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "retry_interval_s",
+      "required": false,
+      "description": "Defines minimum duration in seconds between retries for fetching EC2 instance tags.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 300
+    },
+    {
+      "name": "tags_enabled",
+      "required": true,
+      "description": "Specifies whether to attach EC2 instance tags. The EC2 instance must have the instance-metadata-tags option enabled, which is disabled by default.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tags_exclude",
+      "required": true,
+      "description": "Defines a list of specific EC2 tag keys not to inject into the logs. Tag keys must be comma-separated (,). Tags not included in this list will be injected into the logs. If both tags_include and tags_exclude are specified, the configuration is invalid and the plugin fails. Example: Name,tag1,tag2",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "tags_include",
+      "required": true,
+      "description": "Defines a list of specific EC2 tag keys to inject into the logs. Tag keys must be comma-separated (,). Tags not included in this list will be ignored. Example: Name,tag1,tag2.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "vpc_id",
+      "required": false,
+      "description": "The VPC ID for the current EC2 instance.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/aws-metadata#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: AWS metadata."
+}

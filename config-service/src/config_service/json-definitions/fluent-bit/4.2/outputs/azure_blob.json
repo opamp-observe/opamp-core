@@ -1,0 +1,393 @@
+{
+  "title": "Azure Blob",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob",
+  "fields": [
+    {
+      "name": "account_name",
+      "required": false,
+      "description": "Azure Storage account name.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "integer"
+      }
+    },
+    {
+      "name": "auth_type",
+      "required": false,
+      "description": "Specify the type to authenticate against the service. Supported values: key, sas.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "key"
+    },
+    {
+      "name": "auto_create_container",
+      "required": false,
+      "description": "If container_name doesn't exist in the remote service, enabling this option handles the exception and auto-creates the container.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "azure_blob_buffer_key",
+      "required": false,
+      "description": "Set the Azure Blob buffer key which needs to be specified when using multiple instances of Azure Blob output plugin and buffering is enabled.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "key"
+    },
+    {
+      "name": "blob_type",
+      "required": false,
+      "description": "Specify the desired blob type. Supported values: appendblob, blockblob.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "appendblob"
+    },
+    {
+      "name": "blob_uri_length",
+      "required": false,
+      "description": "Set the length of the generated blob URI used when creating and uploading objects to Azure Blob Storage.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 64
+    },
+    {
+      "name": "buffer_dir",
+      "required": false,
+      "description": "Specifies the location of directory where the buffered data will be stored.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/tmp/fluent-bit/azure-blob/"
+    },
+    {
+      "name": "buffer_file_delete_early",
+      "required": false,
+      "description": "Whether to delete the buffered file early after successful blob creation.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "buffering_enabled",
+      "required": false,
+      "description": "Enable buffering into disk before ingesting into Azure Blob.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "compress",
+      "required": false,
+      "description": "Sets payload compression in network transfer. Supported values: gzip, zstd.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "compress_blob",
+      "required": false,
+      "description": "Enables compression in the final blockblob file. When enabled without compress, it uses GZIP; if compress is also set, it inherits that codec. This option isn't compatible when blob_type = appendblob. Fluent Bit returns a configuration error and fails to start.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "configuration_endpoint_bearer_token",
+      "required": false,
+      "description": "Bearer token for the configuration endpoint.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "configuration_endpoint_password",
+      "required": false,
+      "description": "Basic authentication password for the configuration endpoint.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "configuration_endpoint_url",
+      "required": false,
+      "description": "Configuration endpoint URL.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "configuration_endpoint_username",
+      "required": false,
+      "description": "Basic authentication username for the configuration endpoint.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "container_name",
+      "required": false,
+      "description": "Name of the container that will contain the blobs.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "database_file",
+      "required": false,
+      "description": "Absolute path to a database file used to store blob file contexts.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "date_key",
+      "required": false,
+      "description": "Key name used to store the record timestamp.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "@timestamp"
+    },
+    {
+      "name": "delete_on_max_upload_error",
+      "required": false,
+      "description": "Whether to delete the buffer file on maximum upload errors.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "emulator_mode",
+      "required": false,
+      "description": "To send data to an Azure emulator service like Azurite, enable this option to format the requests in the expected format.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "endpoint",
+      "required": false,
+      "description": "When using an emulator, this option lets you specify the absolute HTTP address of such service. For example, http://127.0.0.1:10000.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "file_delivery_attempt_limit",
+      "required": false,
+      "description": "Maximum number of delivery attempts for a file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "io_timeout",
+      "required": false,
+      "description": "HTTP IO timeout.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "60s"
+    },
+    {
+      "name": "part_delivery_attempt_limit",
+      "required": false,
+      "description": "Maximum number of delivery attempts for a file part.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "part_size",
+      "required": false,
+      "description": "Size of each part when uploading blob files.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "25M"
+    },
+    {
+      "name": "path",
+      "required": false,
+      "description": "Optional. The path to store your blobs. If your blob name is myblob, specify subdirectories for storage using path. For example, setting path to /logs/kubernetes will store your blob in /logs/kubernetes/myblob.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "sas_token",
+      "required": false,
+      "description": "Specify the Azure Storage shared access signatures to authenticate against the service. This configuration property is mandatory when auth_type is sas.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "scheduler_max_retries",
+      "required": false,
+      "description": "Maximum number of retries for the scheduler send blob.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 3
+    },
+    {
+      "name": "shared_key",
+      "required": false,
+      "description": "Specify the Azure Storage Shared Key to authenticate against the service. This configuration property is mandatory when auth_type is key.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "store_dir_limit_size",
+      "required": false,
+      "description": "Set the max size of the buffer directory.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "8G"
+    },
+    {
+      "name": "tls",
+      "required": false,
+      "description": "Enable or disable TLS encryption. Azure service requires this to be set to on.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": "off"
+    },
+    {
+      "name": "unify_tag",
+      "required": false,
+      "description": "Whether to create a single buffer file when buffering mode is enabled.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "upload_file_size",
+      "required": false,
+      "description": "Specifies the size of files to be uploaded in MB.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "200M"
+    },
+    {
+      "name": "upload_part_freshness_limit",
+      "required": false,
+      "description": "Maximum lifespan of an uncommitted file part.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "6D"
+    },
+    {
+      "name": "upload_parts_timeout",
+      "required": false,
+      "description": "Timeout for uploading parts of a blob file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "10M"
+    },
+    {
+      "name": "upload_timeout",
+      "required": false,
+      "description": "Optional. Specify a timeout for uploads. Fluent Bit will start ingesting buffer files which have been created more than x minutes and haven't reached upload_file_size limit yet.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "30m"
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_blob#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Azure Blob."
+}

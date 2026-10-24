@@ -1,0 +1,703 @@
+{
+  "title": "Amazon S3",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3",
+  "fields": [
+    {
+      "name": "alias",
+      "required": false,
+      "description": "Sets an alias, use for multiple instances of the same output plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "authorization_endpoint_bearer_token",
+      "required": false,
+      "description": "Authorization endpoint bearer token.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "authorization_endpoint_password",
+      "required": false,
+      "description": "Authorization endpoint basic authentication password.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "authorization_endpoint_url",
+      "required": false,
+      "description": "Authorization endpoint URL.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "authorization_endpoint_username",
+      "required": false,
+      "description": "Authorization endpoint basic authentication username.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "auto_retry_requests",
+      "required": false,
+      "description": "Immediately retry failed requests to AWS services once. This option doesn't affect the normal Fluent Bit retry mechanism with backoff. Instead, it enables an immediate retry with no delay for networking errors, which can help improve throughput during transient network issues.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "blob_database_file",
+      "required": false,
+      "description": "Absolute path to a database file to be used to store blob files contexts.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "bucket",
+      "required": false,
+      "description": "S3 bucket name.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "canned_acl",
+      "required": false,
+      "description": "Predefined Canned ACL policy for S3 objects.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "compression",
+      "required": false,
+      "description": "Compression type for S3 objects. Supported values: gzip (always available), arrow, parquet (both require Arrow build), and zstd. For gzip and zstd, the Content-Encoding header is set accordingly. arrow and parquet are available only when Fluent Bit is built with -DFLB_ARROW=On and Arrow GLib/Parquet GLib are installed. parquet is typically used with use_put_object On.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "content_type",
+      "required": false,
+      "description": "A standard MIME type for the S3 object, set as the Content-Type HTTP header.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "endpoint",
+      "required": false,
+      "description": "Custom endpoint for the S3 API. Endpoints can contain scheme and port.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "external_id",
+      "required": false,
+      "description": "Specify an external ID for the STS API. Can be used with the role_arn parameter if your role requires an external ID.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "file_delivery_attempt_limit",
+      "required": false,
+      "description": "File delivery attempt limit.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "host",
+      "required": false,
+      "description": "IP address or hostname of the target HTTP server.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "json_date_format",
+      "required": false,
+      "description": "Specify the format of the date. Accepted values: double, epoch, epoch_ms, iso8601 (2018-05-30T09:39:52.000681Z), _java_sql_timestamp_ (2018-05-30 09:39:52.000681).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "iso8601"
+    },
+    {
+      "name": "json_date_key",
+      "required": false,
+      "description": "Specify the name of the date key in the output record. To disable the time key, set the value to false.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "date"
+    },
+    {
+      "name": "log_key",
+      "required": false,
+      "description": "By default, the whole log record is sent to S3. When specifying a key name with this option, only the value of that key is sent to S3. For example, when using Docker you can specify log_key log and only the log message is sent to S3.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_level",
+      "required": false,
+      "description": "Specifies the log level for output plugin. If not set here, plugin uses global log level in service section.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "info"
+    },
+    {
+      "name": "log_suppress_interval",
+      "required": false,
+      "description": "Suppresses log messages from output plugin that appear similar within a specified time interval. 0 means no suppression.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Set a tag pattern to match records that output should process. Exact matches or wildcards (for example *).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Set a regular expression to match tags for output routing. This allows more flexible matching compared to wildcards.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "net.connect_timeout",
+      "required": false,
+      "description": "Set maximum time allowed to establish a connection, this time includes the TLS handshake.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "10s"
+    },
+    {
+      "name": "net.connect_timeout_log_error",
+      "required": false,
+      "description": "On connection timeout, specify if it should log an error. When disabled, the timeout is logged as a debug message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "net.dns.mode",
+      "required": false,
+      "description": "Select the primary DNS connection type (TCP or UDP).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "net.dns.prefer_ipv4",
+      "required": false,
+      "description": "Select the primary DNS resolver type (LEGACY or ASYNC).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "net.dns.prefer_ipv6",
+      "required": false,
+      "description": "Prioritize IPv6 DNS results when trying to establish a connection.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "net.io_timeout",
+      "required": false,
+      "description": "Set maximum time a connection can stay idle while assigned.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "0s"
+    },
+    {
+      "name": "net.keepalive_max_recycle",
+      "required": false,
+      "description": "Set maximum number of times a keepalive connection can be used before it retries.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 2000
+    },
+    {
+      "name": "net.max_worker_connections",
+      "required": false,
+      "description": "Set the maximum number of active TCP connections that can be used per worker thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "net.proxy_env_ignore",
+      "required": false,
+      "description": "Ignore the environment variables HTTP_PROXY, HTTPS_PROXY and NO_PROXY when set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "net.source_address",
+      "required": false,
+      "description": "Specify network address to bind for data traffic.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "net.tcp_keepalive",
+      "required": false,
+      "description": "Enable or disable Keepalive support.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "off"
+    },
+    {
+      "name": "net.tcp_keepalive_interval",
+      "required": false,
+      "description": "Interval between TCP keepalive probes when no response is received on a keepidle probe.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": -1
+    },
+    {
+      "name": "net.tcp_keepalive_probes",
+      "required": false,
+      "description": "Number of unacknowledged probes to consider a connection dead.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": -1
+    },
+    {
+      "name": "net.tcp_keepalive_time",
+      "required": false,
+      "description": "Interval between the last data packet sent and the first TCP keepalive probe.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": -1
+    },
+    {
+      "name": "part_delivery_attempt_limit",
+      "required": false,
+      "description": "File part delivery attempt limit.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "part_size",
+      "required": false,
+      "description": "Size of each part when uploading blob files.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "25M"
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "TCP port of the target HTTP server.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 80
+    },
+    {
+      "name": "preserve_data_ordering",
+      "required": false,
+      "description": "When an upload request fails, the last received chunk might swap with a later chunk, resulting in data shuffling. This feature prevents shuffling by using a queue logic for uploads.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "profile",
+      "required": false,
+      "description": "Option to specify an AWS Profile for credentials.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "default"
+    },
+    {
+      "name": "region",
+      "required": false,
+      "description": "The AWS region of your S3 bucket. China regions (cn-north-1, cn-northwest-1) and the AWS European Sovereign Cloud region (eusc-de-east-1) are supported; Fluent Bit automatically uses the correct endpoint suffix (.amazonaws.com.cn or .amazonaws.eu) and no custom endpoint is required.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "us-east-1"
+    },
+    {
+      "name": "retry_limit",
+      "required": false,
+      "description": "Set retry limit for output plugin when delivery fails. Integer, no_limits, false, or off to disable, or no_retries to disable retries entirely.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "role_arn",
+      "required": false,
+      "description": "ARN of an IAM role to assume (for example, for cross account access).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "s3_key_format",
+      "required": true,
+      "description": "Format string for keys in S3. This option supports a UUID, strftime time formatters, a syntax for selecting parts of the Fluent log tag using a syntax inspired by the rewrite_tag filter. Add $UUID in the format string to insert a random string. Add $INDEX in the format string to insert an integer that increments each upload. The $INDEX value saves in the store_dir. Add $TAG in the format string to insert the full log tag. Add $TAG[0] to insert the first part of the tag in the S3 key. The tag is split into parts using the characters specified with the s3_key_format_tag_delimiters option. Add the extension directly after the last piece of the format string to insert a key suffix. To specify a key suffix in use_put_object mode, you must specify $UUID. See S3 Key Format. Time in s3_key is the timestamp of the first record in the S3 file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/fluent-bit-logs/$TAG/%Y/%m/%d/%H/%M/%S"
+    },
+    {
+      "name": "s3_key_format_tag_delimiters",
+      "required": false,
+      "description": "A series of characters which will be used to split the tag into parts for use with the s3_key_format option.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "."
+    },
+    {
+      "name": "send_content_md5",
+      "required": true,
+      "description": "Send the Content-MD5 header with PutObject and UploadPart requests, as is required when Object Lock is enabled.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "static_file_path",
+      "required": false,
+      "description": "Disables behavior where UUID string appends to the end of the S3 key name when $UUID isn't provided in s3_key_format. $UUID, time formatters, $TAG, and other dynamic key formatters all work as expected while this feature is set to true.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "store_dir",
+      "required": false,
+      "description": "Directory to locally buffer data before sending. Plugin uses the S3 Multipart upload API to send data in chunks of 5 MB at a time.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/tmp/fluent-bit/s3"
+    },
+    {
+      "name": "store_dir_limit_size",
+      "required": false,
+      "description": "S3 plugin has its own buffering system with files in the store_dir. Use the store_dir_limit_size to limit the amount of data S3 buffers in the store_dir to limit disk usage. If the limit is reached, data will be discarded. Default is 0 which means unlimited.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "storage_class",
+      "required": false,
+      "description": "Specify the storage class for S3 objects. If this option isn't specified, objects store with the default STANDARD storage class.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "sts_endpoint",
+      "required": false,
+      "description": "Custom endpoint for the STS API.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls",
+      "required": false,
+      "description": "Enable or disable TLS/SSL support.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "off"
+    },
+    {
+      "name": "tls.ca_file",
+      "required": false,
+      "description": "Absolute path to CA certificate file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.ca_path",
+      "required": false,
+      "description": "Absolute path to scan for certificate files.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.ciphers",
+      "required": false,
+      "description": "Specify TLS ciphers up to TLSv1.2.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.crt_file",
+      "required": false,
+      "description": "Absolute path to Certificate file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.debug",
+      "required": false,
+      "description": "Set TLS debug level. Accepts 0 (No debug), 1 (Error), 2 (State change), 3 (Informational) and 4 (Verbose).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "tls.key_file",
+      "required": false,
+      "description": "Absolute path to private Key file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.key_passwd",
+      "required": false,
+      "description": "Optional password for tls.key_file file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.max_version",
+      "required": false,
+      "description": "Specify the maximum version of TLS.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.min_version",
+      "required": false,
+      "description": "Specify the minimum version of TLS.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.verify",
+      "required": false,
+      "description": "Force certificate validation.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "on"
+    },
+    {
+      "name": "tls.verify_hostname",
+      "required": false,
+      "description": "Enable or disable to verify hostname.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "off"
+    },
+    {
+      "name": "tls.vhost",
+      "required": false,
+      "description": "Hostname to be used for TLS SNI extension.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.windows.certstore_name",
+      "required": false,
+      "description": "Sets the certstore name on an output (Windows).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.windows.use_enterprise_store",
+      "required": false,
+      "description": "Sets whether using enterprise certstore or not on an output (Windows).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "total_file_size",
+      "required": false,
+      "description": "Specify file size in S3. Minimum size is 1M. With use_put_object On the maximum size is 1G. With multipart uploads, the maximum size is 50G.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 100000000
+    },
+    {
+      "name": "upload_chunk_size",
+      "required": false,
+      "description": "The size of each part for multipart uploads. Default: 5M, Max: 50M, Min: 5M.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 5242880
+    },
+    {
+      "name": "upload_part_freshness_limit",
+      "required": false,
+      "description": "Maximum lifespan of an uncommitted file part.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "6D"
+    },
+    {
+      "name": "upload_parts_timeout",
+      "required": false,
+      "description": "Timeout to upload parts of a blob file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "10m"
+    },
+    {
+      "name": "upload_timeout",
+      "required": false,
+      "description": "When this amount of time elapses, Fluent Bit uploads and creates a new file in S3. Set to 60m to upload a new file every hour.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "10m"
+    },
+    {
+      "name": "use_put_object",
+      "required": false,
+      "description": "Use the S3 PutObject API instead of the multipart upload API. When enabled, the key extension is only available when $UUID is specified in s3_key_format. If $UUID isn't included, a random string appends format string and the key extension can't be customized.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/s3#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Amazon S3."
+}

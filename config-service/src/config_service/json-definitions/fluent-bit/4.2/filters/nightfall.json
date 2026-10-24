@@ -1,0 +1,97 @@
+{
+  "title": "Nightfall",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nightfall",
+  "fields": [
+    {
+      "name": "nightfall_api_key",
+      "required": false,
+      "description": "The Nightfall API key to scan your logs with, obtainable from the Nightfall Dashboard",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nightfall#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "policy_id",
+      "required": false,
+      "description": "The Nightfall developer platform policy to scan your logs with, configurable in the Nightfall Dashboard.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nightfall#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "sampling_rate",
+      "required": true,
+      "description": "The rate controlling how much of your logs you wish to be scanned. Must be a float between (0,1]. 1 means all logs will be scanned. Use this setting to avoid rate limits in conjunction with Fluent Bit match rules.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nightfall#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "tls.ca_path",
+      "required": true,
+      "description": "Absolute path to root certificates, required if tls.verify is true.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nightfall#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.debug",
+      "required": false,
+      "description": "Debug level between 0 (nothing) and 4 (every detail).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nightfall#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "tls.verify",
+      "required": false,
+      "description": "When enabled, turns on certificate validation when connecting to the Nightfall API.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nightfall#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "tls.vhost",
+      "required": false,
+      "description": "Set an optional TLS virtual host for the Nightfall API connection.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nightfall#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nightfall#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Nightfall."
+}

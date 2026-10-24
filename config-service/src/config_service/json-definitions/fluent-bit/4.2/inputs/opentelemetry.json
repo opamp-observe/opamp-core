@@ -1,0 +1,128 @@
+{
+  "title": "OpenTelemetry",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/opentelemetry",
+  "fields": [
+    {
+      "name": "listen",
+      "required": false,
+      "description": "The network address to listen.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/opentelemetry#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": "0.0.0.0",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "The port for Fluent Bit to listen for incoming connections.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/opentelemetry#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": 4318,
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range",
+        "min": 1,
+        "max": 65535
+      }
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag for all the data ingested by this plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tag_key",
+      "required": false,
+      "description": "Specify the key name to overwrite a tag.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/opentelemetry#configuration-a-hrefconfiguration-idconfigurationa",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "raw_traces",
+      "required": false,
+      "description": "Route trace data as a log",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/opentelemetry#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": false,
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      }
+    },
+    {
+      "name": "buffer_max_size",
+      "required": false,
+      "description": "Specify the maximum buffer size in KB/MB/GB to the HTTP payload.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/opentelemetry#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": "4M",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      }
+    },
+    {
+      "name": "buffer_chunk_size",
+      "required": false,
+      "description": "Initial size and allocation strategy to store the payload (advanced users only)",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/opentelemetry#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": "512K",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      }
+    },
+    {
+      "name": "successful_response_code",
+      "required": false,
+      "description": "It allows to set successful response code.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/opentelemetry#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": "201",
+      "enum_options": [
+        "200",
+        "201",
+        "204"
+      ],
+      "data_type": "enum",
+      "validation_rule": {
+        "kind": "enum",
+        "options": [
+          "200",
+          "201",
+          "204"
+        ]
+      }
+    },
+    {
+      "name": "tag_from_uri",
+      "required": true,
+      "description": "By default, tag will be created from uri.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/opentelemetry#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": true,
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      }
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own [thread](/manual/3.2/administration/multithreading.md#inputs).",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/opentelemetry#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": false,
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      }
+    }
+  ],
+  "extraction": {
+    "status": "no_configuration_parameters",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/opentelemetry#configuration-parameters",
+    "table_header": [],
+    "review_required": true,
+    "review_comment": "REVIEW REQUIRED: The documentation page did not expose the expected configuration parameter table. Fields from the previous catalog were retained where available; verify the page reference and table section before accepting this catalog."
+  },
+  "description": "Fluent Bit input plugin: OpenTelemetry."
+}

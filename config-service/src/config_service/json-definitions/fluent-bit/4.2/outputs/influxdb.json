@@ -1,0 +1,171 @@
+{
+  "title": "InfluxDB",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb",
+  "fields": [
+    {
+      "name": "add_integer_suffix",
+      "required": false,
+      "description": "Use integer type of InfluxDB's line protocol.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "auto_tags",
+      "required": false,
+      "description": "Automatically tag keys where value is string.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "bucket",
+      "required": false,
+      "description": "InfluxDB bucket name where records will be inserted. If specified, database is ignored and v2 of the API is used.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "database",
+      "required": false,
+      "description": "InfluxDB database name where records will be inserted.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "fluentbit"
+    },
+    {
+      "name": "host",
+      "required": false,
+      "description": "IP address or hostname of the target InfluxDB service.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "http_header",
+      "required": false,
+      "description": "Add a HTTP header key/value pair. Multiple headers can be set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "http_passwd",
+      "required": false,
+      "description": "Password for user defined in http_user.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "http_token",
+      "required": false,
+      "description": "Authentication token used with InfluxDB v2. If specified, both http_user and http_passwd are ignored.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "http_user",
+      "required": false,
+      "description": "Optional username for HTTP Basic Authentication.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "org",
+      "required": false,
+      "description": "InfluxDB organization name where the bucket is (v2 only).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "fluent"
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "TCP port of the target InfluxDB service.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 8086
+    },
+    {
+      "name": "sequence_tag",
+      "required": false,
+      "description": "The name of the tag whose value is incremented for consecutive simultaneous events.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "\\_seq"
+    },
+    {
+      "name": "tag_keys",
+      "required": false,
+      "description": "Space-separated list of keys to tag.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "uri",
+      "required": false,
+      "description": "Custom URI endpoint.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/influxdb#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: InfluxDB."
+}

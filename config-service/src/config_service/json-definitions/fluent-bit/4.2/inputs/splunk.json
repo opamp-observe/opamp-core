@@ -1,0 +1,163 @@
+{
+  "title": "Splunk",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk",
+  "fields": [
+    {
+      "name": "add_remote_addr",
+      "required": false,
+      "description": "Inject a remote address field into the record, using the X-Forwarded-For header or the connection address as the value.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "buffer_chunk_size",
+      "required": false,
+      "description": "Set the chunk size for incoming JSON messages. These chunks are then stored and managed in the space available by buffer_max_size. Compatibility alias for http_server.buffer_chunk_size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "512K"
+    },
+    {
+      "name": "buffer_max_size",
+      "required": false,
+      "description": "Set the maximum buffer size to receive a JSON message. Compatibility alias for http_server.buffer_max_size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "4M"
+    },
+    {
+      "name": "http2",
+      "required": false,
+      "description": "Enable HTTP/2 support. Compatibility alias for http_server.http2.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "http_server.workers",
+      "required": false,
+      "description": "Number of HTTP listener worker threads.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "listen",
+      "required": false,
+      "description": "The address to listen on.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "0.0.0.0"
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "The port for Fluent Bit to listen on.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 8088
+    },
+    {
+      "name": "remote_addr_key",
+      "required": false,
+      "description": "Record key name used to store the remote address when add_remote_addr is enabled.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "remote_addr"
+    },
+    {
+      "name": "splunk_token",
+      "required": false,
+      "description": "Specify a Splunk token for HTTP HEC authentication. If multiple tokens are specified (with commas and no spaces), usage will be divided across each of the tokens.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "splunk_token_key",
+      "required": false,
+      "description": "Set a record key for storing the Splunk token for HTTP HEC. Use only when store_token_in_metadata is false.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "@splunk_token"
+    },
+    {
+      "name": "store_token_in_metadata",
+      "required": false,
+      "description": "Store Splunk HEC tokens in the Fluent Bit metadata. If set to false, they will be stored as key-value pairs in the record data.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "success_header",
+      "required": false,
+      "description": "Add an HTTP header key/value pair on success. Multiple headers can be set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tag_key",
+      "required": false,
+      "description": "Specify the key name to overwrite a tag. If set, the tag will be overwritten by a value of the key.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/splunk#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Splunk."
+}

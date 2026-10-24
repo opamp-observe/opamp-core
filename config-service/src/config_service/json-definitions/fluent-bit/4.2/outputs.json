@@ -1,0 +1,196 @@
+{
+  "artifact_manifest": {
+    "format": "config-service.composite-json/v1",
+    "base": "outputs.base.json",
+    "parts": [
+      {
+        "pointer": "/azure",
+        "file": "outputs/azure.json"
+      },
+      {
+        "pointer": "/azure_blob",
+        "file": "outputs/azure_blob.json"
+      },
+      {
+        "pointer": "/azure_kusto",
+        "file": "outputs/azure_kusto.json"
+      },
+      {
+        "pointer": "/azure_logs_ingestion",
+        "file": "outputs/azure_logs_ingestion.json"
+      },
+      {
+        "pointer": "/bigquery",
+        "file": "outputs/bigquery.json"
+      },
+      {
+        "pointer": "/chronicle",
+        "file": "outputs/chronicle.json"
+      },
+      {
+        "pointer": "/cloudwatch_logs",
+        "file": "outputs/cloudwatch_logs.json"
+      },
+      {
+        "pointer": "/counter",
+        "file": "outputs/counter.json"
+      },
+      {
+        "pointer": "/datadog",
+        "file": "outputs/datadog.json"
+      },
+      {
+        "pointer": "/es",
+        "file": "outputs/es.json"
+      },
+      {
+        "pointer": "/exit",
+        "file": "outputs/exit.json"
+      },
+      {
+        "pointer": "/file",
+        "file": "outputs/file.json"
+      },
+      {
+        "pointer": "/flowcounter",
+        "file": "outputs/flowcounter.json"
+      },
+      {
+        "pointer": "/forward",
+        "file": "outputs/forward.json"
+      },
+      {
+        "pointer": "/gelf",
+        "file": "outputs/gelf.json"
+      },
+      {
+        "pointer": "/http",
+        "file": "outputs/http.json"
+      },
+      {
+        "pointer": "/influxdb",
+        "file": "outputs/influxdb.json"
+      },
+      {
+        "pointer": "/kafka",
+        "file": "outputs/kafka.json"
+      },
+      {
+        "pointer": "/kafka-rest",
+        "file": "outputs/kafka-rest.json"
+      },
+      {
+        "pointer": "/kinesis_firehose",
+        "file": "outputs/kinesis_firehose.json"
+      },
+      {
+        "pointer": "/kinesis_streams",
+        "file": "outputs/kinesis_streams.json"
+      },
+      {
+        "pointer": "/logdna",
+        "file": "outputs/logdna.json"
+      },
+      {
+        "pointer": "/loki",
+        "file": "outputs/loki.json"
+      },
+      {
+        "pointer": "/nats",
+        "file": "outputs/nats.json"
+      },
+      {
+        "pointer": "/nrlogs",
+        "file": "outputs/nrlogs.json"
+      },
+      {
+        "pointer": "/null",
+        "file": "outputs/null.json"
+      },
+      {
+        "pointer": "/opensearch",
+        "file": "outputs/opensearch.json"
+      },
+      {
+        "pointer": "/opentelemetry",
+        "file": "outputs/opentelemetry.json"
+      },
+      {
+        "pointer": "/oracle_log_analytics",
+        "file": "outputs/oracle_log_analytics.json"
+      },
+      {
+        "pointer": "/output_formats",
+        "file": "outputs/output_formats.json"
+      },
+      {
+        "pointer": "/pgsql",
+        "file": "outputs/pgsql.json"
+      },
+      {
+        "pointer": "/plot",
+        "file": "outputs/plot.json"
+      },
+      {
+        "pointer": "/prometheus_exporter",
+        "file": "outputs/prometheus_exporter.json"
+      },
+      {
+        "pointer": "/prometheus_remote_write",
+        "file": "outputs/prometheus_remote_write.json"
+      },
+      {
+        "pointer": "/s3",
+        "file": "outputs/s3.json"
+      },
+      {
+        "pointer": "/skywalking",
+        "file": "outputs/skywalking.json"
+      },
+      {
+        "pointer": "/slack",
+        "file": "outputs/slack.json"
+      },
+      {
+        "pointer": "/splunk",
+        "file": "outputs/splunk.json"
+      },
+      {
+        "pointer": "/stackdriver",
+        "file": "outputs/stackdriver.json"
+      },
+      {
+        "pointer": "/stackdriver_special_fields",
+        "file": "outputs/stackdriver_special_fields.json"
+      },
+      {
+        "pointer": "/stdout",
+        "file": "outputs/stdout.json"
+      },
+      {
+        "pointer": "/syslog",
+        "file": "outputs/syslog.json"
+      },
+      {
+        "pointer": "/tcp",
+        "file": "outputs/tcp.json"
+      },
+      {
+        "pointer": "/td",
+        "file": "outputs/td.json"
+      },
+      {
+        "pointer": "/udp",
+        "file": "outputs/udp.json"
+      },
+      {
+        "pointer": "/vivo_exporter",
+        "file": "outputs/vivo_exporter.json"
+      },
+      {
+        "pointer": "/websocket",
+        "file": "outputs/websocket.json"
+      }
+    ]
+  }
+}

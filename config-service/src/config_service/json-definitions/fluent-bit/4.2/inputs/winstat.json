@@ -1,0 +1,57 @@
+{
+  "title": "Windows System Statistics (winstat)",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/windows-system-statistics",
+  "fields": [
+    {
+      "name": "interval_sec",
+      "required": false,
+      "description": "Polling interval in seconds.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/windows-system-statistics#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "interval_nsec",
+      "required": false,
+      "description": "Polling interval in nanoseconds.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/windows-system-statistics#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/windows-system-statistics#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/windows-system-statistics#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Windows System Statistics (winstat)."
+}

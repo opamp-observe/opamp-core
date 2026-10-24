@@ -1,0 +1,103 @@
+{
+  "title": "ECS metadata",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/ecs-metadata",
+  "fields": [
+    {
+      "name": "add",
+      "required": false,
+      "description": "Similar to the add option in the modify filter. You can specify it multiple times. It takes two arguments: a KEY name and VALUE. The value uses Fluent Bit record_accessor syntax to create a template that uses ECS Metadata values. See the list of supported metadata templating keys. This option lets you control both the key names for metadata and the format for metadata values.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/ecs-metadata#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "No default"
+    },
+    {
+      "name": "agent_endpoint_retries",
+      "required": false,
+      "description": "Number of retries for failed metadata requests to the ECS Agent Introspection endpoint. The most common cause of failed metadata requests is that the container the metadata request was made for isn't part of an ECS Task.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/ecs-metadata#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 2
+    },
+    {
+      "name": "cluster_metadata_only",
+      "required": false,
+      "description": "When enabled, the plugin only attempts to attach cluster metadata values. Use to attach cluster metadata to system or OS logs from processes that don't run as part of containers or ECS Tasks.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/ecs-metadata#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "ecs_meta_cache_ttl",
+      "required": false,
+      "description": "The filter builds a hash table in memory mapping each unique container short ID to its metadata. This option sets a max TTL for objects in the hash table. Set this if you have frequent container or task restarts. For example, if your cluster runs short-running batch jobs that complete in less than 10 minutes, set this parameter to 10m.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/ecs-metadata#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "1h"
+    },
+    {
+      "name": "ecs_meta_host",
+      "required": false,
+      "description": "The host name at which the ECS Agent Introspection endpoint is reachable.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/ecs-metadata#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "ecs_meta_port",
+      "required": false,
+      "description": "The port at which the ECS Agent Introspection endpoint is reachable.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/ecs-metadata#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 51678
+    },
+    {
+      "name": "ecs_tag_prefix",
+      "required": true,
+      "description": "Similar to the kube_tag_prefix option in the Kubernetes filter and performs the same function. The full log tag should be prefixed with this string and after the prefix the filter must find the next characters in the tag to be the Docker Container Short ID (the first 12 characters of the full container ID). The filter uses this to identify which container the log came from so it can find which task it's a part of. If not specified, defaults to empty string, meaning that the tag must be prefixed with the 12-character container short ID. If you want to attach cluster metadata to system or OS logs from processes that don't run as part of containers or ECS Tasks, don't set this parameter and enable cluster_metadata_only.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/ecs-metadata#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "\"\""
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/ecs-metadata#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: ECS metadata."
+}

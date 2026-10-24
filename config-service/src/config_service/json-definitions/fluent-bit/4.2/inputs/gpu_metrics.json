@@ -1,0 +1,83 @@
+{
+  "title": "GPU metrics",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/gpu-metrics",
+  "fields": [
+    {
+      "name": "cards_exclude",
+      "required": false,
+      "description": "Pattern specifying which GPU cards to exclude from monitoring. Uses the same syntax as cards_include.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/gpu-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "cards_include",
+      "required": false,
+      "description": "Pattern specifying which GPU cards to monitor. Supports wildcards (*), ranges (0-3), and comma-separated lists (0,2,4).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/gpu-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "*"
+    },
+    {
+      "name": "enable_power",
+      "required": false,
+      "description": "Enable collection of power consumption metrics (gpu_power_watts).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/gpu-metrics#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "enable_temperature",
+      "required": false,
+      "description": "Enable collection of temperature metrics (gpu_temperature_celsius).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/gpu-metrics#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "path_sysfs",
+      "required": false,
+      "description": "Path to the sysfs root directory. Typically used for testing or non-standard systems.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/gpu-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/sys"
+    },
+    {
+      "name": "scrape_interval",
+      "required": false,
+      "description": "Interval in seconds between metric collection cycles.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/gpu-metrics#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 5
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/gpu-metrics#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: GPU metrics."
+}

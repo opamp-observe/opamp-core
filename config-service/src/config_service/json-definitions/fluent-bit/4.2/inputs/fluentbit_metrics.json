@@ -1,0 +1,57 @@
+{
+  "title": "Fluent Bit metrics",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/fluentbit-metrics",
+  "fields": [
+    {
+      "name": "scrape_interval",
+      "required": false,
+      "description": "The rate at which Fluent Bit internal metrics are collected.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/fluentbit-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "2 seconds"
+    },
+    {
+      "name": "scrape_on_start",
+      "required": false,
+      "description": "Scrape metrics upon start, use to avoid waiting for scrape_interval for the first round of metrics.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/fluentbit-metrics#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/fluentbit-metrics#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/fluentbit-metrics#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Fluent Bit metrics."
+}

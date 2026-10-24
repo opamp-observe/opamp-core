@@ -1,0 +1,130 @@
+{
+  "title": "Modify",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/modify",
+  "fields": [
+    {
+      "name": "set",
+      "required": false,
+      "description": "Add a key/value pair with key KEY and value VALUE.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "add",
+      "required": false,
+      "description": "Add a key/value pair with key KEY and value VALUE if KEY does not exist",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "remove",
+      "required": false,
+      "description": "Remove a key/value pair with key KEY if it exists",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "remove_wildcard",
+      "required": false,
+      "description": "Remove all key/value pairs with key matching wildcard KEY",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "remove_regex",
+      "required": false,
+      "description": "Remove all key/value pairs with key matching regexp KEY",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "rename",
+      "required": false,
+      "description": "Rename a key/value pair with key KEY to RENAMED_KEY if KEY exists AND RENAMED_KEY does not exist",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "hard_rename",
+      "required": false,
+      "description": "Rename a key/value pair with key KEY to RENAMED_KEY if KEY exists.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "copy",
+      "required": false,
+      "description": "Copy a key/value pair with key KEY to COPIED_KEY if KEY exists AND COPIED_KEY does not exist",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "hard_copy",
+      "required": false,
+      "description": "Copy a key/value pair with key KEY to COPIED_KEY if KEY exists.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "move_to_start",
+      "required": false,
+      "description": "Move key/value pairs with keys matching KEY to the start of the message",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "move_to_end",
+      "required": false,
+      "description": "Move key/value pairs with keys matching KEY to the end of the message",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/filters/modify#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/concepts/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/concepts/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "no_configuration_parameters",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/modify#configuration-parameters",
+    "table_header": [],
+    "review_required": true,
+    "review_comment": "REVIEW REQUIRED: The documentation page did not expose the expected configuration parameter table. Fields from the previous catalog were retained where available; verify the page reference and table section before accepting this catalog."
+  },
+  "description": "Fluent Bit filter plugin: Modify."
+}

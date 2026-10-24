@@ -1,0 +1,750 @@
+{
+  "catalog_type": "fluent-bit-plugin-catalog",
+  "catalog_scope": "all_plugins",
+  "schema_version": "1.1.0",
+  "fluent_bit_version": "4.2",
+  "fluent_bit_series": "4.2",
+  "generated_at": "2026-10-13T18:24:35Z",
+  "release_notes": "https://fluentbit.io/announcements/v4.2/#release-notes-v4.2",
+  "plugins": {
+    "filters": {},
+    "inputs": {},
+    "outputs": {}
+  },
+  "common": {
+    "inputs": {
+      "fields": [
+        {
+          "name": "name",
+          "required": true,
+          "description": "Name of the input plugin.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#inputs"
+        },
+        {
+          "name": "tag",
+          "required": false,
+          "description": "Tag name associated to all records coming from this plugin.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#inputs"
+        },
+        {
+          "name": "log_level",
+          "required": false,
+          "description": "Set the plugin's logging verbosity level.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#inputs",
+          "data_type": "enum",
+          "enum_options": [
+            "off",
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        }
+      ]
+    },
+    "filters": {
+      "fields": [
+        {
+          "name": "name",
+          "required": true,
+          "description": "Name of the filter plugin.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#filters"
+        },
+        {
+          "name": "match",
+          "required": false,
+          "description": "A pattern to match against the tags of incoming records.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#filters"
+        },
+        {
+          "name": "match_regex",
+          "required": false,
+          "description": "A regular expression to match against the tags of incoming records.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#filters"
+        },
+        {
+          "name": "log_level",
+          "required": false,
+          "description": "Set the plugin's logging verbosity level.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#filters",
+          "data_type": "enum",
+          "enum_options": [
+            "off",
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        }
+      ]
+    },
+    "outputs": {
+      "fields": [
+        {
+          "name": "name",
+          "required": true,
+          "description": "Name of the output plugin.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#outputs"
+        },
+        {
+          "name": "match",
+          "required": false,
+          "description": "A pattern to match against the tags of incoming records.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#outputs"
+        },
+        {
+          "name": "match_regex",
+          "required": false,
+          "description": "A regular expression to match against the tags of incoming records.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#outputs"
+        },
+        {
+          "name": "log_level",
+          "required": false,
+          "description": "Set the plugin's logging verbosity level.",
+          "reference": "https://docs.fluentbit.io/manual/4.2/administration/configuring-fluent-bit/yaml/pipeline-section#outputs",
+          "data_type": "enum",
+          "enum_options": [
+            "off",
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        }
+      ]
+    },
+    "processors": {
+      "description": "Shared Fluent Bit processors available to input and output plugins in YAML configuration.",
+      "yaml_only": true,
+      "supported_sections": [
+        "inputs",
+        "outputs"
+      ],
+      "condition": {
+        "title": "condition",
+        "description": "Optional conditional processing block for logs processors.",
+        "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/conditional-processing",
+        "fields": [
+          {
+            "name": "op",
+            "required": true,
+            "description": "How to evaluate the condition rules.",
+            "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/conditional-processing",
+            "data_type": "enum",
+            "validation_rule": {
+              "kind": "enum",
+              "values": [
+                "and",
+                "or"
+              ]
+            },
+            "enum_options": [
+              "and",
+              "or"
+            ]
+          },
+          {
+            "name": "rules",
+            "required": true,
+            "description": "Array of condition rules expressed as JSON objects with field, op, and value keys.",
+            "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/conditional-processing",
+            "data_type": "list",
+            "validation_rule": {
+              "kind": "list"
+            }
+          }
+        ]
+      },
+      "signals": {
+        "logs": {
+          "allow_filters_as_processors": true,
+          "processors": {
+            "content_modifier": {
+              "title": "content_modifier",
+              "doc_url": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+              "description": "Manipulates log or trace content and attributes.",
+              "fields": [
+                {
+                  "name": "action",
+                  "required": true,
+                  "description": "Content modifier action to perform.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "convert",
+                      "delete",
+                      "extract",
+                      "hash",
+                      "insert",
+                      "rename",
+                      "upsert"
+                    ]
+                  },
+                  "enum_options": [
+                    "convert",
+                    "delete",
+                    "extract",
+                    "hash",
+                    "insert",
+                    "rename",
+                    "upsert"
+                  ]
+                },
+                {
+                  "name": "context",
+                  "required": true,
+                  "description": "Context where the modification is applied.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "attributes",
+                      "body",
+                      "otel_resource_attributes",
+                      "otel_scope_name",
+                      "otel_scope_version",
+                      "otel_scope_attributes",
+                      "otel_log_attributes"
+                    ]
+                  },
+                  "enum_options": [
+                    "attributes",
+                    "body",
+                    "otel_resource_attributes",
+                    "otel_scope_name",
+                    "otel_scope_version",
+                    "otel_scope_attributes",
+                    "otel_log_attributes"
+                  ]
+                },
+                {
+                  "name": "key",
+                  "required": false,
+                  "description": "Key targeted by the action.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "value",
+                  "required": false,
+                  "description": "Value used by the action.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "pattern",
+                  "required": false,
+                  "description": "Regular expression used by the extract action.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "converted_type",
+                  "required": false,
+                  "description": "Target type used by the convert action.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "string",
+                      "boolean",
+                      "int",
+                      "double"
+                    ]
+                  },
+                  "enum_options": [
+                    "string",
+                    "boolean",
+                    "int",
+                    "double"
+                  ]
+                }
+              ],
+              "supports_condition": true
+            },
+            "opentelemetry_envelope": {
+              "title": "opentelemetry_envelope",
+              "doc_url": "https://docs.fluentbit.io/manual/data-pipeline/processors/opentelemetry-envelope",
+              "description": "Wraps logs into an OpenTelemetry-compatible schema envelope.",
+              "fields": [],
+              "supports_condition": false
+            },
+            "sql": {
+              "title": "sql",
+              "doc_url": "https://docs.fluentbit.io/manual/data-pipeline/processors/sql",
+              "description": "Runs a SQL query against the log stream.",
+              "fields": [
+                {
+                  "name": "query",
+                  "required": true,
+                  "description": "SQL statement executed against STREAM and ending with a semicolon.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/sql",
+                  "data_type": "code",
+                  "validation_rule": {
+                    "kind": "code_syntax",
+                    "language": "sql",
+                    "parser": "lark",
+                    "dialect": "fluentbit_processor_sql"
+                  }
+                }
+              ],
+              "supports_condition": false
+            }
+          }
+        },
+        "metrics": {
+          "allow_filters_as_processors": false,
+          "processors": {
+            "labels": {
+              "title": "labels",
+              "doc_url": "https://docs.fluentbit.io/manual/data-pipeline/processors/labels",
+              "description": "Manipulates labels on metrics.",
+              "fields": [
+                {
+                  "name": "insert",
+                  "required": false,
+                  "description": "Insert operation expressed as 'key value'.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/labels",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "update",
+                  "required": false,
+                  "description": "Update operation expressed as 'key value'.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/labels",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "upsert",
+                  "required": false,
+                  "description": "Upsert operation expressed as 'key value'.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/labels",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "delete",
+                  "required": false,
+                  "description": "Delete operation expressed as a label key.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/labels",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "hash",
+                  "required": false,
+                  "description": "Hash operation expressed as a label key.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/labels",
+                  "data_type": "string",
+                  "validation_rule": null
+                }
+              ],
+              "supports_condition": false
+            },
+            "metrics_selector": {
+              "title": "metrics_selector",
+              "doc_url": "https://docs.fluentbit.io/manual/data-pipeline/processors/metrics-selector",
+              "description": "Includes or excludes metrics using metric name and label matching.",
+              "fields": [
+                {
+                  "name": "action",
+                  "required": true,
+                  "description": "Whether matching metrics are included or excluded.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/metrics-selector",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "INCLUDE",
+                      "EXCLUDE"
+                    ]
+                  },
+                  "enum_options": [
+                    "INCLUDE",
+                    "EXCLUDE"
+                  ]
+                },
+                {
+                  "name": "context",
+                  "required": true,
+                  "description": "Matching context.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/metrics-selector",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "metric_name",
+                      "delete_label_value"
+                    ]
+                  },
+                  "enum_options": [
+                    "metric_name",
+                    "delete_label_value"
+                  ]
+                },
+                {
+                  "name": "metric_name",
+                  "required": false,
+                  "description": "Metric name or regex used by the match operation.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/metrics-selector",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "label",
+                  "required": false,
+                  "description": "Label key/value pair used by delete_label_value matching.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/metrics-selector",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "operation_type",
+                  "required": false,
+                  "description": "Metric-name matching mode.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/metrics-selector",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "PREFIX",
+                      "SUBSTRING"
+                    ]
+                  },
+                  "enum_options": [
+                    "PREFIX",
+                    "SUBSTRING"
+                  ]
+                }
+              ],
+              "supports_condition": false
+            },
+            "cumulative_to_delta": {
+              "title": "cumulative_to_delta",
+              "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/processors/cumulative-to-delta",
+              "description": "Converts cumulative monotonic metrics to delta values.",
+              "fields": [
+                {
+                  "name": "drop_first",
+                  "required": false,
+                  "description": "Compatibility option for first-sample handling when initial_value is unset.",
+                  "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/processors/cumulative-to-delta",
+                  "data_type": "boolean",
+                  "validation_rule": {
+                    "kind": "boolean"
+                  },
+                  "default": true
+                },
+                {
+                  "name": "drop_on_reset",
+                  "required": false,
+                  "description": "Drop a sample when a reset is detected.",
+                  "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/processors/cumulative-to-delta",
+                  "data_type": "boolean",
+                  "validation_rule": {
+                    "kind": "boolean"
+                  },
+                  "default": true
+                },
+                {
+                  "name": "initial_value",
+                  "required": false,
+                  "description": "How the first sample for a new series is handled.",
+                  "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/processors/cumulative-to-delta",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "auto",
+                      "keep",
+                      "drop"
+                    ]
+                  },
+                  "enum_options": [
+                    "auto",
+                    "keep",
+                    "drop"
+                  ]
+                },
+                {
+                  "name": "max_series",
+                  "required": false,
+                  "description": "Maximum number of series tracked in memory.",
+                  "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/processors/cumulative-to-delta",
+                  "data_type": "integer",
+                  "validation_rule": {
+                    "kind": "range",
+                    "min": 0
+                  },
+                  "default": 65536
+                },
+                {
+                  "name": "max_staleness",
+                  "required": false,
+                  "description": "How long to retain per-series state.",
+                  "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/processors/cumulative-to-delta",
+                  "data_type": "time",
+                  "validation_rule": null,
+                  "default": "1h"
+                }
+              ],
+              "supports_condition": false
+            },
+            "tda": {
+              "title": "tda",
+              "doc_url": "https://docs.fluentbit.io/manual/data-pipeline/processors/tda",
+              "description": "Applies topological data analysis over a sliding window of metrics.",
+              "fields": [
+                {
+                  "name": "window_size",
+                  "required": false,
+                  "description": "Number of samples kept in the sliding window.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/tda",
+                  "data_type": "integer",
+                  "validation_rule": {
+                    "kind": "range",
+                    "min": 1
+                  },
+                  "default": 60
+                },
+                {
+                  "name": "min_points",
+                  "required": false,
+                  "description": "Minimum number of samples required before analysis runs.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/tda",
+                  "data_type": "integer",
+                  "validation_rule": {
+                    "kind": "range",
+                    "min": 1
+                  },
+                  "default": 10
+                },
+                {
+                  "name": "embed_dim",
+                  "required": false,
+                  "description": "Delay embedding dimension.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/tda",
+                  "data_type": "integer",
+                  "validation_rule": {
+                    "kind": "range",
+                    "min": 1
+                  },
+                  "default": 3
+                },
+                {
+                  "name": "embed_delay",
+                  "required": false,
+                  "description": "Embedding delay in samples.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/tda",
+                  "data_type": "integer",
+                  "validation_rule": {
+                    "kind": "range",
+                    "min": 1
+                  },
+                  "default": 1
+                },
+                {
+                  "name": "threshold",
+                  "required": false,
+                  "description": "Distance threshold quantile or 0 for automatic scan.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/tda",
+                  "data_type": "number",
+                  "validation_rule": {
+                    "kind": "range",
+                    "min": 0,
+                    "max": 1
+                  },
+                  "default": 0
+                }
+              ],
+              "supports_condition": false
+            }
+          }
+        },
+        "traces": {
+          "allow_filters_as_processors": false,
+          "processors": {
+            "content_modifier": {
+              "title": "content_modifier",
+              "doc_url": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+              "description": "Manipulates trace span content and attributes.",
+              "fields": [
+                {
+                  "name": "action",
+                  "required": true,
+                  "description": "Content modifier action to perform.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "convert",
+                      "delete",
+                      "extract",
+                      "hash",
+                      "insert",
+                      "rename",
+                      "upsert"
+                    ]
+                  },
+                  "enum_options": [
+                    "convert",
+                    "delete",
+                    "extract",
+                    "hash",
+                    "insert",
+                    "rename",
+                    "upsert"
+                  ]
+                },
+                {
+                  "name": "context",
+                  "required": true,
+                  "description": "Trace context where the modification is applied.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "span_name",
+                      "span_kind",
+                      "span_status",
+                      "span_attributes"
+                    ]
+                  },
+                  "enum_options": [
+                    "span_name",
+                    "span_kind",
+                    "span_status",
+                    "span_attributes"
+                  ]
+                },
+                {
+                  "name": "key",
+                  "required": false,
+                  "description": "Key targeted by the action.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "value",
+                  "required": false,
+                  "description": "Value used by the action.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "pattern",
+                  "required": false,
+                  "description": "Regular expression used by the extract action.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "string",
+                  "validation_rule": null
+                },
+                {
+                  "name": "converted_type",
+                  "required": false,
+                  "description": "Target type used by the convert action.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/content-modifier",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "string",
+                      "boolean",
+                      "int",
+                      "double"
+                    ]
+                  },
+                  "enum_options": [
+                    "string",
+                    "boolean",
+                    "int",
+                    "double"
+                  ]
+                }
+              ],
+              "supports_condition": false
+            },
+            "sampling": {
+              "title": "sampling",
+              "doc_url": "https://docs.fluentbit.io/manual/data-pipeline/processors/sampling",
+              "description": "Applies probabilistic or tail sampling to trace telemetry.",
+              "fields": [
+                {
+                  "name": "type",
+                  "required": true,
+                  "description": "Sampling mode.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/sampling",
+                  "data_type": "enum",
+                  "validation_rule": {
+                    "kind": "enum",
+                    "values": [
+                      "probabilistic",
+                      "tail"
+                    ]
+                  },
+                  "enum_options": [
+                    "probabilistic",
+                    "tail"
+                  ]
+                },
+                {
+                  "name": "debug",
+                  "required": false,
+                  "description": "Enable sampling debug output.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/sampling",
+                  "data_type": "boolean",
+                  "validation_rule": {
+                    "kind": "boolean"
+                  },
+                  "default": false
+                },
+                {
+                  "name": "sampling_settings",
+                  "required": false,
+                  "description": "Sampling settings object, such as percentage or decision_wait.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/sampling",
+                  "data_type": "map",
+                  "validation_rule": {
+                    "kind": "map"
+                  }
+                },
+                {
+                  "name": "conditions",
+                  "required": false,
+                  "description": "Array of tail-sampling condition objects.",
+                  "reference": "https://docs.fluentbit.io/manual/data-pipeline/processors/sampling",
+                  "data_type": "list",
+                  "validation_rule": {
+                    "kind": "list"
+                  }
+                }
+              ],
+              "supports_condition": false
+            }
+          }
+        }
+      },
+      "references": {
+        "processors": "https://docs.fluentbit.io/manual/data-pipeline/processors",
+        "filters_as_processors": "https://docs.fluentbit.io/manual/data-pipeline/processors/filters"
+      }
+    }
+  }
+}

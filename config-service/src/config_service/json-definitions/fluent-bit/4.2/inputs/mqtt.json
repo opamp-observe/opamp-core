@@ -1,0 +1,74 @@
+{
+  "title": "MQTT",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/mqtt",
+  "fields": [
+    {
+      "name": "buffer_size",
+      "required": false,
+      "description": "Maximum payload size (in bytes) for a single MQTT message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/mqtt#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 2048
+    },
+    {
+      "name": "listen",
+      "required": false,
+      "description": "Listener network interface.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/mqtt#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "0.0.0.0"
+    },
+    {
+      "name": "payload_key",
+      "required": false,
+      "description": "Field name where the MQTT message payload will be stored in the output record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/mqtt#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "TCP port where listening for connections.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/mqtt#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1883
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/mqtt#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/mqtt#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: MQTT."
+}

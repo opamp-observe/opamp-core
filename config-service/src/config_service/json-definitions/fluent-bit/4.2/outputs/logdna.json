@@ -1,0 +1,132 @@
+{
+  "title": "LogDNA",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna",
+  "fields": [
+    {
+      "name": "api_key",
+      "required": false,
+      "description": "Required. The API key to get access to the service.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "app",
+      "required": false,
+      "description": "Name of the application. This value is automatically discovered on each record. If no value is found, the default value is used.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "Fluent Bit"
+    },
+    {
+      "name": "file",
+      "required": false,
+      "description": "Optional name of a file being monitored. This value is only set if the record doesn't contain a reference to it.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "hostname",
+      "required": false,
+      "description": "Name of the local machine or device where Fluent Bit is running. If no value is specified, Fluent Bit will look up the hostname and auto-populate its value. If Fluent Bit is unable to find a value, it will set the value unknown instead.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "ip",
+      "required": false,
+      "description": "The IP address of the local hostname. This value is optional.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "logdna_endpoint",
+      "required": false,
+      "description": "The LogDNA ingestion endpoint.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/logs/ingest"
+    },
+    {
+      "name": "logdna_host",
+      "required": false,
+      "description": "The LogDNA API host address.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "logs.logdna.com"
+    },
+    {
+      "name": "logdna_port",
+      "required": false,
+      "description": "The LogDNA TCP port.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 443
+    },
+    {
+      "name": "mac",
+      "required": false,
+      "description": "The MAC address. This value is optional.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tags",
+      "required": false,
+      "description": "A list of comma-separated strings to group records in LogDNA and simplify the query with filters.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/logdna#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: LogDNA."
+}

@@ -1,0 +1,125 @@
+{
+  "title": "Elasticsearch",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch",
+  "fields": [
+    {
+      "name": "buffer_chunk_size",
+      "required": false,
+      "description": "Set the buffer chunk size. Compatibility alias for http_server.buffer_chunk_size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "512K"
+    },
+    {
+      "name": "buffer_max_size",
+      "required": false,
+      "description": "Set the maximum size of buffer. Compatibility alias for http_server.buffer_max_size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "4M"
+    },
+    {
+      "name": "hostname",
+      "required": false,
+      "description": "Specify hostname or fully qualified domain name. This parameter can be used for \"sniffing\" (auto-discovery of) cluster node information.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "\"localhost\""
+    },
+    {
+      "name": "http2",
+      "required": false,
+      "description": "Enable HTTP/2 support. Compatibility alias for http_server.http2.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "http_server.workers",
+      "required": false,
+      "description": "Number of HTTP listener worker threads.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "listen",
+      "required": false,
+      "description": "The address to listen on.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "meta_key",
+      "required": false,
+      "description": "Specify a key name for meta information.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "@meta"
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "The port for Fluent Bit to listen on.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tag_key",
+      "required": false,
+      "description": "Specify a key name for extracting as a tag.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "NULL"
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "version",
+      "required": false,
+      "description": "Specify the Elasticsearch version that Fluent Bit reports to clients during sniffing and API requests.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "8.0.0"
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/elasticsearch#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default value"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Elasticsearch."
+}

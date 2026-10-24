@@ -1,0 +1,73 @@
+{
+  "title": "Prometheus scrape Metrics",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-scrape-metrics",
+  "fields": [
+    {
+      "name": "host",
+      "required": false,
+      "description": "The host of the prometheus metric endpoint that you want to scrape",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/prometheus-scrape-metrics#configuration-a-hrefconfiguration-idconfigurationa",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "The port of the prometheus metric endpoint that you want to scrape",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/prometheus-scrape-metrics#configuration-a-hrefconfiguration-idconfigurationa",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range",
+        "min": 1,
+        "max": 65535
+      }
+    },
+    {
+      "name": "scrape_interval",
+      "required": false,
+      "description": "The interval to scrape metrics",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/prometheus-scrape-metrics#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": "10s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "metrics_path",
+      "required": true,
+      "description": "<p>The metrics URI endpoint, that must start with a forward slash.<br><br>Note: Parameters can also be added to the path by using <code>?</code></p>",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/prometheus-scrape-metrics#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": "/metrics",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own [thread](/manual/3.2/administration/multithreading.md#inputs).",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/prometheus-scrape-metrics#configuration-a-hrefconfiguration-idconfigurationa",
+      "default": false,
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      }
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "no_configuration_parameters",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-scrape-metrics#configuration-parameters",
+    "table_header": [],
+    "review_required": true,
+    "review_comment": "REVIEW REQUIRED: The documentation page did not expose the expected configuration parameter table. Fields from the previous catalog were retained where available; verify the page reference and table section before accepting this catalog."
+  },
+  "description": "Fluent Bit input plugin: Prometheus scrape Metrics."
+}

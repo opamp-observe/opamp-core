@@ -1,0 +1,200 @@
+{
+  "artifact_manifest": {
+    "format": "config-service.composite-json/v1",
+    "base": "inputs.base.json",
+    "parts": [
+      {
+        "pointer": "/blob",
+        "file": "inputs/blob.json"
+      },
+      {
+        "pointer": "/collectd",
+        "file": "inputs/collectd.json"
+      },
+      {
+        "pointer": "/cpu",
+        "file": "inputs/cpu.json"
+      },
+      {
+        "pointer": "/disk",
+        "file": "inputs/disk.json"
+      },
+      {
+        "pointer": "/docker",
+        "file": "inputs/docker.json"
+      },
+      {
+        "pointer": "/docker_events",
+        "file": "inputs/docker_events.json"
+      },
+      {
+        "pointer": "/dummy",
+        "file": "inputs/dummy.json"
+      },
+      {
+        "pointer": "/ebpf",
+        "file": "inputs/ebpf.json"
+      },
+      {
+        "pointer": "/elasticsearch",
+        "file": "inputs/elasticsearch.json"
+      },
+      {
+        "pointer": "/exec",
+        "file": "inputs/exec.json"
+      },
+      {
+        "pointer": "/exec_wasi",
+        "file": "inputs/exec_wasi.json"
+      },
+      {
+        "pointer": "/fluentbit_logs",
+        "file": "inputs/fluentbit_logs.json"
+      },
+      {
+        "pointer": "/fluentbit_metrics",
+        "file": "inputs/fluentbit_metrics.json"
+      },
+      {
+        "pointer": "/forward",
+        "file": "inputs/forward.json"
+      },
+      {
+        "pointer": "/gpu_metrics",
+        "file": "inputs/gpu_metrics.json"
+      },
+      {
+        "pointer": "/head",
+        "file": "inputs/head.json"
+      },
+      {
+        "pointer": "/health",
+        "file": "inputs/health.json"
+      },
+      {
+        "pointer": "/http",
+        "file": "inputs/http.json"
+      },
+      {
+        "pointer": "/kafka",
+        "file": "inputs/kafka.json"
+      },
+      {
+        "pointer": "/kmsg",
+        "file": "inputs/kmsg.json"
+      },
+      {
+        "pointer": "/kubernetes_events",
+        "file": "inputs/kubernetes_events.json"
+      },
+      {
+        "pointer": "/mem",
+        "file": "inputs/mem.json"
+      },
+      {
+        "pointer": "/mqtt",
+        "file": "inputs/mqtt.json"
+      },
+      {
+        "pointer": "/netif",
+        "file": "inputs/netif.json"
+      },
+      {
+        "pointer": "/nginx_metrics",
+        "file": "inputs/nginx_metrics.json"
+      },
+      {
+        "pointer": "/node_exporter_metrics",
+        "file": "inputs/node_exporter_metrics.json"
+      },
+      {
+        "pointer": "/opentelemetry",
+        "file": "inputs/opentelemetry.json"
+      },
+      {
+        "pointer": "/podman_metrics",
+        "file": "inputs/podman_metrics.json"
+      },
+      {
+        "pointer": "/proc",
+        "file": "inputs/proc.json"
+      },
+      {
+        "pointer": "/process_exporter_metrics",
+        "file": "inputs/process_exporter_metrics.json"
+      },
+      {
+        "pointer": "/prometheus-textfile",
+        "file": "inputs/prometheus-textfile.json"
+      },
+      {
+        "pointer": "/prometheus_remote_write",
+        "file": "inputs/prometheus_remote_write.json"
+      },
+      {
+        "pointer": "/prometheus_scrape",
+        "file": "inputs/prometheus_scrape.json"
+      },
+      {
+        "pointer": "/random",
+        "file": "inputs/random.json"
+      },
+      {
+        "pointer": "/serial",
+        "file": "inputs/serial.json"
+      },
+      {
+        "pointer": "/splunk",
+        "file": "inputs/splunk.json"
+      },
+      {
+        "pointer": "/statsd",
+        "file": "inputs/statsd.json"
+      },
+      {
+        "pointer": "/stdin",
+        "file": "inputs/stdin.json"
+      },
+      {
+        "pointer": "/syslog",
+        "file": "inputs/syslog.json"
+      },
+      {
+        "pointer": "/systemd",
+        "file": "inputs/systemd.json"
+      },
+      {
+        "pointer": "/tail",
+        "file": "inputs/tail.json"
+      },
+      {
+        "pointer": "/tcp",
+        "file": "inputs/tcp.json"
+      },
+      {
+        "pointer": "/thermal",
+        "file": "inputs/thermal.json"
+      },
+      {
+        "pointer": "/udp",
+        "file": "inputs/udp.json"
+      },
+      {
+        "pointer": "/windows_exporter_metrics",
+        "file": "inputs/windows_exporter_metrics.json"
+      },
+      {
+        "pointer": "/winevtlog",
+        "file": "inputs/winevtlog.json"
+      },
+      {
+        "pointer": "/winlog",
+        "file": "inputs/winlog.json"
+      },
+      {
+        "pointer": "/winstat",
+        "file": "inputs/winstat.json"
+      }
+    ]
+  }
+}
