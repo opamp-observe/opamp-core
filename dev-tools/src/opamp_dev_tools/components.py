@@ -28,6 +28,8 @@ except ImportError:  # pragma: no cover - Python 3.10 fallback
 from .runtime import CommandRuntime, read_project_metadata
 
 DEFAULT_REPO = "mp3monster/fluent-opamp"
+PYTEST_JUNIT_ARGUMENT = "--junitxml"
+TEST_RESULTS_DIRECTORY = Path("dev-tools/runtime/test-results")
 COMPONENT_EXCLUDES = {
     ".git",
     ".github",
@@ -73,6 +75,32 @@ class BuildComponent:
     path: Path
     project_name: str
     version: str
+
+
+@dataclass(frozen=True)
+class PytestRunOptions:
+    """Settings for one pytest invocation with retained JUnit output.
+
+    Attributes
+    ----------
+    cwd:
+        Working directory whose pytest configuration should apply.
+    junit_path:
+        Output path for the machine-readable JUnit report.
+    arguments_before_report:
+        Pytest options that must appear before the report option.
+    test_targets:
+        Optional test files or directories appended after the report option.
+    env:
+        Optional environment variables passed to pytest.
+
+    """
+
+    cwd: Path
+    junit_path: Path
+    arguments_before_report: tuple[str, ...] = ()
+    test_targets: tuple[str, ...] = ()
+    env: dict[str, str] | None = None
 
 
 def discover_build_components(repo_root: Path) -> list[BuildComponent]:
@@ -268,7 +296,19 @@ def run_component_tests(
         tests_dir = component.path / "tests"
         if tests_dir.exists():
             ensure_pytest_dependencies(runtime, python_exe=python_exe)
-            runtime.run([python_exe, "-m", "pytest", "-s"], cwd=component.path)
+            junit_path = _prepare_test_result_path(
+                runtime,
+                scope=component.key,
+                file_name="pytest.xml",
+            )
+            run_pytest_with_junit(
+                runtime,
+                python_exe=python_exe,
+                options=PytestRunOptions(
+                    cwd=component.path,
+                    junit_path=junit_path,
+                ),
+            )
         package_json = component.path / "package.json"
         playwright_config = component.path / "playwright.config.js"
         if package_json.exists():
@@ -294,11 +334,78 @@ def run_e2e_tests(runtime: CommandRuntime, *, python_exe: str) -> bool:
 
     """
     ensure_pytest_dependencies(runtime, python_exe=python_exe)
-    runtime.run(
-        [python_exe, "-m", "pytest", "-s", "tests/test_socket_e2e.py"],
-        cwd=runtime.repo_root,
+    junit_path = _prepare_test_result_path(
+        runtime,
+        scope="e2e",
+        file_name="pytest.xml",
+    )
+    run_pytest_with_junit(
+        runtime,
+        python_exe=python_exe,
+        options=PytestRunOptions(
+            cwd=runtime.repo_root,
+            junit_path=junit_path,
+            test_targets=("tests/test_socket_e2e.py",),
+        ),
     )
     return False
+
+
+def run_pytest_with_junit(
+    runtime: CommandRuntime,
+    *,
+    python_exe: str,
+    options: PytestRunOptions,
+) -> None:
+    """Run pytest and retain a JUnit report at a caller-selected path.
+
+    Parameters
+    ----------
+    runtime:
+        Shared command runtime used for process execution.
+    python_exe:
+        Python interpreter used to invoke pytest.
+    options:
+        Working directory, report path, optional arguments, and environment
+        used for the pytest invocation.
+
+    """
+    runtime.run(
+        [
+            python_exe,
+            "-m",
+            "pytest",
+            "-s",
+            *options.arguments_before_report,
+            f"{PYTEST_JUNIT_ARGUMENT}={options.junit_path}",
+            *options.test_targets,
+        ],
+        cwd=options.cwd,
+        env=options.env,
+    )
+
+
+def _prepare_test_result_path(
+    runtime: CommandRuntime,
+    *,
+    scope: str,
+    file_name: str,
+) -> Path:
+    """Create a stable test-result directory and return one output path.
+
+    Parameters
+    ----------
+    runtime:
+        Shared command runtime whose repository root owns the result tree.
+    scope:
+        Component or suite name used to keep reports from different runs separate.
+    file_name:
+        Report filename created by the invoked test runner.
+
+    """
+    result_directory = runtime.repo_root / TEST_RESULTS_DIRECTORY / scope
+    result_directory.mkdir(parents=True, exist_ok=True)
+    return result_directory / file_name
 
 
 def ensure_pytest_dependencies(runtime: CommandRuntime, *, python_exe: str) -> None:
