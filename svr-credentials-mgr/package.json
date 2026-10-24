@@ -6,6 +6,7 @@
   "scripts": {
     "ui:test": "playwright test",
     "ui:test:headed": "playwright test --headed",
+    "ui:test:watch": "playwright test --headed",
     "ui:test:debug": "playwright test --debug"
   },
   "devDependencies": {

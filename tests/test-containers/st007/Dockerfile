@@ -39,6 +39,7 @@ RUN npm init -y >/dev/null 2>&1 \
 COPY tests/test-containers/scripts/prepare_source.sh /runner/prepare_source.sh
 COPY tests/test-containers/st007/entrypoint.sh /runner/entrypoint.sh
 COPY tests/test-containers/st007/scripts/playwright.config.js /runner/playwright.config.js
+COPY tests/playwright_runtime_options.cjs /runner/playwright_runtime_options.cjs
 COPY tests/test-containers/st007/scripts/serve_credentials_manager.py /runner/serve_credentials_manager.py
 COPY tests/test-containers/st007/scripts/st007_ui.spec.js /runner/st007_ui.spec.js
 COPY tests/test-containers/st007/scripts/verify_st007.py /runner/verify_st007.py
