@@ -16,6 +16,11 @@ limitations under the License.
 
 The Client Config Generator is an OpAMP server plugin enabled by the default server config and also available as a standalone service. It creates consumer JSON configuration files from a packaged JSON Schema rather than a fixed HTML form. The same schema controls field labels, help text, default values, mode-specific visibility, and server-side validation.
 
+For product installation of the standalone generator or the generator embedded
+in the provider, use the
+[Product Installation Guide](installation.md#install-the-client-config-generator).
+This page provides the component configuration, API, packaging, and test detail.
+
 ## Process modes
 
 The generator supports both consumer process lifecycle strategies:
