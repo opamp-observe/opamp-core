@@ -30,7 +30,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "pylint>=3.0",
   "pytest>=8.0",
+  "pytest-asyncio>=0.23",
   "pytest-cov>=7.0.0",
   "ruff>=0.15.0",
 ]
@@ -57,6 +59,7 @@ opamp_consumer_sim = [
 ]
 
 [tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
 addopts = [
   "-s",
   "--cov=consumer_sim_launcher",
@@ -89,6 +92,9 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "S"]
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["component_version", "consumer_sim_launcher", "opamp_consumer_sim"]

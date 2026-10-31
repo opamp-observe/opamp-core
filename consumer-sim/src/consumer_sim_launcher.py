@@ -78,6 +78,8 @@ KEY_STATUS = "status"
 
 ENTRYPOINT_SIMULATOR = "simulator"
 STATUS_RUNNING = "running"
+TASKKILL_COMMAND = "taskkill"
+TASKLIST_COMMAND = "tasklist"
 STATUS_SHUTDOWN = "shutdown"
 STATUS_SHUTTING_DOWN = "shuttingdown"
 
@@ -424,8 +426,8 @@ def _is_process_running(pid: int) -> bool:
 def _is_process_running_windows(pid: int) -> bool:
     """Return True when `tasklist` still reports one Windows PID."""
     try:
-        completed = subprocess.run(
-            ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+        completed = subprocess.run(  # noqa: S603, S607 - trusted Windows system utility.
+            [TASKLIST_COMMAND, "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
             check=False,
             capture_output=True,
             text=True,
@@ -465,11 +467,11 @@ def _wait_for_exit(pid: int, timeout_seconds: float) -> bool:
 
 def _taskkill(pid: int, *, force: bool) -> None:
     """Run taskkill for one PID on Windows."""
-    cmd = ["taskkill", "/PID", str(pid), "/T"]
+    command = [TASKKILL_COMMAND, "/PID", str(pid), "/T"]
     if force:
-        cmd.append("/F")
-    subprocess.run(
-        cmd,
+        command.append("/F")
+    subprocess.run(  # noqa: S603 - executable is resolved from the trusted host PATH.
+        command,
         check=False,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -593,7 +595,8 @@ def _start_instances(config_path: pathlib.Path) -> None:  # pylint: disable=too-
             else:
                 popen_kwargs["start_new_session"] = True
 
-            process = subprocess.Popen(  # pylint: disable=consider-using-with
+            # The launcher intentionally executes the validated command assembled for this instance.
+            process = subprocess.Popen(  # noqa: S603  # pylint: disable=consider-using-with
                 command,
                 **popen_kwargs,
             )

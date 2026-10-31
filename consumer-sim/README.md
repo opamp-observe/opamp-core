@@ -2,6 +2,36 @@
 
 This tool starts/stops batches of OpAMP consumer instances from one config file.
 
+It also exports a generic, embeddable async lifecycle API for integration packages. This API does
+not import or depend on SignalGenerator and does not alter provider behavior:
+
+```python
+from opamp_consumer_sim import (
+    SimulatorIdentity,
+    SimulatorInstance,
+    SimulatorInstanceConfig,
+    SimulatorResponsePlan,
+)
+
+instance = SimulatorInstance(
+    SimulatorInstanceConfig(
+        name="demo",
+        consumer_config_path=consumer_path,
+        response_plan=SimulatorResponsePlan(responses_path),
+        identity=SimulatorIdentity("demo-01", "1.0.0", "scenario-1"),
+    )
+)
+await instance.start()
+health = instance.health()  # passive; no request or scripted response is consumed
+await instance.logical_restart()
+await instance.stop()
+```
+
+The host owns the event loop and cancellation. `start`, `stop`, `logical_restart`, and
+`apply_config` are awaitable; shutdown cancels and awaits the heartbeat task and finalizes the
+connection. `APP_ENABLE_DEV_FEATURES=true` remains mandatory. These public types follow the
+`opamp-consumer-sim` `0.6.x` compatibility line.
+
 Detailed schema/parameter reference:
 
 - `consumer-sim/consumer_instances.md`
