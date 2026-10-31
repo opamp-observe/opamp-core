@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -260,7 +260,7 @@ def test_command_line_scripts_and_parameters_are_consistent() -> None:
 
     for source_path in source_paths:
         source_text = source_path.read_text(encoding="utf-8")
-        assert "Copyright 2026 mp3monster.org" in source_text
+        assert "Copyright 2026 opamp.info" in source_text
         assert "Licensed under the Apache License, Version 2.0" in source_text
 
     parameter_text = (AWS_DIRECTORY / "parameters.example.env").read_text(encoding="utf-8")

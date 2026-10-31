@@ -9,7 +9,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 
 """Unit tests for the containerized agent-shutdown regression verifier."""
 

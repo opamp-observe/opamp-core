@@ -1,6 +1,6 @@
 # Server credentials manager service
 
-Copyright 2026 mp3monster.org. Licensed under the Apache License, Version 2.0.
+Copyright 2026 opamp.info. Licensed under the Apache License, Version 2.0.
 
 This component manages named OpAMP `ServerToAgent.connection_settings` definitions, stores
 their sensitive values in a keyring backend, tracks which client nodes are assigned to which

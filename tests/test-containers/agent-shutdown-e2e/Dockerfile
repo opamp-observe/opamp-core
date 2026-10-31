@@ -9,7 +9,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 
 FROM cr.fluentbit.io/fluent/fluent-bit:5.0.3 AS fluent-bit-runtime
 FROM timberio/vector:0.58.0-debian AS vector-runtime

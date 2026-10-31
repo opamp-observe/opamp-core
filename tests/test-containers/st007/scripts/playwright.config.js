@@ -1,4 +1,4 @@
-/* Copyright 2026 mp3monster.org; Licensed under the Apache License, Version 2.0. */
+/* Copyright 2026 opamp.info; Licensed under the Apache License, Version 2.0. */
 const path = require("node:path");
 const { defineConfig } = require("@playwright/test");
 const {

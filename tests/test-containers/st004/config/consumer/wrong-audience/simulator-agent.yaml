@@ -1,5 +1,5 @@
 # Licensed under the Apache License, Version 2.0.
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 #
 # This id must not appear in provider clients because the JWT audience is wrong.
 # agent_description: ST004 wrong audience simulator

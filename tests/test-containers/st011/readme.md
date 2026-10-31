@@ -1,6 +1,6 @@
 # ST-011 MCP and Conversation Broker Container
 
-Copyright 2026 mp3monster.org. Licensed under the Apache License, Version 2.0.
+Copyright 2026 opamp.info. Licensed under the Apache License, Version 2.0.
 
 This container runs the provider MCP transport gate, JSON-RPC protocol, authentication, SSE/messages, client-configuration, build-tool, broker startup, tool-discovery, constrained planner, session, Slack-adapter, and broker proxy suites. Slack and LLM behavior use deterministic local doubles; the default scenario performs no external writes or model calls.
 

@@ -1,5 +1,5 @@
 # Licensed under the Apache License, Version 2.0.
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 #
 # Verifier searches for this id to prove the authenticated consumer registered.
 # agent_description: ST004 valid Keycloak simulator

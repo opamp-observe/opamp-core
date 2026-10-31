@@ -1,6 +1,6 @@
 # ST-009 Consumer Simulator Scale and Failure Container
 
-Copyright 2026 mp3monster.org. Licensed under the Apache License, Version 2.0.
+Copyright 2026 opamp.info. Licensed under the Apache License, Version 2.0.
 
 This container validates the consumer simulator development-feature gate, launcher schema and stale-state handling, scripted simulator response behavior, and a real ten-client HTTP batch against a provider. The integration check verifies unique client identities, launcher PID state, provider visibility, clean launcher shutdown, state-file removal, and provider disconnect records.
 

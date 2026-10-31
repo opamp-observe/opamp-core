@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Licensed under the Apache License, Version 2.0.
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 #
 # Build, run, verify, capture evidence, and tear down one ST-002 profile. The
 # script keeps orchestration repeatable so the Markdown and JSON evidence can be

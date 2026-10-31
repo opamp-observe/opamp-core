@@ -1,5 +1,5 @@
 <!--
-Copyright 2026 mp3monster.org
+Copyright 2026 opamp.info
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -35,8 +35,7 @@ configuration, connection settings, commands, package offers, or implementation-
 custom messages. Communication uses Protobuf messages over HTTP or WebSocket.
 
 The management client does not have to be built into the observed agent. The
-[OpAMP specification](https://opentelemetry.io/docs/specs/opamp/#communication-model)
-explicitly allows it to be integrated, a plugin, a sidecar, or a separate supervisor.
+[OpAMP specification](https://opentelemetry.io/docs/specs/opamp/#communication-model) explicitly allows it to be integrated, a plugin, a sidecar, or a separate supervisor.
 That separation is important: it lets mature agents participate in a standard management
 plane while preserving their existing data plane and deployment model.
 
@@ -63,7 +62,8 @@ It includes both ends of the OpAMP exchange and the practical services around th
 - a provider with HTTP and WebSocket OpAMP transports, a browser console, APIs, command
   and remote-configuration workflows, authentication options, state persistence, and
   optional MCP exposure;
-- consumer plugins for Fluent Bit, Fluentd, Elastic Agent, Elastic Heartbeat, Vector,
+- A specialization of the supervisor concept referred to as an observer, ideal for tapping into existing deployments to control the existing telemetry agents.
+- prebuilt consumer plugins for Fluent Bit, Fluentd, Elastic Agent, Elastic Heartbeat, Vector, (which understand how to use the telemetry agents interfaces to provide the OpAMP capabilities).
   and scripted simulation, within a framework that supports supervisor and observer
   lifecycle strategies;
 - built-in reporting for identity, status, health, effective configuration, remote
@@ -76,11 +76,8 @@ It includes both ends of the OpAMP exchange and the practical services around th
 - an optional conversation broker that exposes constrained provider tools through
   collaboration channels and AI-assisted planning.
 
-The current built-in support is recorded in the
-[consumer capability matrix](docs/consumer_implementations.md), while the
-[feature and specification alignment](docs/features.md) identifies partial, planned, and
-deliberately unsupported areas. This is a working framework with useful end-to-end paths,
-not a claim that every optional OpAMP capability is complete.
+The current built-in support is recorded in the [consumer capability matrix](docs/consumer_implementations.md), while the
+[feature and specification alignment](docs/features.md) identifies partial, planned, and deliberately unsupported areas. This is a working framework with useful end-to-end paths, not a claim that every optional OpAMP capability is complete.
 
 ### Design ideals
 
@@ -103,17 +100,15 @@ The implementation is guided by a few practical ideals:
   the base, while documented custom messages and MCP tools provide controlled extension
   points for agent-specific operations.
 
-These goals expand on the project's
-[implementation philosophy](docs/dev/implementation_philosophy.md) and the original
-[OpAMP with Fluent Bit: Observability and ChatOps](https://blog.mp3monster.org/2026/03/23/opamp-with-fluent-bit/)
-project write-up.
+These goals expand on the project's [implementation philosophy](docs/dev/implementation_philosophy.md) and the original [OpAMP with Fluent Bit: Observability and ChatOps](https://blog.mp3monster.org/2026/03/23/opamp-with-fluent-bit/) project write-up.
 
 ## Brief Demo
 
-> **YouTube demo placeholder**
->
-> A short provider, consumer, remote-operation, and ChatOps walkthrough will be embedded
-> here when the clip is published.
+There is a demo recorded as part of the Open Source Observability Day conference:
+
+ https://youtu.be/tKQjnS6wbsc 
+
+The recording illustrates features that contribute to the 0.6 release.
 
 ## How It Compares with the OpenTelemetry Implementations
 

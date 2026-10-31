@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Licensed under the Apache License, Version 2.0.
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 #
 # Install and start the provider with Keycloak/JWT route protection enabled.
 set -euo pipefail

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Licensed under the Apache License, Version 2.0.
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 """Verify the ST-002 compose scenario and write reviewable evidence."""
 
 from __future__ import annotations
