@@ -61,7 +61,11 @@ component name:
 - `ruff.sarif` and `semgrep.sarif` for static-analysis findings;
 - `bandit.json` for the report-only Python security comparison;
 - `detect-secrets.json` for secret-scan candidates; and
-- `pip-audit.json` for dependency vulnerability results.
+- `pip-audit.json` for a named component's dependency vulnerability result or the repository
+  manifest, with full-repository native results retained beneath `pip-audit/` for each packaged
+  project's `pyproject.toml` dependencies. Generated inputs beneath `requirements/` contain the
+  third-party runtime dependencies extracted from each TOML file; workspace-owned packages are
+  audited separately rather than resolved from a public package index.
 
 Ruff, secret detection, dependency auditing, and tests are blocking. Semgrep and Bandit findings
 are report-only while the checked-in rules and overlap are evaluated, although scanner execution

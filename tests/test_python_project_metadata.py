@@ -14,10 +14,31 @@
 
 from pathlib import Path
 
+import tomllib
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 APACHE_LICENSE_DECLARATION = 'license = "Apache-2.0"'
 DEPRECATED_LICENSE_TABLE_PREFIX = "license = {"
 PEP_639_HATCHLING_REQUIREMENT = 'requires = ["hatchling>=1.27"]'
+REQUIRED_DEV_DEPENDENCIES = {
+    "pylint>=3.0",
+    "pytest>=8.0",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.0",
+}
+REQUIRED_RUFF_RULES = {"E", "F", "I", "S", "UP"}
+REQUIRED_SECURITY_DEPENDENCIES = {
+    "bandit>=1.9.4",
+    "detect-secrets>=1.5.0",
+    "mcp==1.29.0",
+    "pip-audit>=2.10.1",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.0",
+    "semgrep>=1.182.1",
+}
+SECURITY_TOOLING_PROJECT_PATH = "dev-tools/pyproject.toml"
 
 PYTHON_PROJECT_PATHS = (
     "agent_broker/pyproject.toml",
@@ -53,3 +74,24 @@ def test_hatchling_projects_require_pep_639_support() -> None:
     for relative_path in HATCHLING_PROJECT_PATHS:
         metadata = (REPOSITORY_ROOT / relative_path).read_text(encoding="utf-8")
         assert PEP_639_HATCHLING_REQUIREMENT in metadata
+
+
+def test_python_projects_expose_the_shared_development_baseline() -> None:
+    """Keep lint, test, and coverage dependencies available in every packaged module."""
+    for relative_path in PYTHON_PROJECT_PATHS:
+        with (REPOSITORY_ROOT / relative_path).open("rb") as project_handle:
+            payload = tomllib.load(project_handle)
+        dev_dependencies = set(payload["project"]["optional-dependencies"]["dev"])
+        assert REQUIRED_DEV_DEPENDENCIES <= dev_dependencies, relative_path
+        selected_rules = set(payload["tool"]["ruff"]["lint"]["select"])
+        assert REQUIRED_RUFF_RULES <= selected_rules, relative_path
+
+
+def test_developer_tools_declares_the_security_toolchain() -> None:
+    """Keep the security gate's external tools reproducible through a named extra."""
+    with (REPOSITORY_ROOT / SECURITY_TOOLING_PROJECT_PATH).open("rb") as project_handle:
+        payload = tomllib.load(project_handle)
+    security_dependencies = set(
+        payload["project"]["optional-dependencies"]["security"]
+    )
+    assert REQUIRED_SECURITY_DEPENDENCIES == security_dependencies

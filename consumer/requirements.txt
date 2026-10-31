@@ -1,7 +1,6 @@
 protobuf>=5.27
 grpcio-tools>=1.60
 httpx>=0.27
-quart>=0.19.4
 websockets>=12.0
 psutil>=5.9
 uuid_v7>=0.1

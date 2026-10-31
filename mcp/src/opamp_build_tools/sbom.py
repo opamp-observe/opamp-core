@@ -31,10 +31,20 @@ TIMESTAMP_Z_SUFFIX_FROM = "+00:00"
 TIMESTAMP_Z_SUFFIX_TO = "Z"
 
 
-def _run(cmd: list[str], *, cwd: Path) -> None:
-    """Run one subprocess command and stream output."""
-    print(f"+ {' '.join(cmd)}")
-    subprocess.run(cmd, cwd=str(cwd), check=True)
+def _run(command: list[str], *, cwd: Path) -> None:
+    """Run one internally assembled package command and stream its output.
+
+    Parameters
+    ----------
+    command:
+        Argument vector built by the trusted SBOM packaging workflow.
+    cwd:
+        Working directory in which the command should run.
+
+    """
+    print(f"+ {' '.join(command)}")
+    # The caller builds command arguments from fixed packaging operations, without a shell.
+    subprocess.run(command, cwd=str(cwd), check=True)  # noqa: S603
 
 
 def ensure_python_package(
@@ -43,8 +53,20 @@ def ensure_python_package(
     python_exe: str,
     package_name: str,
 ) -> None:
-    """Ensure a Python package is available in the active environment."""
-    probe = subprocess.run(
+    """Ensure a Python package is available in the active environment.
+
+    Parameters
+    ----------
+    repo_root:
+        Repository root used as the package-command working directory.
+    python_exe:
+        Selected Python interpreter path.
+    package_name:
+        Trusted packaging dependency to locate or install.
+
+    """
+    # The interpreter and package are supplied by the trusted packaging workflow.
+    probe = subprocess.run(  # noqa: S603
         [python_exe, "-m", "pip", "show", package_name],
         cwd=str(repo_root),
         stdout=subprocess.DEVNULL,
@@ -188,7 +210,7 @@ def _build_base_requirements_sbom(
     return payload
 
 
-def build_requirements_application_sbom_payload(
+def build_requirements_application_sbom_payload(  # pylint: disable=too-many-arguments
     *,
     repo_root: Path,
     python_exe: str,
@@ -206,7 +228,8 @@ def build_requirements_application_sbom_payload(
         cwd=cwd,
     )
     dependency_refs = _normalize_component_refs(sbom)
-    root_ref = f"{PYPI_PURL_PREFIX}/{normalize_dist_name(root_component_name)}@{root_component_version}"
+    normalized_root_name = normalize_dist_name(root_component_name)
+    root_ref = f"{PYPI_PURL_PREFIX}/{normalized_root_name}@{root_component_version}"
     root_component: dict[str, Any] = {
         "type": "application",
         "name": str(root_component_name).strip(),
@@ -243,13 +266,17 @@ def build_requirements_application_sbom_payload(
     if not isinstance(dependencies, list):
         dependencies = []
     dependencies = [entry for entry in dependencies if isinstance(entry, dict)]
-    dependencies = [entry for entry in dependencies if str(entry.get("ref") or "").strip() != root_ref]
+    dependencies = [
+        entry
+        for entry in dependencies
+        if str(entry.get("ref") or "").strip() != root_ref
+    ]
     dependencies.insert(0, {"ref": root_ref, "dependsOn": dependency_refs})
     sbom["dependencies"] = dependencies
     return sbom
 
 
-def build_wheel_artifact_sbom_payload(
+def build_wheel_artifact_sbom_payload(  # pylint: disable=too-many-arguments,too-many-locals
     *,
     repo_root: Path,
     python_exe: str,
@@ -359,7 +386,7 @@ def write_sbom_file(payload: dict[str, Any], output_path: Path) -> Path:
     return output_path
 
 
-def write_wheel_artifact_sbom(
+def write_wheel_artifact_sbom(  # pylint: disable=too-many-arguments
     *,
     repo_root: Path,
     python_exe: str,
@@ -398,7 +425,7 @@ def _property_value(properties: Any, name: str) -> str | None:
     return None
 
 
-def validate_wheel_artifact_sbom(
+def validate_wheel_artifact_sbom(  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
     *,
     artifact: Path,
     sbom_path: Path,
@@ -464,7 +491,11 @@ def validate_wheel_artifact_sbom(
         raise RuntimeError(
             "SBOM validation failed: metadata.component.version does not match wheel version."
         )
-    if repo is not None and _property_value(metadata_component.get("properties"), "github.repository") != repo:
+    metadata_repository = _property_value(
+        metadata_component.get("properties"),
+        "github.repository",
+    )
+    if repo is not None and metadata_repository != repo:
         raise RuntimeError(
             "SBOM validation failed: metadata github.repository does not match build target."
         )

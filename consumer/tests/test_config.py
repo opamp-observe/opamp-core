@@ -578,3 +578,19 @@ def test_consumer_observability_loads_signal_specific_endpoint(
     assert loaded.observability.resolved_metrics_endpoint == "http://metrics:4318"
     assert loaded.observability.resolved_traces_endpoint == "http://collector:4317"
     assert loaded.observability.export_interval_seconds == 42
+
+
+def test_import_default_allows_embedding_without_discovered_config(
+    tmp_path, monkeypatch
+) -> None:
+    """Public client modules remain importable before an embedding host supplies config."""
+
+    def missing_config():
+        raise FileNotFoundError("no process config")
+
+    monkeypatch.setattr(consumer_config, "load_config", missing_config)
+    monkeypatch.setenv(
+        consumer_config.ENV_OPAMP_CONFIG_PATH,
+        str(tmp_path / "missing-opamp.json"),
+    )
+    assert consumer_config._load_import_default_config() is None

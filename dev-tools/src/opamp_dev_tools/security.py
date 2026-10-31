@@ -17,10 +17,15 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 from collections.abc import Callable
+from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
+
+try:
+    import tomllib
+except ImportError:  # pragma: no cover - Python 3.10 fallback
+    import tomli as tomllib  # type: ignore[no-redef]
 
 from .components import (
     BuildComponent,
@@ -30,10 +35,18 @@ from .components import (
 )
 from .provider_ui import compact_provider_ui_assets
 from .runtime import CommandRuntime
+from .sbom import normalize_dist_name, requirement_name
 
 APP_ENABLE_DEV_FEATURES_ENV = "APP_ENABLE_DEV_FEATURES"
+AUDIT_MANIFEST_PROJECT_KEY = "project"
+AUDIT_MANIFEST_PROJECTS_KEY = "projects"
+AUDIT_MANIFEST_REPORT_KEY = "report"
+AUDIT_MANIFEST_STATUS_KEY = "status"
+AUDIT_STATUS_FAILED = "failed"
+AUDIT_STATUS_PASSED = "passed"
 BANDIT_REPORT_FILE_NAME = "bandit.json"
-BANDIT_TOOL_NAME = "bandit"
+BANDIT_PIP_REQUIREMENT = "bandit>=1.9.4"
+BANDIT_TOOL_MODULE = "bandit"
 DETECT_SECRETS_EXCLUDE_REGEX = (
     r"(^\.git/|^\.venv/|^dist/|^logs/|^runtime/|^server-state/|^dev-notes/|"
     r"^build/|/build/|^node_modules/|/node_modules/|^\.pytest_cache/|"
@@ -55,25 +68,87 @@ RUFF_SECURITY_IGNORE_CODES = (
 REPO_RUFF_SECURITY_TARGETS = (
     "provider/src",
     "consumer/src",
+    "consumer-sim/src",
     "cli/src",
     "catalog-service/src",
     "config-service/src",
     "client-config-generator-service/src",
     "agent_broker/opamp_broker",
+    "dev-tools/src",
+    "mcp/src",
+    "mcp/configure_mcp_clients.py",
+    "mcp/build_mcp_config_tool.py",
+    "svr-credentials-mgr/src",
+    "svr-credentials-mgr/plaintext-keyring/src",
     "shared",
     "scripts",
 )
-DETECT_SECRETS_REPORT_FILE_NAME = "detect-secrets.json"
-DETECT_SECRETS_RESULTS_KEY = "results"
+DETECT_SECRETS_REPORT_FILE_NAME = "detect-secrets.json"  # pragma: allowlist secret
+DETECT_SECRETS_PIP_REQUIREMENT = "detect-secrets>=1.5.0"  # pragma: allowlist secret
+DETECT_SECRETS_TOOL_MODULE = "detect_secrets"  # pragma: allowlist secret
+DETECT_SECRETS_RESULTS_KEY = "results"  # pragma: allowlist secret
 LINE_NUMBER_KEY = "line_number"
 PIP_AUDIT_REPORT_FILE_NAME = "pip-audit.json"
+PIP_AUDIT_REPORT_DIRECTORY_NAME = "pip-audit"
+PIP_AUDIT_REQUIREMENTS_DIRECTORY_NAME = "requirements"
+PIP_AUDIT_PIP_REQUIREMENT = "pip-audit>=2.10.1"
+PIP_AUDIT_TOOL_MODULE = "pip_audit"
+PROJECT_DEPENDENCIES_KEY = "dependencies"
+PROJECT_METADATA_KEY = "project"
+PROJECT_NAME_KEY = "name"
 PYTEST_IMPORT_MODE_ARGUMENT = "--import-mode=importlib"
 PYTEST_REPORT_FILE_NAME = "pytest.xml"
+REPO_PYTHON_PROJECT_PATHS = (
+    Path("agent_broker"),
+    Path("catalog-service"),
+    Path("cli"),
+    Path("client-config-generator-service"),
+    Path("config-service"),
+    Path("consumer"),
+    Path("consumer-sim"),
+    Path("dev-tools"),
+    Path("mcp"),
+    Path("provider"),
+    Path("svr-credentials-mgr"),
+    Path("svr-credentials-mgr/plaintext-keyring"),
+)
 RUFF_REPORT_FILE_NAME = "ruff.sarif"
+RUFF_PIP_REQUIREMENT = "ruff>=0.15.0"
+RUFF_TOOL_MODULE = "ruff"
 SECURITY_REPORT_DIRECTORY = Path("dev-tools/runtime/security-reports")
 SEMGREP_CONFIG_PATH = Path("security/semgrep.yml")
+SEMGREP_ENTRYPOINT_CODE = "from semgrep.console_scripts.pysemgrep import main; main()"
+SEMGREP_MCP_MODULE = "mcp.server.fastmcp"
+SEMGREP_MCP_REQUIREMENT = "mcp==1.29.0"
 SEMGREP_REPORT_FILE_NAME = "semgrep.sarif"
-SEMGREP_TOOL_NAME = "semgrep"
+SEMGREP_PIP_REQUIREMENT = "semgrep>=1.182.1"
+SEMGREP_TOOL_MODULE = "semgrep"
+
+
+@dataclass(frozen=True)
+class ProjectAuditOptions:
+    """Immutable settings shared by each project dependency audit.
+
+    Attributes
+    ----------
+    python_exe:
+        Python interpreter containing pip-audit.
+    multiple_projects:
+        Whether reports belong beneath the repository's per-project directory.
+    env:
+        Environment variables passed to pip-audit.
+    report_scope:
+        Stable name used for the retained security report directory.
+    workspace_project_names:
+        Normalized distribution names owned by projects in this audit run.
+
+    """
+
+    python_exe: str
+    multiple_projects: bool
+    env: dict[str, str]
+    report_scope: str
+    workspace_project_names: set[str]
 
 
 def run_repo_security_checks(runtime: CommandRuntime, *, python_exe: str) -> bool:
@@ -88,30 +163,41 @@ def run_repo_security_checks(runtime: CommandRuntime, *, python_exe: str) -> boo
 
     """
     env = _security_env(runtime)
-    _ensure_cli_tool(runtime, python_exe=python_exe, tool_name="ruff", pip_package="ruff")
     _ensure_cli_tool(
         runtime,
         python_exe=python_exe,
-        tool_name="detect-secrets",
-        pip_package="detect-secrets",
+        module_name=RUFF_TOOL_MODULE,
+        pip_package=RUFF_PIP_REQUIREMENT,
     )
     _ensure_cli_tool(
         runtime,
         python_exe=python_exe,
-        tool_name="pip-audit",
-        pip_package="pip-audit",
+        module_name=DETECT_SECRETS_TOOL_MODULE,
+        pip_package=DETECT_SECRETS_PIP_REQUIREMENT,
     )
     _ensure_cli_tool(
         runtime,
         python_exe=python_exe,
-        tool_name=SEMGREP_TOOL_NAME,
-        pip_package=SEMGREP_TOOL_NAME,
+        module_name=PIP_AUDIT_TOOL_MODULE,
+        pip_package=PIP_AUDIT_PIP_REQUIREMENT,
     )
     _ensure_cli_tool(
         runtime,
         python_exe=python_exe,
-        tool_name=BANDIT_TOOL_NAME,
-        pip_package=BANDIT_TOOL_NAME,
+        module_name=SEMGREP_TOOL_MODULE,
+        pip_package=SEMGREP_PIP_REQUIREMENT,
+    )
+    _ensure_cli_tool(
+        runtime,
+        python_exe=python_exe,
+        module_name=SEMGREP_MCP_MODULE,
+        pip_package=SEMGREP_MCP_REQUIREMENT,
+    )
+    _ensure_cli_tool(
+        runtime,
+        python_exe=python_exe,
+        module_name=BANDIT_TOOL_MODULE,
+        pip_package=BANDIT_PIP_REQUIREMENT,
     )
     ensure_pytest_dependencies(runtime, python_exe=python_exe)
 
@@ -150,7 +236,9 @@ def run_repo_security_checks(runtime: CommandRuntime, *, python_exe: str) -> boo
         operation=partial(
             runtime.run,
             [
-                "ruff",
+                python_exe,
+                "-m",
+                RUFF_TOOL_MODULE,
                 "check",
                 "--select",
                 "S",
@@ -173,26 +261,25 @@ def run_repo_security_checks(runtime: CommandRuntime, *, python_exe: str) -> boo
         operation=partial(
             _scan_for_secrets,
             runtime,
-            repo_root=runtime.repo_root,
+            python_exe=python_exe,
             env=env,
             report_scope=report_scope,
         ),
         failure_messages=failure_messages,
     )
-    audit_files = [
-        runtime.repo_root / "requirements.txt",
-        runtime.repo_root / "provider" / "requirements.txt",
-        runtime.repo_root / "consumer" / "requirements.txt",
-        runtime.repo_root / "agent_broker" / "requirements.txt",
+    project_paths = [
+        runtime.repo_root / project_path
+        for project_path in REPO_PYTHON_PROJECT_PATHS
+        if (runtime.repo_root / project_path / "pyproject.toml").is_file()
     ]
-    existing_files = [path for path in audit_files if path.exists()]
     _run_security_step(
         runtime,
         label="pip-audit",
         operation=partial(
-            _audit_requirement_files,
+            _audit_python_projects,
             runtime,
-            requirement_paths=existing_files,
+            python_exe=python_exe,
+            project_paths=project_paths,
             env=env,
             report_scope=report_scope,
         ),
@@ -204,6 +291,7 @@ def run_repo_security_checks(runtime: CommandRuntime, *, python_exe: str) -> boo
         operation=partial(
             _run_semgrep_report,
             runtime,
+            python_exe=python_exe,
             targets=REPO_RUFF_SECURITY_TARGETS,
             env=env,
             report_scope=report_scope,
@@ -216,6 +304,7 @@ def run_repo_security_checks(runtime: CommandRuntime, *, python_exe: str) -> boo
         operation=partial(
             _run_bandit_report,
             runtime,
+            python_exe=python_exe,
             targets=REPO_RUFF_SECURITY_TARGETS,
             env=env,
             report_scope=report_scope,
@@ -246,24 +335,35 @@ def run_component_security_checks(
 
     """
     env = _security_env(runtime)
-    _ensure_cli_tool(runtime, python_exe=python_exe, tool_name="ruff", pip_package="ruff")
     _ensure_cli_tool(
         runtime,
         python_exe=python_exe,
-        tool_name="detect-secrets",
-        pip_package="detect-secrets",
+        module_name=RUFF_TOOL_MODULE,
+        pip_package=RUFF_PIP_REQUIREMENT,
     )
     _ensure_cli_tool(
         runtime,
         python_exe=python_exe,
-        tool_name=SEMGREP_TOOL_NAME,
-        pip_package=SEMGREP_TOOL_NAME,
+        module_name=DETECT_SECRETS_TOOL_MODULE,
+        pip_package=DETECT_SECRETS_PIP_REQUIREMENT,
     )
     _ensure_cli_tool(
         runtime,
         python_exe=python_exe,
-        tool_name=BANDIT_TOOL_NAME,
-        pip_package=BANDIT_TOOL_NAME,
+        module_name=SEMGREP_TOOL_MODULE,
+        pip_package=SEMGREP_PIP_REQUIREMENT,
+    )
+    _ensure_cli_tool(
+        runtime,
+        python_exe=python_exe,
+        module_name=SEMGREP_MCP_MODULE,
+        pip_package=SEMGREP_MCP_REQUIREMENT,
+    )
+    _ensure_cli_tool(
+        runtime,
+        python_exe=python_exe,
+        module_name=BANDIT_TOOL_MODULE,
+        pip_package=BANDIT_PIP_REQUIREMENT,
     )
     ensure_pytest_dependencies(runtime, python_exe=python_exe)
 
@@ -300,7 +400,9 @@ def run_component_security_checks(
         operation=partial(
             runtime.run,
             [
-                "ruff",
+                python_exe,
+                "-m",
+                RUFF_TOOL_MODULE,
                 "check",
                 "--select",
                 "S",
@@ -323,7 +425,7 @@ def run_component_security_checks(
         operation=partial(
             _scan_for_secrets,
             runtime,
-            repo_root=runtime.repo_root,
+            python_exe=python_exe,
             env=env,
             path_prefix=component.path.name,
             report_scope=report_scope,
@@ -331,28 +433,25 @@ def run_component_security_checks(
         failure_messages=failure_messages,
     )
 
-    requirement_path = component.path / "requirements.txt"
-    if requirement_path.exists():
-        _ensure_cli_tool(
+    _ensure_cli_tool(
+        runtime,
+        python_exe=python_exe,
+        module_name=PIP_AUDIT_TOOL_MODULE,
+        pip_package=PIP_AUDIT_PIP_REQUIREMENT,
+    )
+    _run_security_step(
+        runtime,
+        label="pip-audit",
+        operation=partial(
+            _audit_python_projects,
             runtime,
             python_exe=python_exe,
-            tool_name="pip-audit",
-            pip_package="pip-audit",
-        )
-        _run_security_step(
-            runtime,
-            label="pip-audit",
-            operation=partial(
-                _audit_requirement_files,
-                runtime,
-                requirement_paths=[requirement_path],
-                env=env,
-                report_scope=report_scope,
-            ),
-            failure_messages=failure_messages,
-        )
-    else:
-        runtime.info(f"No requirements.txt found for {component.key}; pip-audit skipped.")
+            project_paths=[component.path],
+            env=env,
+            report_scope=report_scope,
+        ),
+        failure_messages=failure_messages,
+    )
     component_targets = (str(component.path.relative_to(runtime.repo_root)),)
     _run_security_step(
         runtime,
@@ -360,6 +459,7 @@ def run_component_security_checks(
         operation=partial(
             _run_semgrep_report,
             runtime,
+            python_exe=python_exe,
             targets=component_targets,
             env=env,
             report_scope=report_scope,
@@ -372,6 +472,7 @@ def run_component_security_checks(
         operation=partial(
             _run_bandit_report,
             runtime,
+            python_exe=python_exe,
             targets=component_targets,
             env=env,
             report_scope=report_scope,
@@ -427,10 +528,10 @@ def _ensure_cli_tool(
     runtime: CommandRuntime,
     *,
     python_exe: str,
-    tool_name: str,
+    module_name: str,
     pip_package: str,
 ) -> None:
-    """Ensure a required external CLI tool exists before use.
+    """Ensure a required security-tool module exists for the selected Python.
 
     Parameters
     ----------
@@ -438,22 +539,23 @@ def _ensure_cli_tool(
         Shared command runtime used to install missing command-line tools.
     python_exe:
         Python interpreter used to install the missing tool via pip.
-    tool_name:
-        Executable name that should be present on the PATH.
+    module_name:
+        Importable module that provides the command-line entry point.
     pip_package:
         Pip package name that provides the missing executable.
 
     """
-    if shutil.which(tool_name):
-        return
-    runtime.info(f"CLI tool `{tool_name}` not found; installing `{pip_package}`...")
-    runtime.run([python_exe, "-m", "pip", "install", pip_package], cwd=runtime.repo_root)
+    runtime.ensure_python_module(
+        python_exe=python_exe,
+        module_name=module_name,
+        pip_package=pip_package,
+    )
 
 
 def _scan_for_secrets(
     runtime: CommandRuntime,
     *,
-    repo_root: Path,
+    python_exe: str,
     env: dict[str, str],
     path_prefix: str | None = None,
     report_scope: str = "repository",
@@ -464,8 +566,8 @@ def _scan_for_secrets(
     ----------
     runtime:
         Shared command runtime used for process execution and issue capture.
-    repo_root:
-        Repository root from which tracked files should be enumerated.
+    python_exe:
+        Python interpreter containing the versioned security dependencies.
     env:
         Environment variables passed to the subprocess commands.
     path_prefix:
@@ -478,14 +580,16 @@ def _scan_for_secrets(
     scan_paths = [path_prefix] if path_prefix else []
     completed = runtime.run(
         [
-            "detect-secrets",
+            python_exe,
+            "-m",
+            DETECT_SECRETS_TOOL_MODULE,
             "scan",
             "--force-use-all-plugins",
             "--exclude-files",
             DETECT_SECRETS_EXCLUDE_REGEX,
             *scan_paths,
         ],
-        cwd=repo_root,
+        cwd=runtime.repo_root,
         env=env,
         capture_output=True,
     )
@@ -533,44 +637,230 @@ def _record_detect_secret_findings(
         )
 
 
-def _audit_requirement_files(
+def _audit_python_projects(
     runtime: CommandRuntime,
     *,
-    requirement_paths: list[Path],
+    python_exe: str,
+    project_paths: list[Path],
     env: dict[str, str],
     report_scope: str,
 ) -> None:
-    """Audit requirement files and retain pip-audit's native JSON output.
+    """Audit packaged projects and retain pip-audit JSON for every project.
 
     Parameters
     ----------
     runtime:
         Shared command runtime used for process execution.
-    requirement_paths:
-        Existing requirement files that define the environments to audit.
+    python_exe:
+        Python interpreter containing pip-audit.
+    project_paths:
+        Project directories containing the ``pyproject.toml`` files to audit.
     env:
         Environment variables passed to pip-audit.
     report_scope:
         Stable name used for the retained report directory.
 
     """
-    if not requirement_paths:
-        runtime.info("No requirements.txt files found; pip-audit skipped.")
+    if not project_paths:
+        runtime.info("No pyproject.toml files found; pip-audit skipped.")
         return
+    multiple_projects = len(project_paths) > 1
+    workspace_project_names = _workspace_project_names(project_paths)
+    audit_options = ProjectAuditOptions(
+        python_exe=python_exe,
+        multiple_projects=multiple_projects,
+        env=env,
+        report_scope=report_scope,
+        workspace_project_names=workspace_project_names,
+    )
+    audit_failures: list[str] = []
+    report_entries: list[dict[str, str]] = []
+    for project_path in project_paths:
+        report_entry, audit_failure = _audit_python_project(
+            runtime,
+            project_path=project_path,
+            options=audit_options,
+        )
+        report_entries.append(report_entry)
+        if audit_failure:
+            audit_failures.append(audit_failure)
+
+    if multiple_projects:
+        manifest_path = _security_report_path(
+            runtime,
+            scope=report_scope,
+            file_name=PIP_AUDIT_REPORT_FILE_NAME,
+        )
+        manifest_path.write_text(
+            json.dumps(
+                {AUDIT_MANIFEST_PROJECTS_KEY: report_entries},
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+    if audit_failures:
+        raise RuntimeError("pip-audit failed: " + "; ".join(audit_failures))
+
+
+def _audit_python_project(
+    runtime: CommandRuntime,
+    *,
+    project_path: Path,
+    options: ProjectAuditOptions,
+) -> tuple[dict[str, str], str | None]:
+    """Audit one project's third-party dependencies and describe its result.
+
+    Parameters
+    ----------
+    runtime:
+        Shared command runtime used for process execution.
+    project_path:
+        Project directory containing the source ``pyproject.toml``.
+    options:
+        Interpreter, report layout, environment, and workspace package settings.
+
+    """
+    relative_project_path = project_path.relative_to(runtime.repo_root)
+    project_report_name = relative_project_path.as_posix().replace("/", "__") + ".json"
+    report_file_name = (
+        str(Path(PIP_AUDIT_REPORT_DIRECTORY_NAME) / project_report_name)
+        if options.multiple_projects
+        else PIP_AUDIT_REPORT_FILE_NAME
+    )
     report_path = _security_report_path(
         runtime,
-        scope=report_scope,
-        file_name=PIP_AUDIT_REPORT_FILE_NAME,
+        scope=options.report_scope,
+        file_name=report_file_name,
     )
-    command = ["pip-audit", "--format", "json", "--output", str(report_path)]
-    for requirement_path in requirement_paths:
-        command.extend(["-r", str(requirement_path.relative_to(runtime.repo_root))])
-    runtime.run(command, cwd=runtime.repo_root, env=env)
+    requirements_path = _write_audit_requirements(
+        runtime,
+        project_path=project_path,
+        report_scope=options.report_scope,
+        workspace_project_names=options.workspace_project_names,
+    )
+    try:
+        runtime.run(
+            [
+                options.python_exe,
+                "-m",
+                PIP_AUDIT_TOOL_MODULE,
+                "--strict",
+                "--format",
+                "json",
+                "--output",
+                str(report_path),
+                "--requirement",
+                str(requirements_path),
+            ],
+            cwd=runtime.repo_root,
+            env=options.env,
+        )
+        status = AUDIT_STATUS_PASSED
+        audit_failure = None
+    except RuntimeError as error:
+        status = AUDIT_STATUS_FAILED
+        audit_failure = f"{relative_project_path}: {error}"
+    return (
+        {
+            AUDIT_MANIFEST_PROJECT_KEY: relative_project_path.as_posix(),
+            AUDIT_MANIFEST_REPORT_KEY: report_path.relative_to(runtime.repo_root).as_posix(),
+            AUDIT_MANIFEST_STATUS_KEY: status,
+        },
+        audit_failure,
+    )
+
+
+def _workspace_project_names(project_paths: list[Path]) -> set[str]:
+    """Return normalized distribution names owned by the audited workspace.
+
+    Parameters
+    ----------
+    project_paths:
+        Project directories whose ``pyproject.toml`` metadata defines local packages.
+
+    """
+    project_names: set[str] = set()
+    for project_path in project_paths:
+        project_metadata = _read_project_metadata(project_path)
+        project_name = project_metadata.get(PROJECT_NAME_KEY)
+        if isinstance(project_name, str) and project_name.strip():
+            project_names.add(normalize_dist_name(project_name))
+    return project_names
+
+
+def _write_audit_requirements(
+    runtime: CommandRuntime,
+    *,
+    project_path: Path,
+    report_scope: str,
+    workspace_project_names: set[str],
+) -> Path:
+    """Write third-party project dependencies to a pip-audit input file.
+
+    Local workspace packages are omitted because they are not resolvable from the public
+    package index and each package is audited independently from its own TOML metadata.
+
+    Parameters
+    ----------
+    runtime:
+        Shared command runtime whose repository root owns the generated audit input.
+    project_path:
+        Project directory containing the source ``pyproject.toml``.
+    report_scope:
+        Stable name used for the retained security report directory.
+    workspace_project_names:
+        Normalized distribution names owned by projects in this audit run.
+
+    """
+    project_metadata = _read_project_metadata(project_path)
+    dependency_values = project_metadata.get(PROJECT_DEPENDENCIES_KEY, [])
+    dependencies = (
+        [str(dependency) for dependency in dependency_values]
+        if isinstance(dependency_values, list)
+        else []
+    )
+    auditable_dependencies = [
+        dependency
+        for dependency in dependencies
+        if normalize_dist_name(requirement_name(dependency)) not in workspace_project_names
+    ]
+    relative_project_path = project_path.relative_to(runtime.repo_root)
+    requirements_name = relative_project_path.as_posix().replace("/", "__") + ".txt"
+    requirements_path = _security_report_path(
+        runtime,
+        scope=report_scope,
+        file_name=str(Path(PIP_AUDIT_REQUIREMENTS_DIRECTORY_NAME) / requirements_name),
+    )
+    content = "\n".join(auditable_dependencies)
+    requirements_path.write_text(content + ("\n" if content else ""), encoding="utf-8")
+    return requirements_path
+
+
+def _read_project_metadata(project_path: Path) -> dict[str, object]:
+    """Read the project table from one package's TOML metadata.
+
+    Parameters
+    ----------
+    project_path:
+        Project directory containing ``pyproject.toml``.
+
+    """
+    pyproject_path = project_path / "pyproject.toml"
+    if not pyproject_path.is_file():
+        return {}
+    payload = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+    project_metadata = payload.get(PROJECT_METADATA_KEY, {})
+    if not isinstance(project_metadata, dict):
+        return {}
+    return project_metadata
 
 
 def _run_semgrep_report(
     runtime: CommandRuntime,
     *,
+    python_exe: str,
     targets: tuple[str, ...],
     env: dict[str, str],
     report_scope: str,
@@ -581,6 +871,8 @@ def _run_semgrep_report(
     ----------
     runtime:
         Shared command runtime used for process execution.
+    python_exe:
+        Python interpreter containing Semgrep.
     targets:
         Repository-relative source paths Semgrep should inspect.
     env:
@@ -596,7 +888,9 @@ def _run_semgrep_report(
     )
     runtime.run(
         [
-            SEMGREP_TOOL_NAME,
+            python_exe,
+            "-c",
+            SEMGREP_ENTRYPOINT_CODE,
             "scan",
             "--config",
             str(runtime.repo_root / SEMGREP_CONFIG_PATH),
@@ -615,6 +909,7 @@ def _run_semgrep_report(
 def _run_bandit_report(
     runtime: CommandRuntime,
     *,
+    python_exe: str,
     targets: tuple[str, ...],
     env: dict[str, str],
     report_scope: str,
@@ -625,6 +920,8 @@ def _run_bandit_report(
     ----------
     runtime:
         Shared command runtime used for process execution.
+    python_exe:
+        Python interpreter containing Bandit.
     targets:
         Repository-relative source paths Bandit should inspect.
     env:
@@ -640,7 +937,9 @@ def _run_bandit_report(
     )
     runtime.run(
         [
-            BANDIT_TOOL_NAME,
+            python_exe,
+            "-m",
+            BANDIT_TOOL_MODULE,
             "-r",
             *targets,
             "--format",
@@ -673,8 +972,9 @@ def _security_report_path(
 
     """
     report_directory = runtime.repo_root / SECURITY_REPORT_DIRECTORY / scope
-    report_directory.mkdir(parents=True, exist_ok=True)
-    return report_directory / file_name
+    report_path = report_directory / file_name
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    return report_path
 
 
 def _security_env(runtime: CommandRuntime) -> dict[str, str]:

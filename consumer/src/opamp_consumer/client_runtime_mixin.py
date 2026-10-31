@@ -309,6 +309,17 @@ class ClientRuntimeMixin:
             return True
         return False
 
+    async def run_heartbeat_loop(self, port: int) -> None:
+        """Run the cancellable heartbeat loop for an embedding host.
+
+        Args:
+            port: Local agent HTTP status port used for heartbeat polling.
+
+        This public wrapper keeps embedding integrations independent of the private
+        implementation method while preserving the existing launcher behavior.
+        """
+        await self._heartbeat_loop(port)
+
     async def _heartbeat_loop(self, port: int) -> None:
         """Run a periodic polling loop that updates last heartbeat results.
 

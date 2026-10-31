@@ -230,7 +230,8 @@ Repository virtual environment setup:
 - `opamp-cli setup-venv` creates or updates `.venv` at the repository root.
 - It upgrades `pip`, `setuptools>=82`, `wheel`, `build`, and `hatchling>=1.25`.
 - It installs root `requirements.txt`.
-- It installs local Python components editable with their `dev` extras:
+- It installs local Python components editable with their `dev` extras; `dev-tools` also receives
+  its versioned `security` extra:
   `cli`, `provider`, `consumer`, `consumer-sim`, `config-service`,
   `catalog-service`, `agent_broker`, `mcp`, `dev-tools`,
   `svr-credentials-mgr/plaintext-keyring`, and `svr-credentials-mgr`.

@@ -22,7 +22,12 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Build the OpAMP MCP config tool wheel and SBOM."
     )
     parser.add_argument("--python", default=sys.executable, help="Python executable to use")
-    parser.add_argument("--out-dir", type=Path, default=DEFAULT_DIST_DIR, help="Wheel output directory")
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=DEFAULT_DIST_DIR,
+        help="Wheel output directory",
+    )
     parser.add_argument(
         "--sbom-path",
         type=Path,
@@ -30,7 +35,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="CycloneDX SBOM output path",
     )
     parser.add_argument("--install", action="store_true", help="Install the built wheel with pip")
-    parser.add_argument("--skip-sbom", action="store_true", help="Build artifacts without writing SBOM")
+    parser.add_argument(
+        "--skip-sbom",
+        action="store_true",
+        help="Build artifacts without writing SBOM",
+    )
     parser.add_argument("--no-clean", action="store_true", help="Keep existing MCP build artifacts")
     return parser
 

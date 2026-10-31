@@ -16,9 +16,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from quart import Quart
+if TYPE_CHECKING:
+    from quart import Quart
 
 CFG_OTLP_ENDPOINTS = "otlp-endpoints"
 CFG_OTLP_ALL = "ALL"

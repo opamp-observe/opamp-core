@@ -379,6 +379,7 @@ See:
 
 ## Core documentation map
 
+- [Components and repository layout](components_and_repository_layout.md)
 - [Features and spec alignment](features.md)
 - [Consumer implementations](consumer_implementations.md)
 - [Client config generator service](client_config_generator_service.md)

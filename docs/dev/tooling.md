@@ -83,6 +83,8 @@ Development extras are mostly shared across components:
 
 - Tests: `pytest`, `pytest-asyncio`, `pytest-cov`.
 - Static checks: `ruff`, `pylint`.
+- Security: `bandit`, `detect-secrets`, `pip-audit`, and `semgrep` from the versioned
+  `dev-tools[security]` extra.
 - Packaging/SBOM support: `build`, `hatchling`, component build backends, and dev-tools helpers.
 
 The repository also contains `pyrightconfig.json` and `.flake8`; those files

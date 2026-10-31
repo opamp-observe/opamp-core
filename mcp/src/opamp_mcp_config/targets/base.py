@@ -15,7 +15,7 @@ class ApplyResult:
     changed: bool
 
 
-class ClientTarget(Protocol):
+class ClientTarget(Protocol):  # pylint: disable=too-few-public-methods
     """Protocol implemented by each MCP client target handler."""
 
     key: str

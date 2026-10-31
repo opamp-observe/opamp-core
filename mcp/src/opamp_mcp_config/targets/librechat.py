@@ -9,7 +9,7 @@ from typing import Any
 from opamp_mcp_config.targets.base import ApplyResult
 
 
-class LibreChatTarget:
+class LibreChatTarget:  # pylint: disable=too-few-public-methods
     """Apply OpAMP MCP settings to LibreChat YAML configuration."""
 
     key = "librechat"
@@ -28,6 +28,7 @@ class LibreChatTarget:
         self._merge_librechat_yaml = merge_librechat_yaml
 
     def apply(self, settings: dict[str, Any], *, dry_run: bool) -> ApplyResult:
+        """Write the configured LibreChat MCP server entry unless previewing."""
         cfg = dict(settings["clients"][self.key])
         config_path = self._resolve_path(str(cfg.get("config_path") or "librechat.yaml"))
         name = str(cfg.get("name") or "opampServer")

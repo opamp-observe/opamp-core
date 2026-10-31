@@ -140,9 +140,13 @@ python scripts/security_checks.py
 ```
 
 The gate compacts provider UI assets, runs pytest, checks Ruff security rules, scans tracked files
-with `detect-secrets`, audits Python requirements with `pip-audit`, and produces Semgrep and Bandit
-evaluation reports. Semgrep uses the reviewed repository rules in `security/semgrep.yml`; it does
-not download an automatically changing ruleset.
+with `detect-secrets`, audits every packaged project's `pyproject.toml` dependencies with
+`pip-audit`, and produces Semgrep and Bandit evaluation reports. Semgrep uses the reviewed
+repository rules in `security/semgrep.yml`; it does not download an automatically changing
+ruleset. `setup-venv` installs the versioned scanner set from the `security` extra in
+`dev-tools/pyproject.toml`. Dependency auditing extracts each project's runtime dependencies from
+its TOML metadata. Packages owned by this workspace are audited from their own TOML files instead
+of being resolved from a public package index.
 
 Pytest, Ruff, `detect-secrets`, and `pip-audit` are blocking checks. Semgrep findings and Bandit
 findings are initially report-only so maintainers can compare their unique signal with Ruff and
@@ -179,7 +183,7 @@ ingestion.
 | Semgrep findings | `dev-tools/runtime/security-reports/<scope>/semgrep.sarif` | SARIF viewer or GitHub code-scanning ingestion |
 | Bandit findings | `dev-tools/runtime/security-reports/<scope>/bandit.json` | JSON viewer; compare with Ruff findings |
 | Secret scan | `dev-tools/runtime/security-reports/<scope>/detect-secrets.json` | JSON viewer; validate every candidate without copying secrets into issues |
-| Dependency audit | `dev-tools/runtime/security-reports/<scope>/pip-audit.json` | JSON viewer; review package, advisory, and fixed-version data |
+| Dependency audit | `dev-tools/runtime/security-reports/<scope>/pip-audit.json` | For a named component, review native pip-audit JSON; for `repository`, use this manifest to find each project's native report under `pip-audit/` |
 | Developer CLI issues/errors | `dev-tools/runtime/logs/*-issues.json` and `*-errors.json` | Use the paths printed at command completion |
 
 `<scope>` is `repository` for `secure all` and the component directory name for `secure named`.

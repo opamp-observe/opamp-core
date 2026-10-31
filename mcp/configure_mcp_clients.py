@@ -27,7 +27,6 @@ import json
 import os
 import platform
 import shutil
-import subprocess
 import sys
 from copy import deepcopy
 from pathlib import Path
@@ -46,7 +45,6 @@ from opamp_mcp_config.targets import (  # noqa: E402
     LibreChatTarget,
     VSCodeTarget,
 )
-
 
 DEFAULT_CONFIG_FILENAME = "mcp-client-defaults.json"
 JSON_INDENT = 2

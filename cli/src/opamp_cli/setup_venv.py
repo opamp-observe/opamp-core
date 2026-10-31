@@ -24,6 +24,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+DEFAULT_DEVELOPMENT_EXTRAS = "dev"
+DEVELOPER_TOOLS_EXTRAS = "dev,security"
+DEVELOPER_TOOLS_PATH = Path("dev-tools")
 OPAMP_VENV_PYTHON_COMPONENTS = (
     Path("cli"),
     Path("provider"),
@@ -278,9 +281,21 @@ def python_setup_venv_steps(
     for relative_path in OPAMP_VENV_PYTHON_COMPONENTS:
         component_dir = (repo_root / relative_path).resolve()
         if (component_dir / "pyproject.toml").is_file():
+            extras = (
+                DEVELOPER_TOOLS_EXTRAS
+                if relative_path == DEVELOPER_TOOLS_PATH
+                else DEFAULT_DEVELOPMENT_EXTRAS
+            )
             steps.append(
                 (
-                    [str(venv_python), "-m", "pip", "install", "-e", f"{component_dir}[dev]"],
+                    [
+                        str(venv_python),
+                        "-m",
+                        "pip",
+                        "install",
+                        "-e",
+                        f"{component_dir}[{extras}]",
+                    ],
                     repo_root,
                 )
             )

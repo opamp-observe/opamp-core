@@ -169,3 +169,17 @@ def test_heartbeat_loop_reraises_cancelled_error() -> None:
         asyncio.run(harness._heartbeat_loop(port=2020))
 
     assert harness.disconnect_calls == 1
+
+
+def test_public_heartbeat_loop_delegates_to_cancellable_runtime() -> None:
+    """Embedding hosts can use the public wrapper without accessing private methods."""
+
+    harness = _HeartbeatLoopHarness(send_outcomes=[])
+    observed_ports: list[int] = []
+
+    async def replacement(port: int) -> None:
+        observed_ports.append(port)
+
+    harness._heartbeat_loop = replacement
+    asyncio.run(harness.run_heartbeat_loop(port=2020))
+    assert observed_ports == [2020]
