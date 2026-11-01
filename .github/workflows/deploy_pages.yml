@@ -55,7 +55,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gem install bundler --version 4.0.22 --no-document
+          user_gem_bin="$(ruby -e 'puts Gem.user_dir')/bin"
+          gem install bundler --version 4.0.22 --no-document --user-install
+          echo "$user_gem_bin" >> "$GITHUB_PATH"
+          export PATH="$user_gem_bin:$PATH"
           bundle config set path ../vendor/bundle
           bundle install
 
