@@ -61,6 +61,9 @@ cloud/aws/*.local.env
 
 
 # Documentation
+/_site/
+/vendor/
+docs/.bundle/
 docs/screenshots/
 dev-notes/
 *.backup*

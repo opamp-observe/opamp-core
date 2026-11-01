@@ -27,7 +27,8 @@ def test_pages_workflow_builds_docs_only_from_main() -> None:
     assert "- \"docs/**\"" in workflow
     assert "workflow_dispatch:" in workflow
     assert workflow.count("if: github.ref == 'refs/heads/main'") == 2
-    assert "gem install bundler --version 4.0.22 --no-document" in workflow
+    assert "gem install bundler --version 4.0.22 --no-document --user-install" in workflow
+    assert 'echo "$user_gem_bin" >> "$GITHUB_PATH"' in workflow
     assert "bundle exec jekyll build --destination ../_site" in workflow
     assert "actions/upload-pages-artifact@v4" in workflow
     assert "actions/deploy-pages@v4" in workflow
