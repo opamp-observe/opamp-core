@@ -89,9 +89,9 @@ Evidence is written under `dist/test-reports/st007/`:
 | `screenshots/st007-browser-workflow.png` | Completed browser workflow. |
 
 The randomly suffixed directories named `integration-runtime-*` and `ui-runtime.*` are isolated
-test fixtures. They can contain synthetic confidential markers and must not be reused as
-deployment configuration. A unique directory is created on every run so retained evidence from
-an earlier invocation cannot change the next result.
+test fixtures. They can contain synthetic confidential markers, so the container removes them on
+exit instead of retaining or uploading them as evidence. A unique directory is created on every
+run so retained evidence from an earlier invocation cannot change the next result.
 
 ## Troubleshooting
 

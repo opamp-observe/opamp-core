@@ -15,6 +15,8 @@
 set -euo pipefail
 
 readonly ui_port=18191
+readonly integration_runtime_name="integration-runtime-*"
+readonly ui_runtime_name="ui-runtime.*"
 results_dir="${RESULTS_DIR:-/host-output}"
 staged_root="$(/runner/prepare_source.sh)"
 ui_runtime_dir=""
@@ -23,11 +25,14 @@ ui_process_id=""
 ui_ready=0
 
 cleanup() {
-  # Stop the browser-test service without hiding the original scenario status.
+  # Stop the browser-test service and remove private scratch state without hiding the result.
   if [[ -n "${ui_process_id}" ]] && kill -0 "${ui_process_id}" 2>/dev/null; then
     kill "${ui_process_id}" 2>/dev/null || true
     wait "${ui_process_id}" 2>/dev/null || true
   fi
+  find "${results_dir}" -maxdepth 1 -type d \
+    \( -name "${integration_runtime_name}" -o -name "${ui_runtime_name}" \) \
+    -exec rm -rf -- {} + 2>/dev/null || true
 }
 trap cleanup EXIT
 
