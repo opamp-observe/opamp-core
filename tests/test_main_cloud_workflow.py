@@ -29,7 +29,7 @@ def test_workflow_accepts_azure_aws_or_no_cloud_provider() -> None:
     workflow = _workflow_text()
 
     assert "CONFIGURED_CLOUD_PROVIDER: ${{ vars.CLOUD_PROVIDER || '' }}" in workflow
-    assert "DEFAULT_CLOUD_PROVIDER: ${{ github.event_name == 'push' && 'aws' || 'none' }}" in workflow
+    assert "DEFAULT_CLOUD_PROVIDER: none" in workflow
     assert "REQUESTED_CLOUD_PROVIDER: ${{ inputs.cloud_provider || 'configured' }}" in workflow
     assert 'cloud_provider="$DEFAULT_CLOUD_PROVIDER"' in workflow
     assert "azure|aws|none" in workflow
@@ -84,6 +84,10 @@ def test_aws_mode_uses_the_existing_cloudformation_deployment() -> None:
     assert "AWS_ROLE_TO_ASSUME repository secret is required for AWS mode" in workflow
     assert "AWS_KEY_NAME repository variable is required for AWS mode" in workflow
     assert "AWS_ADMIN_SOURCE_CIDR repository variable is required for AWS mode" in workflow
+    assert "AWS_AMI_ID repository variable must be a pinned EC2 AMI id" in workflow
+    assert '"AmiId=$AMI_ID"' in workflow
+    assert "ServerPrivateIp=" not in workflow
+    assert "ConsumerPrivateIp=" not in workflow
     assert "Set CLOUD_PROVIDER to none" in workflow
     assert "PARAMETERS_FILE: cloud/aws/parameters.workflow.env" in workflow
     assert "run: bash cloud/aws/deploy.sh" in workflow
@@ -119,6 +123,7 @@ def test_operator_guide_documents_cloud_provider_control() -> None:
     assert "`CLOUD_PROVIDER`" in operator_guide
     assert "`azure`" in operator_guide
     assert "`aws`" in operator_guide
-    assert "Use `aws` for pushes to `main`" in operator_guide
+    assert "build-only `none` flow" in operator_guide
+    assert "`AWS_AMI_ID`" in operator_guide
     assert "`AWS_ROLE_TO_ASSUME`" in operator_guide
     assert "`AWS_REGRESSION_ONLY`" in operator_guide

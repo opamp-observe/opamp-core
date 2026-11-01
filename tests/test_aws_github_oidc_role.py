@@ -175,6 +175,19 @@ def test_configure_github_actions_writes_secret_and_variables(
     }) in captured_requests
 
 
+def test_aws_arguments_include_pinned_ami_github_variable(
+    oidc_role_module: ModuleType,
+) -> None:
+    """Expose the deliberately selected regional AMI through GitHub configuration."""
+    arguments = oidc_role_module._build_parser().parse_args(
+        ["--aws-ami-id", "ami-0123456789abcdef0"]
+    )
+
+    variables = oidc_role_module._github_variables_from_arguments(arguments)
+
+    assert variables["AWS_AMI_ID"] == "ami-0123456789abcdef0"
+
+
 def test_azure_subjects_scope_github_federation_to_main_branch(
     oidc_role_module: ModuleType,
 ) -> None:

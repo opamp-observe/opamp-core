@@ -77,6 +77,7 @@ VERSION_KEY = "Version"
 ALLOW_EFFECT = "Allow"
 ASSUME_ROLE_WITH_WEB_IDENTITY_ACTION = "sts:AssumeRoleWithWebIdentity"
 AWS_ADMIN_SOURCE_CIDR_VARIABLE = "AWS_ADMIN_SOURCE_CIDR"
+AWS_AMI_ID_VARIABLE = "AWS_AMI_ID"
 AWS_KEY_NAME_VARIABLE = "AWS_KEY_NAME"
 AWS_ROLE_TO_ASSUME_SECRET = "AWS_ROLE_TO_ASSUME"
 CLOUD_PROVIDER_VARIABLE = "CLOUD_PROVIDER"
@@ -217,6 +218,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--aws-key-name",
         default="",
         help="optional value to upsert as the AWS_KEY_NAME GitHub Actions variable",
+    )
+    parser.add_argument(
+        "--aws-ami-id",
+        default="",
+        help="optional pinned regional AMI id to upsert as the AWS_AMI_ID GitHub variable",
     )
     parser.add_argument(
         "--aws-admin-source-cidr",
@@ -1109,6 +1115,7 @@ def _github_variables_from_arguments(arguments: argparse.Namespace) -> dict[str,
     """Return the GitHub Actions variables requested on the command line."""
     return {
         AWS_ADMIN_SOURCE_CIDR_VARIABLE: arguments.aws_admin_source_cidr,
+        AWS_AMI_ID_VARIABLE: arguments.aws_ami_id,
         AWS_KEY_NAME_VARIABLE: arguments.aws_key_name,
         AZURE_RESOURCE_GROUP_VARIABLE: arguments.azure_resource_group,
         AZURE_WEBAPP_NAME_VARIABLE: arguments.azure_webapp_name,
@@ -1150,7 +1157,10 @@ def _configure_aws_resources(
             "No IAM permissions were attached. Attach a managed policy or custom "
             "least-privilege policy before running the deployment workflow."
         )
-    return {AWS_ROLE_TO_ASSUME_SECRET: selected_role_arn}, _github_variables_from_arguments(arguments)
+    return (
+        {AWS_ROLE_TO_ASSUME_SECRET: selected_role_arn},
+        _github_variables_from_arguments(arguments),
+    )
 
 
 def _configure_azure_resources(
