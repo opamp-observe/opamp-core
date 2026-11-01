@@ -188,6 +188,12 @@ credentials manager, CLI, broker, MCP setup tooling, and simulator are optional.
 
 ## Documentation
 
+The `Build and deploy GitHub Pages` workflow publishes `docs/` only from the
+`main` branch when documentation changes. The repository Pages source must be
+set to **GitHub Actions**; the workflow preserves the `docs/CNAME` custom domain
+configuration for `opamp.info`. The organization Actions policy must allow the
+GitHub-owned `actions/upload-pages-artifact` and `actions/deploy-pages` actions.
+
 - [Product installation](docs/installation.md) — deployment scenarios, released wheels,
   automation, and command-line tooling.
 - [Documentation hub](docs/README.md) — full setup, architecture, and run instructions.

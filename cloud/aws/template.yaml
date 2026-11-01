@@ -42,14 +42,6 @@ Parameters:
     Type: String
     Default: 10.42.0.0/24
     Description: IPv4 CIDR for the public subnet.
-  ServerPrivateIp:
-    Type: String
-    Default: 10.42.0.10
-    Description: Static private IPv4 address for the server instance.
-  ConsumerPrivateIp:
-    Type: String
-    Default: 10.42.0.20
-    Description: Static private IPv4 address for the consumer instance.
   ArtifactBucket:
     Type: String
     MinLength: 3
@@ -58,10 +50,9 @@ Parameters:
     Type: String
     Default: opamp-cloud/opamp-cloud-artifacts.tar.gz
     Description: S3 object key for the packaged scripts and wheels.
-  LatestAmiId:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
-    Description: Canonical Ubuntu 22.04 AMD64 AMI public parameter.
+  AmiId:
+    Type: AWS::EC2::Image::Id
+    Description: Pinned Ubuntu 22.04 AMD64 AMI id selected for this deployment region.
   KeycloakAdminUser:
     Type: String
     Default: admin
@@ -321,7 +312,7 @@ Resources:
       IamInstanceProfile:
         Ref: ServerInstanceProfile
       ImageId:
-        Ref: LatestAmiId
+        Ref: AmiId
       InstanceType:
         Ref: InstanceType
       KeyName:
@@ -331,8 +322,6 @@ Resources:
         HttpPutResponseHopLimit: 1
         HttpTokens: required
         InstanceMetadataTags: disabled
-      PrivateIpAddress:
-        Ref: ServerPrivateIp
       PropagateTagsToVolumeOnCreation: true
       SecurityGroupIds:
         - Ref: ServerSecurityGroup
@@ -391,12 +380,17 @@ Resources:
               --secret-id '${KeycloakAdminSecret}' --query SecretString --output text)"
             keycloak_admin_user="$(printf '%s' "$keycloak_secret_json" | jq -r '.username')"
             keycloak_admin_password="$(printf '%s' "$keycloak_secret_json" | jq -r '.password')"
+            server_private_ip="$(hostname -I | awk '{print $1}')"
+            if [[ -z "$server_private_ip" ]]; then
+              signal_cloudformation FAILURE "Server private IPv4 address could not be resolved"
+              exit 1
+            fi
 
             server_start_log=/var/log/opamp-server-start.log
             if ! KEYCLOAK_ADMIN="$keycloak_admin_user" \
               KEYCLOAK_ADMIN_PASSWORD="$keycloak_admin_password" \
               OPAMP_PUBLIC_HOST='${ServerElasticIp}' \
-              OPAMP_SERVER_PRIVATE_IP='${ServerPrivateIp}' \
+              OPAMP_SERVER_PRIVATE_IP="$server_private_ip" \
               bash "$artifact_root/scripts/start-opamp-server.sh" 2>&1 | tee "$server_start_log"; then
               server_start_error="$(tail -n 5 "$server_start_log" | tr '\n' ' ' | tr -cd '[:alnum:] ._:/=-' | cut -c1-180)"
               if [[ -z "$server_start_error" ]]; then server_start_error="see opamp-server-start.log"; fi
@@ -448,7 +442,7 @@ Resources:
       IamInstanceProfile:
         Ref: ConsumerInstanceProfile
       ImageId:
-        Ref: LatestAmiId
+        Ref: AmiId
       InstanceType:
         Ref: InstanceType
       KeyName:
@@ -458,8 +452,6 @@ Resources:
         HttpPutResponseHopLimit: 1
         HttpTokens: required
         InstanceMetadataTags: disabled
-      PrivateIpAddress:
-        Ref: ConsumerPrivateIp
       PropagateTagsToVolumeOnCreation: true
       SecurityGroupIds:
         - Ref: ConsumerSecurityGroup
@@ -515,7 +507,7 @@ Resources:
             fi
 
             OPAMP_DEPLOYMENT_PLATFORM=AWS \
-              OPAMP_SERVER_URL='https://${ServerPrivateIp}' \
+              OPAMP_SERVER_URL='https://${ServerInstance.PrivateIp}' \
               OPAMP_SERVER_HOST='${ServerElasticIp}' \
               bash "$artifact_root/scripts/start-opamp-consumer.sh"
 

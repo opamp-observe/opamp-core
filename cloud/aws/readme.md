@@ -171,9 +171,24 @@ deploy script detect the current public IPv4 address through
 password belongs in this file; CloudFormation generates the Keycloak
 administrator password in Secrets Manager.
 
-The default AMI parameter selects Canonical Ubuntu 22.04 AMD64 dynamically in
-the selected region. The supported default instance types are therefore the
-x86-based `t3` choices listed in the template.
+Set `AmiId` to a specific Ubuntu 22.04 AMD64 image in the selected region. The
+template deliberately has no moving AMI default: changing this value is an
+explicit instance replacement decision. Resolve Canonical's current image once
+and copy the returned `ami-*` value into the parameter file:
+
+```bash
+aws ssm get-parameter \
+  --region eu-west-2 \
+  --name /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id \
+  --query Parameter.Value \
+  --output text
+```
+
+CloudFormation assigns private addresses dynamically. The consumer receives
+the created server address through the template, so an AMI update can create a
+replacement instance before deleting its predecessor without colliding with a
+hard-coded private address. The supported instance types remain the x86-based
+`t3` choices listed in the template.
 
 ## Deploy From A Command Line
 
@@ -341,8 +356,8 @@ not deploy on pushes.
 4. Add repository secret `AWS_ROLE_TO_ASSUME` containing the OIDC role ARN.
 5. Optionally add `AWS_CLOUDFORMATION_ROLE_ARN` containing the execution role ARN.
 6. Run the workflow from the Actions tab, select `deploy`, and provide the EC2
-   key pair and administrator CIDR inputs. Leave the bucket input blank to
-   create timestamped retained storage.
+   key pair, administrator CIDR, and pinned regional AMI id inputs. Leave the
+   bucket input blank to create timestamped retained storage.
 
 The workflow requests `id-token: write` and uses temporary OIDC credentials. Do
 not add long-lived AWS access keys as repository secrets.
@@ -379,6 +394,7 @@ export GITHUB_TOKEN=REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS
 python cloud/aws/scripts/configure_github_oidc_role.py \
   --attach-administrator-access \
   --configure-github \
+  --aws-ami-id ami-REPLACE_WITH_PINNED_IMAGE_ID \
   --aws-key-name opamp-regression \
   --aws-admin-source-cidr REPLACE_WITH_YOUR_PUBLIC_IP/32 \
   --cloud-provider aws
@@ -391,6 +407,7 @@ $env:GITHUB_TOKEN = "REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS"
 py -3 cloud\aws\scripts\configure_github_oidc_role.py `
   --attach-administrator-access `
   --configure-github `
+  --aws-ami-id ami-REPLACE_WITH_PINNED_IMAGE_ID `
   --aws-key-name opamp-regression `
   --aws-admin-source-cidr "REPLACE_WITH_YOUR_PUBLIC_IP/32" `
   --cloud-provider aws
@@ -403,6 +420,7 @@ set GITHUB_TOKEN=REPLACE_WITH_TOKEN_ALLOWED_TO_WRITE_REPO_ACTIONS_SETTINGS
 py -3 cloud\aws\scripts\configure_github_oidc_role.py ^
   --attach-administrator-access ^
   --configure-github ^
+  --aws-ami-id ami-REPLACE_WITH_PINNED_IMAGE_ID ^
   --aws-key-name opamp-regression ^
   --aws-admin-source-cidr "REPLACE_WITH_YOUR_PUBLIC_IP/32" ^
   --cloud-provider aws
@@ -417,6 +435,7 @@ python cloud/aws/scripts/configure_github_oidc_role.py \
   --attach-administrator-access \
   --configure-github \
   --github-token-source git \
+  --aws-ami-id ami-REPLACE_WITH_PINNED_IMAGE_ID \
   --aws-key-name opamp-regression \
   --aws-admin-source-cidr REPLACE_WITH_YOUR_PUBLIC_IP/32 \
   --cloud-provider aws
@@ -429,6 +448,7 @@ py -3 cloud\aws\scripts\configure_github_oidc_role.py `
   --attach-administrator-access `
   --configure-github `
   --github-token-source git `
+  --aws-ami-id ami-REPLACE_WITH_PINNED_IMAGE_ID `
   --aws-key-name opamp-regression `
   --aws-admin-source-cidr "REPLACE_WITH_YOUR_PUBLIC_IP/32" `
   --cloud-provider aws
@@ -441,6 +461,7 @@ py -3 cloud\aws\scripts\configure_github_oidc_role.py ^
   --attach-administrator-access ^
   --configure-github ^
   --github-token-source git ^
+  --aws-ami-id ami-REPLACE_WITH_PINNED_IMAGE_ID ^
   --aws-key-name opamp-regression ^
   --aws-admin-source-cidr "REPLACE_WITH_YOUR_PUBLIC_IP/32" ^
   --cloud-provider aws
@@ -570,9 +591,9 @@ aws iam get-role \
 
 Copy the returned ARN into the GitHub repository secret
 `AWS_ROLE_TO_ASSUME`. The main workflow also needs repository variables
-`AWS_KEY_NAME` and `AWS_ADMIN_SOURCE_CIDR`; set `CLOUD_PROVIDER` to `none` if
-main-branch pushes should remain build-only until the AWS role and variables
-are ready.
+`AWS_KEY_NAME`, `AWS_ADMIN_SOURCE_CIDR`, and `AWS_AMI_ID`. The AMI value must be
+a pinned image id in `AWS_REGION`. Main-branch pushes remain build-only unless
+`CLOUD_PROVIDER` is explicitly set to `aws` or `azure`.
 
 GitHub changed OIDC subject claims for some repositories in July 2026 to add
 immutable organization and repository IDs. Inspect a token from this repository

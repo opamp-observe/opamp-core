@@ -42,7 +42,7 @@ jobs:
         shell: bash
         env:
           CONFIGURED_CLOUD_PROVIDER: ${{ vars.CLOUD_PROVIDER || '' }}
-          DEFAULT_CLOUD_PROVIDER: ${{ github.event_name == 'push' && 'aws' || 'none' }}
+          DEFAULT_CLOUD_PROVIDER: none
           REQUESTED_CLOUD_PROVIDER: ${{ inputs.cloud_provider || 'configured' }}
         run: |
           set -euo pipefail
@@ -192,12 +192,14 @@ jobs:
         shell: bash
         env:
           ADMIN_SOURCE_CIDR: ${{ vars.AWS_ADMIN_SOURCE_CIDR }}
+          AMI_ID: ${{ vars.AWS_AMI_ID }}
           AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           KEY_NAME: ${{ vars.AWS_KEY_NAME }}
         run: |
           set -euo pipefail
           missing_configuration=0
           [[ -n "$AWS_ROLE_TO_ASSUME" ]] || { echo "AWS_ROLE_TO_ASSUME repository secret is required for AWS mode" >&2; missing_configuration=1; }
+          [[ "$AMI_ID" =~ ^ami-[0-9a-fA-F]+$ ]] || { echo "AWS_AMI_ID repository variable must be a pinned EC2 AMI id for AWS mode" >&2; missing_configuration=1; }
           [[ -n "$KEY_NAME" ]] || { echo "AWS_KEY_NAME repository variable is required for AWS mode" >&2; missing_configuration=1; }
           [[ -n "$ADMIN_SOURCE_CIDR" ]] || { echo "AWS_ADMIN_SOURCE_CIDR repository variable is required for AWS mode" >&2; missing_configuration=1; }
           if [[ "$missing_configuration" -ne 0 ]]; then
@@ -259,16 +261,19 @@ jobs:
         shell: bash
         env:
           ADMIN_SOURCE_CIDR: ${{ vars.AWS_ADMIN_SOURCE_CIDR }}
+          AMI_ID: ${{ vars.AWS_AMI_ID }}
           KEY_NAME: ${{ vars.AWS_KEY_NAME }}
         run: |
           set -euo pipefail
           [[ -n "$KEY_NAME" ]] || { echo "AWS_KEY_NAME repository variable is required for AWS mode" >&2; exit 1; }
           [[ -n "$ADMIN_SOURCE_CIDR" ]] || { echo "AWS_ADMIN_SOURCE_CIDR repository variable is required for AWS mode" >&2; exit 1; }
+          [[ "$AMI_ID" =~ ^ami-[0-9a-fA-F]+$ ]] || { echo "AWS_AMI_ID must be a pinned EC2 AMI id" >&2; exit 1; }
 
       - name: Create AWS parameter file
         shell: bash
         env:
           ADMIN_SOURCE_CIDR: ${{ vars.AWS_ADMIN_SOURCE_CIDR }}
+          AMI_ID: ${{ vars.AWS_AMI_ID }}
           INSTANCE_TYPE: ${{ vars.AWS_INSTANCE_TYPE || 't3.small' }}
           KEY_NAME: ${{ vars.AWS_KEY_NAME }}
           NAME_PREFIX: ${{ vars.AWS_NAME_PREFIX || 'opamp' }}
@@ -279,10 +284,9 @@ jobs:
             "KeyName=$KEY_NAME" \
             "AdminSourceCidr=$ADMIN_SOURCE_CIDR" \
             "InstanceType=$INSTANCE_TYPE" \
+            "AmiId=$AMI_ID" \
             "VpcCidr=10.42.0.0/16" \
             "PublicSubnetCidr=10.42.0.0/24" \
-            "ServerPrivateIp=10.42.0.10" \
-            "ConsumerPrivateIp=10.42.0.20" \
             "KeycloakAdminUser=admin" \
             > cloud/aws/parameters.workflow.env
 

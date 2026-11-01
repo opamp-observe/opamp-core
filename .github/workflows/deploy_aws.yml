@@ -59,6 +59,10 @@ on:
           - t3.small
           - t3.medium
           - t3.large
+      ami_id:
+        description: Pinned Ubuntu 22.04 AMD64 AMI id in the selected AWS region
+        required: false
+        type: string
       name_prefix:
         description: Prefix for AWS resource names and tags
         required: true
@@ -88,6 +92,7 @@ jobs:
           AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           INPUT_ACTION: ${{ inputs.action }}
           INPUT_ADMIN_SOURCE_CIDR: ${{ inputs.admin_source_cidr }}
+          INPUT_AMI_ID: ${{ inputs.ami_id }}
           INPUT_KEY_NAME: ${{ inputs.key_name }}
         run: |
           set -euo pipefail
@@ -96,6 +101,7 @@ jobs:
           if [[ "$INPUT_ACTION" == "deploy" ]]; then
             [[ -n "$INPUT_KEY_NAME" ]] || { echo "key_name input is required for deploy" >&2; missing_configuration=1; }
             [[ -n "$INPUT_ADMIN_SOURCE_CIDR" ]] || { echo "admin_source_cidr input is required for deploy" >&2; missing_configuration=1; }
+            [[ "$INPUT_AMI_ID" =~ ^ami-[0-9a-fA-F]+$ ]] || { echo "ami_id input must be a pinned EC2 AMI id for deploy" >&2; missing_configuration=1; }
           fi
           exit "$missing_configuration"
 
@@ -149,17 +155,20 @@ jobs:
         shell: bash
         env:
           INPUT_ADMIN_SOURCE_CIDR: ${{ inputs.admin_source_cidr }}
+          INPUT_AMI_ID: ${{ inputs.ami_id }}
           INPUT_KEY_NAME: ${{ inputs.key_name }}
         run: |
           set -euo pipefail
           [[ -n "$INPUT_KEY_NAME" ]] || { echo "key_name is required" >&2; exit 1; }
           [[ -n "$INPUT_ADMIN_SOURCE_CIDR" ]] || { echo "admin_source_cidr is required" >&2; exit 1; }
+          [[ "$INPUT_AMI_ID" =~ ^ami-[0-9a-fA-F]+$ ]] || { echo "ami_id must be a pinned EC2 AMI id" >&2; exit 1; }
 
       - name: Create workflow parameter file
         if: inputs.action == 'deploy'
         shell: bash
         env:
           INPUT_ADMIN_SOURCE_CIDR: ${{ inputs.admin_source_cidr }}
+          INPUT_AMI_ID: ${{ inputs.ami_id }}
           INPUT_INSTANCE_TYPE: ${{ inputs.instance_type }}
           INPUT_KEY_NAME: ${{ inputs.key_name }}
           INPUT_NAME_PREFIX: ${{ inputs.name_prefix }}
@@ -169,10 +178,9 @@ jobs:
             "KeyName=$INPUT_KEY_NAME" \
             "AdminSourceCidr=$INPUT_ADMIN_SOURCE_CIDR" \
             "InstanceType=$INPUT_INSTANCE_TYPE" \
+            "AmiId=$INPUT_AMI_ID" \
             "VpcCidr=10.42.0.0/16" \
             "PublicSubnetCidr=10.42.0.0/24" \
-            "ServerPrivateIp=10.42.0.10" \
-            "ConsumerPrivateIp=10.42.0.20" \
             "KeycloakAdminUser=admin" \
             > cloud/aws/parameters.workflow.env
 

@@ -60,6 +60,9 @@ SERVER_SECURITY_GROUP_RESOURCE = "ServerSecurityGroup"
 SERVER_WAIT_CONDITION_RESOURCE = "ServerWaitCondition"
 GET_SECRET_VALUE_ACTION = "secretsmanager:GetSecretValue"
 LATEST_AMI_ID_PARAMETER = "LatestAmiId"
+AMI_ID_PARAMETER = "AmiId"
+IMAGE_ID_KEY = "ImageId"
+PRIVATE_IP_ADDRESS_KEY = "PrivateIpAddress"
 
 SERVER_INBOUND_PORTS = {22, 443, 8443}
 CONSUMER_INBOUND_PORTS = {22}
@@ -68,14 +71,12 @@ EXPECTED_PARAMETERS = {
     "AdminSourceCidr",
     "ArtifactBucket",
     "ArtifactKey",
-    "ConsumerPrivateIp",
+    "AmiId",
     "InstanceType",
     "KeyName",
     "KeycloakAdminUser",
-    "LatestAmiId",
     "NamePrefix",
     "PublicSubnetCidr",
-    "ServerPrivateIp",
     "VpcCidr",
 }
 EXPECTED_OUTPUTS = {
@@ -99,9 +100,6 @@ EXPECTED_RESOURCE_TYPES = {
     "AWS::IAM::Role",
     "AWS::SecretsManager::Secret",
 }
-UBUNTU_2204_AMI_PARAMETER = (
-    "/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
-)
 
 
 def _load_template() -> dict:
@@ -124,14 +122,19 @@ def test_template_exposes_complete_parameter_and_output_contract() -> None:
     assert set(template[OUTPUTS_KEY]) == EXPECTED_OUTPUTS
 
 
-def test_template_uses_published_ubuntu_2204_ami_parameter() -> None:
-    """Use Canonical's published gp2 namespace while EC2 overrides disks to gp3."""
+def test_template_requires_one_pinned_ami_for_both_instances() -> None:
+    """Prevent an upstream moving AMI pointer from unexpectedly replacing live instances."""
     template = _load_template()
+    parameters = template[PARAMETERS_KEY]
+    resources = template[RESOURCES_KEY]
 
-    assert (
-        template[PARAMETERS_KEY][LATEST_AMI_ID_PARAMETER][DEFAULT_KEY]
-        == UBUNTU_2204_AMI_PARAMETER
-    )
+    assert parameters[AMI_ID_PARAMETER][TYPE_KEY] == "AWS::EC2::Image::Id"
+    assert DEFAULT_KEY not in parameters[AMI_ID_PARAMETER]
+    assert LATEST_AMI_ID_PARAMETER not in parameters
+    for resource_name in (SERVER_INSTANCE_RESOURCE, CONSUMER_INSTANCE_RESOURCE):
+        assert resources[resource_name][PROPERTIES_KEY][IMAGE_ID_KEY] == {
+            REF_KEY: AMI_ID_PARAMETER
+        }
 
 
 def test_template_contains_expected_aws_resource_families() -> None:
@@ -170,6 +173,21 @@ def test_instances_require_imdsv2_and_encrypted_boot_volumes() -> None:
         root_volume = properties[BLOCK_DEVICE_MAPPINGS_KEY][0][EBS_KEY]
         assert root_volume[ENCRYPTED_KEY] is True
         assert root_volume[DELETE_ON_TERMINATION_KEY] is True
+
+
+def test_instances_use_dynamic_private_addresses_during_replacement() -> None:
+    """Allow CloudFormation to create replacement instances before removing old instances."""
+    template = _load_template()
+    resources = template[RESOURCES_KEY]
+
+    for resource_name in (SERVER_INSTANCE_RESOURCE, CONSUMER_INSTANCE_RESOURCE):
+        assert PRIVATE_IP_ADDRESS_KEY not in resources[resource_name][PROPERTIES_KEY]
+
+    server_user_data = _user_data(template, SERVER_INSTANCE_RESOURCE)
+    consumer_user_data = _user_data(template, CONSUMER_INSTANCE_RESOURCE)
+    assert "server_private_ip=\"$(hostname -I | awk '{print $1}')\"" in server_user_data
+    assert 'OPAMP_SERVER_PRIVATE_IP="$server_private_ip"' in server_user_data
+    assert "OPAMP_SERVER_URL='https://${ServerInstance.PrivateIp}'" in consumer_user_data
 
 
 def test_bootstrap_uses_private_artifacts_generated_secret_and_wait_signals() -> None:
@@ -266,6 +284,9 @@ def test_command_line_scripts_and_parameters_are_consistent() -> None:
     parameter_text = (AWS_DIRECTORY / "parameters.example.env").read_text(encoding="utf-8")
     assert "KeyName=REPLACE_WITH_EXISTING_EC2_KEY_PAIR_NAME" in parameter_text
     assert "AdminSourceCidr=REPLACE_WITH_YOUR_PUBLIC_IP/32" in parameter_text
+    assert "AmiId=REPLACE_WITH_PINNED_UBUNTU_2204_AMI_ID" in parameter_text
+    assert "ServerPrivateIp" not in parameter_text
+    assert "ConsumerPrivateIp" not in parameter_text
 
 
 def test_shared_vm_scripts_support_both_cloud_artifact_flows() -> None:

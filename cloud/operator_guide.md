@@ -97,7 +97,9 @@ The artifact location and retained result location have different exposure:
 AWS validates and deploys `cloud/aws/template.yaml`. Azure submits
 `cloud/azure/mainTemplate.json` to an ARM resource-group deployment. Both
 templates create network controls before VMs and pass artifact locations into
-VM bootstrap commands.
+VM bootstrap commands. AWS requires a pinned regional AMI id and lets EC2
+assign private addresses, so a deliberate image replacement does not compete
+with the running instance for a hard-coded address.
 
 ### 5. VM bootstrap
 
@@ -240,7 +242,7 @@ for pushes to `main`:
 | `azure` | Deploy the existing `fluent-opamp` Azure Web App |
 | `aws` | Deploy the AWS CloudFormation regression environment and run the retained regression flow |
 | `none` | Complete the build without requesting cloud credentials |
-| unset | Use `aws` for pushes to `main`; use `none` for manual `configured` runs |
+| unset | Use the build-only `none` flow for pushes and manual `configured` runs |
 
 A manual workflow run can select `azure`, `aws`, or `none` directly. Selecting
 `configured` applies the repository variable when it exists and otherwise
@@ -254,16 +256,18 @@ variables through GitHub's REST API. Azure mode uses the existing
 `AZUREAPPSERVICE_CLIENTID_*`, `AZUREAPPSERVICE_TENANTID_*`, and
 `AZUREAPPSERVICE_SUBSCRIPTIONID_*` secrets, plus optional `AZURE_APP_NAME` and
 `AZURE_RESOURCE_GROUP` variables. AWS mode requires the `AWS_ROLE_TO_ASSUME`
-secret and the `AWS_KEY_NAME` and `AWS_ADMIN_SOURCE_CIDR` repository variables.
+secret and the `AWS_KEY_NAME`, `AWS_ADMIN_SOURCE_CIDR`, and pinned regional
+`AWS_AMI_ID` repository variables.
 `AWS_REGION`, `AWS_STACK_NAME`, `AWS_INSTANCE_TYPE`, `AWS_NAME_PREFIX`, and
 `AWS_ARTIFACT_BUCKET` are optional AWS repository variables.
 `AWS_REGRESSION_ONLY` and `AWS_REGRESSION_SKIP` can contain space-separated
 regression test ids when the merge flow should run a focused subset instead of
 the full pack. `AWS_REGRESSION_CONTINUE_ON_FAILURE` can be set to `true` to
-keep collecting later test evidence after an earlier test fails. Set
-`CLOUD_PROVIDER` to `none` if pushes to `main` should stay build-only while the
-selected provider's OIDC resources or required repository variables are not
-ready. The CloudFormation execution-role secret remains optional.
+keep collecting later test evidence after an earlier test fails. Keep
+`CLOUD_PROVIDER` unset or set it to `none` when pushes to `main` should stay
+build-only. Set it to a cloud provider only after that provider's OIDC
+resources and required repository variables are ready. The CloudFormation
+execution-role secret remains optional.
 
 ## Generated local files
 
