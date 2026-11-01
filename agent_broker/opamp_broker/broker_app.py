@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Attribution: opamp_broker runtime orchestration maintained by mp3monster.org.
+# Attribution: opamp_broker runtime orchestration maintained by opamp.info.
 """Application entrypoint that wires configuration, Slack I/O, MCP, and sessions.
 
 This module centralizes lifecycle orchestration so startup and shutdown behavior

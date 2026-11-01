@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,6 +10,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Resolve config-service runtime settings and environment overrides."""
+
+# Repository checkout imports intentionally follow the shared-package path bootstrap below.
+# ruff: noqa: E402
 
 from __future__ import annotations
 
@@ -24,12 +29,12 @@ ROOT_PATH = Path(__file__).resolve().parents[3]
 if str(ROOT_PATH) not in sys.path:
     sys.path.insert(0, str(ROOT_PATH))
 
+from shared.observability import ObservabilityConfig, load_observability_config_from_payload
 from shared.opamp_config import (
     CFG_COMPONENT_ENTRY_POINTS_QUART,
     load_json_config,
     resolve_component_entry_points_from_payload,
 )
-from shared.observability import ObservabilityConfig, load_observability_config_from_payload
 
 ENV_CONFIG_TOOL_CONFIG_PATH = "CONFIG_TOOL_CONFIG_PATH"
 ENV_OPAMP_CONFIG_PATH = "OPAMP_CONFIG_PATH"
@@ -71,12 +76,11 @@ APP_EXTENSION_CONFIG_PATH = "config_service:config_path"
 
 
 def _config_service_root() -> Path:
+    """Resolve packaged assets before considering a legacy repository-level tree."""
     module_dir = Path(__file__).resolve().parent
     source_root = module_dir.parents[1]
-    if (source_root / "config").is_dir() and (source_root / "json-definitions").is_dir():
-        return source_root
-    for candidate in (module_dir, Path(sys.prefix) / "config_service"):
-        if (candidate / "config").is_dir():
+    for candidate in (module_dir, source_root, Path(sys.prefix) / "config_service"):
+        if (candidate / "config").is_dir() and (candidate / "json-definitions").is_dir():
             return candidate
     return source_root
 

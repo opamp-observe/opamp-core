@@ -1,6 +1,6 @@
 @echo off
 rem Licensed under the Apache License, Version 2.0.
-rem Copyright 2026 mp3monster.org
+rem Copyright 2026 opamp.info
 rem
 rem Prepend the default local demo agent folders to PATH for this shell.
 rem Usage from cmd.exe:

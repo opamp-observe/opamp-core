@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -133,7 +134,12 @@ def test_catalog_launch_config_path_enables_catalog(tmp_path: Path, monkeypatch)
         "opamp": {
             "config_catalog": {
                 "enabled": False,
-                "sources": [{"folder": "config-service/json-definitions", "extensions": [".json"]}],
+                "sources": [
+                    {
+                        "folder": "config-service/src/config_service/json-definitions",
+                        "extensions": [".json"],
+                    }
+                ],
             }
         }
     }
@@ -337,6 +343,7 @@ def test_launch_smart_log_viewer_prints_url_and_config(
     assert f"with config: {config_dir.resolve()}" in output
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows PATH separator behavior")
 def test_smart_log_viewer_process_env_merges_persisted_path(monkeypatch) -> None:
     monkeypatch.setattr(
         cli_main.process_tail.os,
@@ -980,6 +987,10 @@ def test_setup_venv_dry_run_lists_python_and_node_steps(
     repo_root = tmp_path / "repo"
     (repo_root / "cli").mkdir(parents=True)
     (repo_root / "cli" / "pyproject.toml").write_text("[project]\nname = 'opamp-cli'\n")
+    (repo_root / "dev-tools").mkdir()
+    (repo_root / "dev-tools" / "pyproject.toml").write_text(
+        "[project]\nname = 'opamp-dev-tools'\n"
+    )
     (repo_root / "tools" / "mermaid").mkdir(parents=True)
     (repo_root / "tools" / "mermaid" / "package.json").write_text('{"scripts": {}}\n')
     (repo_root / "requirements.txt").write_text("prompt_toolkit>=3.0\n")
@@ -1000,6 +1011,7 @@ def test_setup_venv_dry_run_lists_python_and_node_steps(
     assert '"pip" "install" "-r"' in output or "pip install -r" in output
     assert '"pip" "install" "-e"' in output or "pip install -e" in output
     assert "cli[dev]" in output
+    assert "dev-tools[dev,security]" in output
     assert "npm" in output and "install" in output
     assert "Dry run complete." in output
 

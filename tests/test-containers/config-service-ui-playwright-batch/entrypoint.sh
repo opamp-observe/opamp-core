@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Licensed under the Apache License, Version 2.0.
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 #
 # Build a disposable Config Service browser-test runtime, start the service,
 # and run the Fluent Bit chapter batch through Playwright.

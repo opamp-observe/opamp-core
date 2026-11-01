@@ -1,0 +1,224 @@
+{
+  "title": "Syslog",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog",
+  "fields": [
+    {
+      "name": "allow_longer_sd_id",
+      "required": false,
+      "description": "If true, Fluent Bit allows SD-ID values longer than 32 characters. SD-ID values that exceed 32 characters violate RFC5424 standards.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "host",
+      "required": false,
+      "description": "Domain or IP address of the remote Syslog server.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "mode",
+      "required": false,
+      "description": "Desired transport type. Available options are tcp and udp.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "udp"
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "TCP or UDP port of the remote Syslog server.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 514
+    },
+    {
+      "name": "syslog_appname_key",
+      "required": false,
+      "description": "Optional. The key name from the original record that contains the application name that generated the message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_appname_preset",
+      "required": false,
+      "description": "Optional. The preset application name. It will be overwritten if syslog_appname_key is set and a key of a record is matched.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_facility_key",
+      "required": false,
+      "description": "Optional. The key name from the original record that contains the Syslog facility number.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_facility_preset",
+      "required": false,
+      "description": "Optional. The preset facility number. It will be overwritten if syslog_facility_key is set and a key of a record is matched.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "syslog_format",
+      "required": false,
+      "description": "The Syslog protocol format to use. Available options are rfc3164 and rfc5424.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "rfc5424"
+    },
+    {
+      "name": "syslog_hostname_key",
+      "required": false,
+      "description": "Optional. The key name from the original record that contains the hostname that generated the message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_hostname_preset",
+      "required": false,
+      "description": "Optional. The preset hostname. It will be overwritten if syslog_hostname_key is set and a key of a record is matched.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_maxsize",
+      "required": true,
+      "description": "The maximum size allowed per message. The value must be an integer representing the number of bytes allowed. If no value is provided, the default size is set depending on the protocol version specified by syslog_format. The value rfc3164 sets max size to 1024 bytes, and rfc5424 sets the size to 2048 bytes.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "syslog_message_key",
+      "required": false,
+      "description": "Required. The key name from the original record that contains the message to deliver.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_msgid_key",
+      "required": false,
+      "description": "Optional. The key name from the original record that contains the Message ID associated to the message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_msgid_preset",
+      "required": false,
+      "description": "Optional. The preset message ID. It will be overwritten if syslog_msgid_key is set and a key of a record is matched.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_procid_key",
+      "required": false,
+      "description": "Optional. The key name from the original record that contains the Process ID that generated the message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_procid_preset",
+      "required": false,
+      "description": "Optional. The preset process ID. It will be overwritten if syslog_procid_key is set and a key of a record is matched.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_sd_key",
+      "required": false,
+      "description": "Optional. The key name from the original record that contains a map of key/value pairs to use as Structured Data (SD) content. The key name is included in the resulting SD field as shown in the examples in this doc.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "list",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      }
+    },
+    {
+      "name": "syslog_severity_key",
+      "required": false,
+      "description": "Optional. The key name from the original record that contains the Syslog severity number.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "syslog_severity_preset",
+      "required": false,
+      "description": "Optional. The preset severity number. It will be overwritten if syslog_severity_key is set and a key of a record is matched.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 6
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/syslog#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Syslog."
+}

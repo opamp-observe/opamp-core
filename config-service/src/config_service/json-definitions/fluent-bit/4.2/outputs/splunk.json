@@ -1,0 +1,198 @@
+{
+  "title": "Splunk",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk",
+  "fields": [
+    {
+      "name": "channel",
+      "required": false,
+      "description": "Specify X-Splunk-Request-Channel header for the HTTP Event Collector interface.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "compress",
+      "required": false,
+      "description": "Set payload compression mechanism. Allowed value: gzip.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "host",
+      "required": false,
+      "description": "IP address or hostname of the target Splunk service.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "http_buffer_size",
+      "required": false,
+      "description": "Buffer size used to receive Splunk HTTP responses.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "2M"
+    },
+    {
+      "name": "http_debug_bad_request",
+      "required": false,
+      "description": "If the HTTP server response code is 400 (bad request) and this flag is enabled, it will print the full HTTP request and response to the stdout interface. This feature is available for debugging purposes.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "http_passwd",
+      "required": false,
+      "description": "Password for user defined in http_user.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "http_user",
+      "required": false,
+      "description": "Optional username for basic authentication on HEC.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "TCP port of the target Splunk service.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 8088
+    },
+    {
+      "name": "splunk_token",
+      "required": false,
+      "description": "Specify the authentication token for the HTTP Event Collector interface.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 2
+    },
+    {
+      "name": "event_field",
+      "required": false,
+      "description": "Set event fields for the record. This option can be set multiple times and the format is key_name record_accessor_pattern.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "event_host",
+      "required": false,
+      "description": "Specify the key name that contains the host value. This option allows a record accessors pattern.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "event_index",
+      "required": false,
+      "description": "The name of the index by which the event data is to be indexed.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "event_index_key",
+      "required": false,
+      "description": "Set a record key that will populate the index field. If the key is found, it will have precedence over the value set in event_index.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "event_key",
+      "required": false,
+      "description": "Specify the key name that will be used to send a single value as part of the record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "event_source",
+      "required": false,
+      "description": "Set the source value to assign to the event data.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "event_sourcetype",
+      "required": false,
+      "description": "Set the sourcetype value to assign to the event data.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "event_sourcetype_key",
+      "required": false,
+      "description": "Set a record key that will populate sourcetype. If the key is found, it will have precedence over the value set in event_sourcetype.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "splunk_send_raw",
+      "required": false,
+      "description": "When enabled, the record keys and values are set in the top level of the map instead of under the event key. See Sending Raw Events to configure this option.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "off"
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/splunk#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Splunk."
+}

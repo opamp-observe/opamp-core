@@ -1,0 +1,148 @@
+{
+  "title": "Syslog",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog",
+  "fields": [
+    {
+      "name": "buffer_chunk_size",
+      "required": true,
+      "description": "Set the buffer size to store incoming syslog messages. Memory is allocated on demand in chunks of this size rather than allocating the maximum allowed upfront. When using udp or unix_udp mode, this also sets the maximum message size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "32KB"
+    },
+    {
+      "name": "buffer_max_size",
+      "required": false,
+      "description": "Specify the maximum buffer size to receive a syslog message. If not set, the default size is the value of buffer_chunk_size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      }
+    },
+    {
+      "name": "format",
+      "required": false,
+      "description": "Specify the TCP framing format. Set to octet_counting for RFC 6587 compliant octet-counting framing, or newline for newline-delimited framing. Only applies to TCP modes (tcp or unix_tcp).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "newline"
+    },
+    {
+      "name": "listen",
+      "required": false,
+      "description": "If mode is set to tcp or udp, specify the network interface to bind.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "0.0.0.0"
+    },
+    {
+      "name": "mode",
+      "required": false,
+      "description": "Defines transport protocol mode: UDP over Unix socket (unix_udp), TCP over Unix socket (unix_tcp), tcp, or udp",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "unix_udp"
+    },
+    {
+      "name": "parser",
+      "required": false,
+      "description": "Specify an alternative parser for the message. If mode is set to tcp or udp, the default parser is syslog-rfc5424. Otherwise, syslog-rfc3164-local is used. If your syslog messages have fractional seconds, set this parser value to syslog-rfc5424 instead.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "references_parser": true
+    },
+    {
+      "name": "path",
+      "required": false,
+      "description": "If mode is set to unix_tcp or unix_udp, set the absolute path to the Unix socket file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "If mode is set to tcp or udp, specify the port to listen for incoming messages.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 5140
+    },
+    {
+      "name": "raw_message_key",
+      "required": false,
+      "description": "Specify the key where the original raw syslog message will be preserved.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "receive_buffer_size",
+      "required": false,
+      "description": "Specify the maximum socket receive buffer size. If not set, the default value is OS-dependent, but generally too low to accept thousands of syslog messages per second without loss on udp or unix_udp sockets. On Linux, the value is capped by sysctl net.core.rmem_max.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      }
+    },
+    {
+      "name": "source_address_key",
+      "required": false,
+      "description": "Specify the key where the source address will be injected.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "unix_perm",
+      "required": false,
+      "description": "If mode is set to unix_tcp or unix_udp, set the permission of the Unix socket file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 644
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/syslog#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Syslog."
+}

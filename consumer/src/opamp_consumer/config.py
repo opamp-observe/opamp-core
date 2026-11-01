@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1072,4 +1072,30 @@ def set_config(config: ConsumerConfig) -> None:
     CONFIG = config  # Module-level consumer config singleton.
 
 
-CONFIG = load_config()  # Module-level consumer config singleton loaded at import time.
+def _load_import_default_config() -> ConsumerConfig | None:
+    """Load a process default when present without making library imports require a config file.
+
+    Console bootstraps load explicit configuration after parsing arguments. Embedding hosts may
+    import public client types before process configuration exists, so a missing discovered default
+    must not make the package unimportable.
+    """
+
+    environment_path = os.environ.get(ENV_OPAMP_CONFIG_PATH)
+    candidate_paths = (
+        (pathlib.Path(environment_path).expanduser(),)
+        if environment_path
+        else (
+            pathlib.Path.cwd() / DEFAULT_CONFIG_FILENAME,
+            _repo_root() / "consumer" / DEFAULT_CONFIG_FILENAME,
+            _repo_root() / "config" / DEFAULT_CONFIG_FILENAME,
+        )
+    )
+    if not any(candidate.exists() for candidate in candidate_paths):
+        logging.getLogger(__name__).debug(
+            "no default consumer config found during library import; explicit load required"
+        )
+        return None
+    return load_config()
+
+
+CONFIG: ConsumerConfig | None = _load_import_default_config()

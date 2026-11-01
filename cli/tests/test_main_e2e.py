@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -93,6 +93,14 @@ def test_help_command_prints_usage() -> None:
     assert "opamp-cli cli-config summary" in completed.stdout
     assert "opamp-cli dev-containers" in completed.stdout
     assert "opamp-cli dev-version-bump" in completed.stdout
+
+
+def test_version_command_prints_packaged_version() -> None:
+    """The source entrypoint should expose the same packaged version used by releases."""
+    completed = _run_cli("--version")
+
+    assert completed.returncode == 0
+    assert completed.stdout.strip() == "opamp-cli 0.6.0"
 
 
 def test_status_command_reports_runtime_paths() -> None:

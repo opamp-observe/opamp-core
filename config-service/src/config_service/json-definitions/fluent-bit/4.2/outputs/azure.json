@@ -1,0 +1,96 @@
+{
+  "title": "Azure Log Analytics",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure",
+  "fields": [
+    {
+      "name": "customer_id",
+      "required": false,
+      "description": "Customer ID or WorkspaceID string.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_type",
+      "required": false,
+      "description": "The name of the event type.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "fluentbit"
+    },
+    {
+      "name": "log_type_key",
+      "required": false,
+      "description": "If included, the value for this key checked in the record and if present, will overwrite the log_type. If not found then the log_type value will be used.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "shared_key",
+      "required": false,
+      "description": "The primary or the secondary Connected Sources client authentication key.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "time_generated",
+      "required": false,
+      "description": "If enabled, the HTTP request header time-generated-field will be included so Azure can override the timestamp with the key specified by time_key option.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "time_key",
+      "required": false,
+      "description": "Optional. Specify the key name where the timestamp will be stored.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "@timestamp"
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Azure Log Analytics."
+}

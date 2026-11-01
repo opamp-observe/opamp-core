@@ -1,6 +1,6 @@
 <!--
 Licensed under the Apache License, Version 2.0.
-Copyright 2026 mp3monster.org
+Copyright 2026 opamp.info
 -->
 
 # ST-002 Creation and Verification Results
@@ -52,6 +52,8 @@ Evidence:
 | `readme.md` | Triggering and verification instructions. |
 
 ## Reconciliation Against ST-002
+
+This implementation currently proves only the reusable transport baseline. Remote-config lifecycle, status, file mutation/backup, and rejection checks remain unimplemented, so this folder must not be treated as a complete ST-002 pass.
 
 | ST-002 requirement | Coverage |
 |---|---|

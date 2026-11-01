@@ -9,7 +9,7 @@ description = "OpAMP conversation broker package for standalone wheel deployment
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
-authors = [{ name = "mp3monster.org" }]
+authors = [{ name = "opamp.info" }]
 keywords = ["opamp", "observability", "broker", "chatops", "automation"]
 dependencies = [
   "quart>=0.19",

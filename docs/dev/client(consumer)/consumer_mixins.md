@@ -61,7 +61,14 @@ Selection behavior:
 - local status polling (`poll_local_status_with_codes`)
 - version discovery (`add_agent_version`)
 - heartbeat loop (`_heartbeat_loop`)
-- disconnect/finalize fallbacks (`send_disconnect`, `finalize`)
+- explicit awaited shutdown (`send_disconnect`, `finalize_async`)
+- synchronous compatibility shutdown (`finalize`)
+
+Callers already running an event loop should await `finalize_async()` so the
+disconnect attempt finishes before shutdown continues. Synchronous callers can
+use `finalize()`, which runs cleanup directly when no loop exists and schedules
+it on the caller's active loop otherwise. Object destruction only disables the
+local heartbeat flag; it does not start network I/O or a background thread.
 
 `ServerMessageHandlingMixin` owns provider message handling:
 

@@ -1,0 +1,130 @@
+{
+  "title": "Exec WASI",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi",
+  "fields": [
+    {
+      "name": "accessible_paths",
+      "required": false,
+      "description": "Specify the allowed list of paths to be able to access paths from Wasm programs.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "list",
+        "delimiter": ","
+      },
+      "default": "."
+    },
+    {
+      "name": "buf_size",
+      "required": false,
+      "description": "Size of the buffer. Review unit sizes for allowed values.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 4096
+    },
+    {
+      "name": "interval_nsec",
+      "required": false,
+      "description": "Polling interval (nanosecond).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "interval_sec",
+      "required": false,
+      "description": "Polling interval (seconds).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "oneshot",
+      "required": false,
+      "description": "Execute the command only once at startup.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "parser",
+      "required": false,
+      "description": "Specify the name of a parser to interpret the entry as a structured message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "references_parser": true
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "wasi_path",
+      "required": false,
+      "description": "The location of a Wasm program file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "wasm_heap_size",
+      "required": false,
+      "description": "Size of the heap size of Wasm execution. Review unit sizes for allowed values.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 8192
+    },
+    {
+      "name": "wasm_stack_size",
+      "required": false,
+      "description": "Size of the stack size of Wasm execution. Review unit sizes for allowed values.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 8192
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/exec-wasi#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Exec WASI."
+}

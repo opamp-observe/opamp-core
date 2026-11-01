@@ -1,0 +1,68 @@
+{
+  "title": "Random",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/random",
+  "fields": [
+    {
+      "name": "interval_nsec",
+      "required": false,
+      "description": "Set the interval between generated samples, in nanoseconds. This works in conjunction with interval_sec.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/random#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "interval_sec",
+      "required": false,
+      "description": "Set the interval between generated samples, in seconds.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/random#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "samples",
+      "required": false,
+      "description": "Set the number of samples to generate. -1 generates unlimited samples.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/random#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": -1
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/random#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/random#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Random."
+}

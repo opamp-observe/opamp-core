@@ -4,7 +4,7 @@ title: Documentation
 permalink: /
 ---
 <!--
-Copyright 2026 mp3monster.org
+Copyright 2026 opamp.info
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -38,12 +38,15 @@ Primary repository-wide build outputs now include independent artefacts for:
 
 - `provider`
 - `consumer`
+- `config-service`
 - `catalog-service`
+- `client-config-generator-service`
 - `cli`
 - `consumer-sim`
 
 ## Core guides
 
+- [Product installation](installation.md) — choose and install the core provider, standalone or embedded editors, catalog, agent configuration generator, wheel files, automation, and CLI tools.
 - [Setup README](README.md) — full setup and run instructions.
 - [Features - spec alignment](features.md) — feature notes and design direction.
 - [Roadmap](roadmap/index.md) — future ideas under consideration, without timeline commitments.

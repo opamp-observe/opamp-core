@@ -1,0 +1,162 @@
+{
+  "title": "Google Cloud BigQuery",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery",
+  "fields": [
+    {
+      "name": "aws_region",
+      "required": false,
+      "description": "Used to construct a regional endpoint for AWS STS to verify AWS credentials obtained by Fluent Bit. Regional endpoints are recommended by AWS.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "dataset_id",
+      "required": true,
+      "description": "The dataset ID of the BigQuery dataset to write into. This dataset must exist in your project.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "enable_identity_federation",
+      "required": false,
+      "description": "Enables workload identity federation as an alternative authentication method. Can't be used with a service account credentials file or environment variable. AWS is the only identity provider currently supported.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "Off"
+    },
+    {
+      "name": "google_service_account",
+      "required": true,
+      "description": "The email address of the Google service account to impersonate. The workload identity provider must have permissions to impersonate this service account, and the service account must have permissions to access Google BigQuery resources (write access to tables).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "integer"
+      }
+    },
+    {
+      "name": "google_service_credentials",
+      "required": false,
+      "description": "Absolute path to a Google Cloud credentials JSON file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "Value of the environment variable $GOOGLE_SERVICE_CREDENTIALS."
+    },
+    {
+      "name": "ignore_unknown_values",
+      "required": false,
+      "description": "Accept rows that contain values that don't match the schema. The unknown values are ignored. Default is Off, which treats unknown values as errors.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "Off"
+    },
+    {
+      "name": "pool_id",
+      "required": false,
+      "description": "GCP workload identity pool where the identity provider was created. Used to construct the full resource name of the identity provider.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "project_id",
+      "required": false,
+      "description": "The project ID containing the BigQuery dataset to stream into.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "Value of the project_id in the credentials file."
+    },
+    {
+      "name": "project_number",
+      "required": false,
+      "description": "GCP project number where the identity provider was created. Used to construct the full resource name of the identity provider.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "provider_id",
+      "required": false,
+      "description": "GCP workload identity provider. Used to construct the full resource name of the identity provider. Currently only AWS accounts are supported.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "service_account_email",
+      "required": false,
+      "description": "The service account email address. Used as an alternative to a credentials file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "service_account_secret",
+      "required": false,
+      "description": "The service account private key. Used as an alternative to a credentials file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "skip_invalid_rows",
+      "required": false,
+      "description": "Insert all valid rows of a request, even if invalid rows exist. When Off, the entire request fails if any invalid rows exist.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "Off"
+    },
+    {
+      "name": "table_id",
+      "required": true,
+      "description": "The table ID of the BigQuery table to write into. This table must exist in the specified dataset and the schema must match the output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/bigquery#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Google Cloud BigQuery."
+}

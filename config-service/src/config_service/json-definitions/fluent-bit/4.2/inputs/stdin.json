@@ -1,0 +1,55 @@
+{
+  "title": "Standard input",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/standard-input",
+  "fields": [
+    {
+      "name": "buffer_size",
+      "required": true,
+      "description": "Set the buffer size to read data. This value is used to increase buffer size and must be set according to the Unit Size specification.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/standard-input#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "16k"
+    },
+    {
+      "name": "parser",
+      "required": false,
+      "description": "The name of the parser to invoke instead of the default JSON input parser.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/standard-input#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "references_parser": true
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/standard-input#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/standard-input#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Standard input."
+}

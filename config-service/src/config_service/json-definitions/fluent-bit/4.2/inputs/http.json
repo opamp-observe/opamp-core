@@ -1,0 +1,205 @@
+{
+  "title": "HTTP",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http",
+  "fields": [
+    {
+      "name": "add_remote_addr",
+      "required": false,
+      "description": "Adds a REMOTE_ADDR field to the record. The value of REMOTE_ADDR is the client's address, which is extracted from the X-Forwarded-For header.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "buffer_chunk_size",
+      "required": false,
+      "description": "This sets the chunk size for incoming JSON messages. These chunks are then stored and managed in the space available by buffer_max_size. Compatibility alias for http_server.buffer_chunk_size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "512K"
+    },
+    {
+      "name": "buffer_max_size",
+      "required": false,
+      "description": "Specify the maximum buffer size to receive a JSON message. Compatibility alias for http_server.buffer_max_size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "4M"
+    },
+    {
+      "name": "http2",
+      "required": false,
+      "description": "Enable HTTP/2 support. Compatibility alias for http_server.http2.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "http_server.workers",
+      "required": false,
+      "description": "Number of HTTP listener worker threads.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "listen",
+      "required": false,
+      "description": "The address to listen on.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "0.0.0.0"
+    },
+    {
+      "name": "oauth2.allowed_audience",
+      "required": false,
+      "description": "Audience claim to enforce when validating incoming OAuth 2.0 JWT tokens.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "oauth2.allowed_clients",
+      "required": false,
+      "description": "Authorized client_id or azp claim values. Can be specified multiple times.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "oauth2.issuer",
+      "required": false,
+      "description": "Expected issuer (iss) claim. Required when oauth2.validate is true.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "oauth2.jwks_refresh_interval",
+      "required": false,
+      "description": "How often in seconds to refresh the cached JWKS keys from oauth2.jwks_url.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 300
+    },
+    {
+      "name": "oauth2.jwks_url",
+      "required": false,
+      "description": "JWKS endpoint URL used to fetch public keys for JWT validation. Required when oauth2.validate is true.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "oauth2.validate",
+      "required": false,
+      "description": "Enable OAuth 2.0 JWT validation for incoming requests.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "The port for Fluent Bit to listen on.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 9880
+    },
+    {
+      "name": "remote_addr_key",
+      "required": false,
+      "description": "Key name for the remote address field added to the record when add_remote_addr is enabled.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "REMOTE_ADDR"
+    },
+    {
+      "name": "success_header",
+      "required": false,
+      "description": "Add an HTTP header key/value pair on success. Multiple headers can be set. For example, X-Custom custom-answer.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "successful_response_code",
+      "required": false,
+      "description": "Allows setting successful response code. Supported values: 200, 201, and 204.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 201,
+      "enum_options": [
+        "200",
+        "201",
+        "204"
+      ]
+    },
+    {
+      "name": "tag_key",
+      "required": false,
+      "description": "Specify the key name to overwrite a tag. If set, the tag will be overwritten by a value of the key.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/http#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: HTTP."
+}

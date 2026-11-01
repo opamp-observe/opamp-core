@@ -32,7 +32,7 @@ Configure in `opamp.json` under top-level `opamp.config_catalog`:
       "ui_base_css_path": "/config-service/ui/assets/config_ui.css",
       "sources": [
         {
-          "folder": "config-service/json-definitions",
+          "folder": "config-service/src/config_service/json-definitions",
           "extensions": [".json", ".yaml", ".yml", ".conf"]
         }
       ]

@@ -1,3 +1,15 @@
+# Copyright 2026 opamp.info
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 [build-system]
 requires = ["setuptools>=82", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -16,7 +28,10 @@ keywords = ["opamp", "mcp", "claude", "codex", "gemini", "librechat"]
 yaml = ["PyYAML>=6.0"]
 dev = [
   "build>=1.2",
+  "pylint>=3.0",
   "pytest>=8.0",
+  "pytest-cov>=7.0.0",
+  "ruff>=0.15.0",
 ]
 
 [project.scripts]
@@ -44,3 +59,37 @@ opamp_mcp_config = "src/opamp_mcp_config"
 
 [tool.setuptools.package-data]
 opamp_mcp_config = ["mcp-client-defaults.json"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "-s",
+  "--cov=opamp_mcp_config",
+  "--cov=opamp_build_tools",
+  "--cov-report=term-missing",
+  "--cov-report=xml:coverage.xml",
+  "--cov-branch",
+]
+python_files = ["test_mcp_*.py"]
+testpaths = ["../tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["opamp_mcp_config", "opamp_build_tools"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+precision = 2
+exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "S"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["opamp_build_tools", "opamp_mcp_config", "shared"]

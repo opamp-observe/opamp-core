@@ -1,0 +1,81 @@
+{
+  "title": "Nest",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nest",
+  "fields": [
+    {
+      "name": "add_prefix",
+      "required": false,
+      "description": "Prefix affected keys with this string",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nest#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "nest_under",
+      "required": false,
+      "description": "Nest records matching the wildcard under this key",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nest#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "nested_under",
+      "required": false,
+      "description": "Lift records nested under the nested_under key",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nest#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "operation",
+      "required": false,
+      "description": "Select the operation nest or lift",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nest#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "remove_prefix",
+      "required": false,
+      "description": "Remove prefix from affected keys if it matches this string",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nest#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "wildcard",
+      "required": false,
+      "description": "Nest records which field matches the wildcard",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nest#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/nest#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Value format",
+      "Operation",
+      "Description"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Nest."
+}

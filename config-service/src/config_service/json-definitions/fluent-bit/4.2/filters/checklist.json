@@ -1,0 +1,88 @@
+{
+  "title": "CheckList",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/checklist",
+  "fields": [
+    {
+      "name": "file",
+      "required": false,
+      "description": "The single value file that Fluent Bit will use as a lookup table to determine if the specified lookup_key exists.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/checklist#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "ignore_case",
+      "required": false,
+      "description": "Compare strings by ignoring case.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/checklist#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "lookup_key",
+      "required": false,
+      "description": "The specific key to look up and determine if it exists. Supports record accessor.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/checklist#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "log"
+    },
+    {
+      "name": "mode",
+      "required": false,
+      "description": "Set the check mode. exact and partial are supported.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/checklist#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "exact"
+    },
+    {
+      "name": "print_query_time",
+      "required": false,
+      "description": "Print to stdout the elapsed query time for every matched record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/checklist#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "record",
+      "required": false,
+      "description": "The record to add if the lookup_key is found in the specified file. You can add multiple record parameters.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/checklist#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/checklist#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: CheckList."
+}

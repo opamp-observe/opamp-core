@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,11 +15,10 @@
 
 from __future__ import annotations
 
-import os
+import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 try:
     import tomllib
@@ -29,6 +28,8 @@ except ImportError:  # pragma: no cover - Python 3.10 fallback
 from .runtime import CommandRuntime, read_project_metadata
 
 DEFAULT_REPO = "mp3monster/fluent-opamp"
+PYTEST_JUNIT_ARGUMENT = "--junitxml"
+TEST_RESULTS_DIRECTORY = Path("dev-tools/runtime/test-results")
 COMPONENT_EXCLUDES = {
     ".git",
     ".github",
@@ -74,6 +75,32 @@ class BuildComponent:
     path: Path
     project_name: str
     version: str
+
+
+@dataclass(frozen=True)
+class PytestRunOptions:
+    """Settings for one pytest invocation with retained JUnit output.
+
+    Attributes
+    ----------
+    cwd:
+        Working directory whose pytest configuration should apply.
+    junit_path:
+        Output path for the machine-readable JUnit report.
+    arguments_before_report:
+        Pytest options that must appear before the report option.
+    test_targets:
+        Optional test files or directories appended after the report option.
+    env:
+        Optional environment variables passed to pytest.
+
+    """
+
+    cwd: Path
+    junit_path: Path
+    arguments_before_report: tuple[str, ...] = ()
+    test_targets: tuple[str, ...] = ()
+    env: dict[str, str] | None = None
 
 
 def discover_build_components(repo_root: Path) -> list[BuildComponent]:
@@ -132,6 +159,7 @@ def build_artifacts(
     runtime.ensure_python_module(python_exe=python_exe, module_name="build", pip_package="build")
     dist_root = runtime.repo_root / "dist"
     for component in components:
+        _clean_component_build_tree(component)
         if no_isolation:
             _ensure_build_backend_requirements(
                 runtime,
@@ -158,6 +186,7 @@ def build_component_wheel(
 ) -> Path:
     """Build one component wheel and return the resulting wheel path."""
     runtime.ensure_python_module(python_exe=python_exe, module_name="build", pip_package="build")
+    _clean_component_build_tree(component)
     if no_isolation:
         _ensure_build_backend_requirements(
             runtime,
@@ -187,7 +216,7 @@ def build_component_wheel(
     return wheels[-1]
 
 
-def build_sboms(
+def build_sboms(  # pylint: disable=too-many-locals,import-outside-toplevel
     runtime: CommandRuntime,
     *,
     components: list[BuildComponent],
@@ -204,7 +233,12 @@ def build_sboms(
         write_wheel_artifact_sbom,
     )
 
-    build_artifacts(runtime, components=components, python_exe=python_exe, no_isolation=no_isolation)
+    build_artifacts(
+        runtime,
+        components=components,
+        python_exe=python_exe,
+        no_isolation=no_isolation,
+    )
     issue_found = False
     dist_root = repo_root / "dist"
     sbom_root = dist_root / "sbom"
@@ -262,7 +296,19 @@ def run_component_tests(
         tests_dir = component.path / "tests"
         if tests_dir.exists():
             ensure_pytest_dependencies(runtime, python_exe=python_exe)
-            runtime.run([python_exe, "-m", "pytest", "-s"], cwd=component.path)
+            junit_path = _prepare_test_result_path(
+                runtime,
+                scope=component.key,
+                file_name="pytest.xml",
+            )
+            run_pytest_with_junit(
+                runtime,
+                python_exe=python_exe,
+                options=PytestRunOptions(
+                    cwd=component.path,
+                    junit_path=junit_path,
+                ),
+            )
         package_json = component.path / "package.json"
         playwright_config = component.path / "playwright.config.js"
         if package_json.exists():
@@ -288,8 +334,78 @@ def run_e2e_tests(runtime: CommandRuntime, *, python_exe: str) -> bool:
 
     """
     ensure_pytest_dependencies(runtime, python_exe=python_exe)
-    runtime.run([python_exe, "-m", "pytest", "-s", "tests/test_socket_e2e.py"], cwd=runtime.repo_root)
+    junit_path = _prepare_test_result_path(
+        runtime,
+        scope="e2e",
+        file_name="pytest.xml",
+    )
+    run_pytest_with_junit(
+        runtime,
+        python_exe=python_exe,
+        options=PytestRunOptions(
+            cwd=runtime.repo_root,
+            junit_path=junit_path,
+            test_targets=("tests/test_socket_e2e.py",),
+        ),
+    )
     return False
+
+
+def run_pytest_with_junit(
+    runtime: CommandRuntime,
+    *,
+    python_exe: str,
+    options: PytestRunOptions,
+) -> None:
+    """Run pytest and retain a JUnit report at a caller-selected path.
+
+    Parameters
+    ----------
+    runtime:
+        Shared command runtime used for process execution.
+    python_exe:
+        Python interpreter used to invoke pytest.
+    options:
+        Working directory, report path, optional arguments, and environment
+        used for the pytest invocation.
+
+    """
+    runtime.run(
+        [
+            python_exe,
+            "-m",
+            "pytest",
+            "-s",
+            *options.arguments_before_report,
+            f"{PYTEST_JUNIT_ARGUMENT}={options.junit_path}",
+            *options.test_targets,
+        ],
+        cwd=options.cwd,
+        env=options.env,
+    )
+
+
+def _prepare_test_result_path(
+    runtime: CommandRuntime,
+    *,
+    scope: str,
+    file_name: str,
+) -> Path:
+    """Create a stable test-result directory and return one output path.
+
+    Parameters
+    ----------
+    runtime:
+        Shared command runtime whose repository root owns the result tree.
+    scope:
+        Component or suite name used to keep reports from different runs separate.
+    file_name:
+        Report filename created by the invoked test runner.
+
+    """
+    result_directory = runtime.repo_root / TEST_RESULTS_DIRECTORY / scope
+    result_directory.mkdir(parents=True, exist_ok=True)
+    return result_directory / file_name
 
 
 def ensure_pytest_dependencies(runtime: CommandRuntime, *, python_exe: str) -> None:
@@ -385,6 +501,25 @@ def _clean_dir(path: Path) -> None:
             child.unlink()
 
 
+def _clean_component_build_tree(component: BuildComponent) -> None:
+    """Remove one component's local build tree before packaging.
+
+    This prevents deleted or renamed source modules from surviving in a stale
+    ``build/lib`` directory and being copied into a later wheel.
+
+    Parameters
+    ----------
+    component:
+        Build component whose exact local ``build`` path should be cleared.
+
+    """
+    build_directory = component.path / "build"
+    if build_directory.is_symlink() or build_directory.is_file():
+        build_directory.unlink()
+    elif build_directory.is_dir():
+        shutil.rmtree(build_directory)
+
+
 def _discover_fluentbit_versions(repo_root: Path) -> list[str]:
     source_dir = repo_root / "config-service" / "json-definitions"
     versions: set[str] = set()
@@ -418,7 +553,11 @@ def _ensure_build_backend_requirements(
     requirements = build_system.get("requires")
     if not isinstance(requirements, list):
         return
-    normalized_requirements = [str(requirement).strip() for requirement in requirements if str(requirement).strip()]
+    normalized_requirements = [
+        str(requirement).strip()
+        for requirement in requirements
+        if str(requirement).strip()
+    ]
     if not normalized_requirements:
         return
     runtime.info(

@@ -1,6 +1,6 @@
 # Server credentials manager service
 
-Copyright 2026 mp3monster.org. Licensed under the Apache License, Version 2.0.
+Copyright 2026 opamp.info. Licensed under the Apache License, Version 2.0.
 
 This component manages named OpAMP `ServerToAgent.connection_settings` definitions, stores
 their sensitive values in a keyring backend, tracks which client nodes are assigned to which
@@ -375,3 +375,14 @@ node --check src/svr_credentials_manager_service/html/functions.js
 node --check src/svr_credentials_manager_service/html/app.js
 node --check src/svr_credentials_manager_service/html/bindings.js
 ```
+
+The project-level ST-007 container adds live provider and simulator delivery, unavailable-provider
+fallback, storage-separation, reconciliation, and browser workflow coverage. From the repository
+root, run:
+
+```powershell
+py -3.11 tests/test-containers/run_regression_pack.py --only st007
+```
+
+See [the ST-007 container guide](../tests/test-containers/st007/readme.md) for the complete coverage
+matrix, direct Docker commands, retained evidence, and troubleshooting guidance.

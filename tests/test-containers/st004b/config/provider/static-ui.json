@@ -1,0 +1,13 @@
+{
+  "provider": {
+    "webui_port": 8080,
+    "log_level": "DEBUG",
+    "default_heartbeat_frequency": 3,
+    "allow-mcp": true,
+    "opamp-use-authorization": "none",
+    "ui-use-authorization": "config-token",
+    "metrics": {"enabled": true, "graph_history_minutes": 0},
+    "tls": {"enabled": false},
+    "state_persistence": {"enabled": false}
+  }
+}

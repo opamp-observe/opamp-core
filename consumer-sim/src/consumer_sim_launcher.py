@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -43,8 +43,8 @@ from opamp_consumer_sim.resources import (
     ensure_user_default_config,
     read_packaged_text,
     source_component_root,
-    source_resource_path,
     source_repo_root,
+    source_resource_path,
     user_state_root,
 )
 
@@ -78,11 +78,15 @@ KEY_STATUS = "status"
 
 ENTRYPOINT_SIMULATOR = "simulator"
 STATUS_RUNNING = "running"
+TASKKILL_COMMAND = "taskkill"
+TASKLIST_COMMAND = "tasklist"
 STATUS_SHUTDOWN = "shutdown"
 STATUS_SHUTTING_DOWN = "shuttingdown"
 
 ENV_SIM_PROCESS_RECORD_FILE = "OPAMP_SIM_PROCESS_RECORD_FILE"
 ENV_SIM_PROCESS_RECORD_NAME = "OPAMP_SIM_PROCESS_RECORD_NAME"
+ENV_APP_ENABLE_DEV_FEATURES = "APP_ENABLE_DEV_FEATURES"
+ENABLED_ENV_VALUES = frozenset({"1", "on", "true", "yes"})
 
 GRACEFUL_SHUTDOWN_WAIT_SECONDS = 90.0
 TERMINATE_WAIT_SECONDS = 5.0
@@ -110,6 +114,16 @@ def _resolve_launcher_config_path() -> pathlib.Path:
     if override:
         return pathlib.Path(override).expanduser().resolve()
     return _default_config_path()
+
+
+def _require_dev_features() -> None:
+    """Block simulator startup unless the explicit development feature flag is enabled."""
+    configured_value = str(os.getenv(ENV_APP_ENABLE_DEV_FEATURES, "") or "").strip().lower()
+    if configured_value not in ENABLED_ENV_VALUES:
+        raise RuntimeError(
+            "consumer-sim startup requires APP_ENABLE_DEV_FEATURES=true; "
+            "no simulator processes were launched"
+        )
 
 
 def _json_path(path_parts: list[Any]) -> str:
@@ -412,8 +426,8 @@ def _is_process_running(pid: int) -> bool:
 def _is_process_running_windows(pid: int) -> bool:
     """Return True when `tasklist` still reports one Windows PID."""
     try:
-        completed = subprocess.run(
-            ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+        completed = subprocess.run(  # noqa: S603, S607 - trusted Windows system utility.
+            [TASKLIST_COMMAND, "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
             check=False,
             capture_output=True,
             text=True,
@@ -453,11 +467,11 @@ def _wait_for_exit(pid: int, timeout_seconds: float) -> bool:
 
 def _taskkill(pid: int, *, force: bool) -> None:
     """Run taskkill for one PID on Windows."""
-    cmd = ["taskkill", "/PID", str(pid), "/T"]
+    command = [TASKKILL_COMMAND, "/PID", str(pid), "/T"]
     if force:
-        cmd.append("/F")
-    subprocess.run(
-        cmd,
+        command.append("/F")
+    subprocess.run(  # noqa: S603 - executable is resolved from the trusted host PATH.
+        command,
         check=False,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -535,6 +549,7 @@ def _write_state_file(
 
 def _start_instances(config_path: pathlib.Path) -> None:  # pylint: disable=too-many-locals
     """Start all configured consumer instances and record their process IDs."""
+    _require_dev_features()
     payload = _load_launcher_payload(config_path)
     _validate_payload_against_schema(payload, config_path=config_path)
     state_file = _state_file_path(config_path, payload)
@@ -580,7 +595,8 @@ def _start_instances(config_path: pathlib.Path) -> None:  # pylint: disable=too-
             else:
                 popen_kwargs["start_new_session"] = True
 
-            process = subprocess.Popen(  # pylint: disable=consider-using-with
+            # The launcher intentionally executes the validated command assembled for this instance.
+            process = subprocess.Popen(  # noqa: S603  # pylint: disable=consider-using-with
                 command,
                 **popen_kwargs,
             )

@@ -41,7 +41,7 @@
       "ui_refresh_seconds": 120,
       "sources": [
         {
-          "folder": "config-service/json-definitions",
+          "folder": "config-service/src/config_service/json-definitions",
           "extensions": [
             ".json",
             ".yaml",

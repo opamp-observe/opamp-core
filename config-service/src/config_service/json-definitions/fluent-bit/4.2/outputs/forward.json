@@ -1,0 +1,128 @@
+{
+  "title": "Forward",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward",
+  "fields": [
+    {
+      "name": "Host",
+      "required": false,
+      "description": "Target host where Fluent Bit or Fluentd are listening for Forward messages.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "Port",
+      "required": false,
+      "description": "TCP Port of the target service.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 24224
+    },
+    {
+      "name": "Time_as_Integer",
+      "required": false,
+      "description": "Set timestamps in integer format, it enables compatibility mode for Fluentd v0.12 series.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "Upstream",
+      "required": false,
+      "description": "If Forward will connect to an Upstream instead of a basic host, this property defines the absolute path for the Upstream configuration file, for more details about this, see Upstream Servers .",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "Unix_Path",
+      "required": false,
+      "description": "Specify the path to a Unix socket to send a Forward message. If set, Upstream is ignored.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "Tag",
+      "required": false,
+      "description": "Overwrite the tag as Fluent Bit transmits. This allows the receiving pipeline start fresh, or to attribute a source.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "Send_options",
+      "required": false,
+      "description": "Always send options (with \"size\"=count of messages)",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "Require_ack_response",
+      "required": false,
+      "description": "Send chunk option and wait for an ack response from the server. Enables at-least-once and receiving server can control rate of traffic. Requires Fluentd v0.14.0+ or later",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "Compress",
+      "required": false,
+      "description": "Set to gzip to enable gzip compression. Incompatible with Time_as_Integer=True and tags set dynamically using the Rewrite Tag filter. Requires Fluentd server v0.14.7 or later.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "Workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 2
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/forward#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Forward."
+}

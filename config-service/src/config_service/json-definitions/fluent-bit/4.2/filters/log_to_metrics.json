@@ -1,0 +1,197 @@
+{
+  "title": "Logs to metrics",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics",
+  "fields": [
+    {
+      "name": "add_label",
+      "required": false,
+      "description": "Adds a custom label NAME and set the value to the value of KEY.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "bucket",
+      "required": false,
+      "description": "Optional for metric_mode histogram. If not set, default Prometheus-style buckets are used.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "discard_logs",
+      "required": false,
+      "description": "Flag that defines if logs should be discarded after processing. This applies for all logs, whether they have emitted metrics or not.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "emitter_mem_buf_limit",
+      "required": false,
+      "description": "Set a buffer limit to restrict memory usage of metrics emitter.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "10M"
+    },
+    {
+      "name": "emitter_name",
+      "required": false,
+      "description": "Name of the emitter (advanced users).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "exclude",
+      "required": false,
+      "description": "Excludes records in which the content of KEY matches the regular expression REGEX.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "flush_interval_nsec",
+      "required": false,
+      "description": "The interval for metrics emission, in nanoseconds. This parameter works in conjunction with flush_interval_sec.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "flush_interval_sec",
+      "required": false,
+      "description": "The interval for metrics emission, in seconds. If flush_interval_sec and flush_interval_nsec are either both unset or both set to 0, the filter emits metrics immediately after each filter match. Otherwise, if either parameter is set to a non-zero value, the filter emits metrics at the specified interval. Longer intervals help lower resource consumption in high-load situations.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "kubernetes_mode",
+      "required": false,
+      "description": "If enabled, adds pod_id, pod_name, namespace_name, docker_id and container_name to the metric as labels. This option is intended to be used in combination with the Kubernetes filter plugin, which fills those fields.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "label_field",
+      "required": false,
+      "description": "Includes a record field as label dimension in the metric.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "metric_description",
+      "required": false,
+      "description": "Sets a description for the metric.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "metric_mode",
+      "required": false,
+      "description": "Defines the mode for the metric. Valid values are counter, gauge or histogram.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "counter"
+    },
+    {
+      "name": "metric_name",
+      "required": false,
+      "description": "Sets the name of the metric.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "a"
+    },
+    {
+      "name": "metric_namespace",
+      "required": false,
+      "description": "Sets the namespace of the metric.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "log_metric"
+    },
+    {
+      "name": "metric_subsystem",
+      "required": false,
+      "description": "Subsystem of the metric.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "regex",
+      "required": false,
+      "description": "Includes records in which the content of KEY matches the regular expression REGEX.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "regex_string"
+      }
+    },
+    {
+      "name": "tag",
+      "required": false,
+      "description": "Defines the tag for the generated metrics record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "value_field",
+      "required": false,
+      "description": "Required for modes gauge and histogram. Specifies the record field that holds a numerical value.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/log_to_metrics#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default",
+      "Format"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Logs to metrics."
+}

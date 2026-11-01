@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,9 +16,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from quart import Quart
+if TYPE_CHECKING:
+    from quart import Quart
 
 CFG_OTLP_ENDPOINTS = "otlp-endpoints"
 CFG_OTLP_ALL = "ALL"

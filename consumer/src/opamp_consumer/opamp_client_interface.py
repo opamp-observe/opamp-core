@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,7 +20,7 @@ from opamp_consumer.config_metadata import ConfigMetadata
 from opamp_consumer.proto import opamp_pb2
 
 
-class OpAMPClientInterface(ABC):
+class OpAMPClientInterface(ABC):  # pylint: disable=too-many-public-methods
     """Defines the core contract for an OpAMP client implementation."""
 
     @abstractmethod
@@ -122,6 +122,10 @@ class OpAMPClientInterface(ABC):
     def is_capability_allowed(self, capability_name: str) -> bool:
         """Return whether the named capability is enabled for this client."""
 
+    async def finalize_async(self) -> None:
+        """Await cleanup, falling back to the synchronous hook for legacy clients."""
+        self.finalize()
+
     @abstractmethod
     def finalize(self) -> None:
-        """Finalize the client and release resources."""
+        """Start or run client cleanup from synchronous compatibility callers."""

@@ -15,6 +15,7 @@ from opamp_mcp_config.build_tool.constants import (
     ERROR_CONFIG_ROOT_NOT_OBJECT,
     ERROR_DEPLOYMENT_NOT_OBJECT,
     ERROR_NO_WHEEL_FOUND,
+    JSON_INDENT,
     MODULE_BUILD,
     MODULE_PIP,
     OUTPUT_COMMAND_PREFIX,
@@ -29,19 +30,38 @@ from opamp_mcp_config.build_tool.constants import (
     SOURCE_EGG_INFO_DIR,
     UTF8_ENCODING,
     WHEEL_GLOB,
-    JSON_INDENT,
 )
 
 
-def _run(cmd: list[str], *, cwd: Path = ROOT) -> None:
-    """Run one subprocess command and echo it for operator visibility."""
-    print(f"{OUTPUT_COMMAND_PREFIX}{' '.join(cmd)}")
-    subprocess.run(cmd, cwd=str(cwd), check=True)
+def _run(command: list[str], *, cwd: Path = ROOT) -> None:
+    """Run one internally assembled build command and echo it.
+
+    Parameters
+    ----------
+    command:
+        Argument vector built by this packaging utility.
+    cwd:
+        Working directory in which the build command should run.
+
+    """
+    print(f"{OUTPUT_COMMAND_PREFIX}{' '.join(command)}")
+    # The caller builds command arguments from fixed packaging operations, without a shell.
+    subprocess.run(command, cwd=str(cwd), check=True)  # noqa: S603
 
 
 def _ensure_python_package(python_exe: str, package_name: str) -> None:
-    """Ensure one Python package is installed for the selected interpreter."""
-    probe = subprocess.run(
+    """Ensure one trusted build dependency exists for the selected interpreter.
+
+    Parameters
+    ----------
+    python_exe:
+        Selected Python interpreter path.
+    package_name:
+        Build dependency owned by the packaging workflow.
+
+    """
+    # Both values come from fixed packaging constants or the active interpreter.
+    probe = subprocess.run(  # noqa: S603
         [python_exe, "-m", MODULE_PIP, PIP_SHOW_SUBCOMMAND, package_name],
         cwd=str(ROOT),
         stdout=subprocess.DEVNULL,

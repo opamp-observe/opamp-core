@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -140,6 +140,10 @@ class _FakeOpAMPClient(OpAMPClientInterface):
 
     def is_capability_allowed(self, capability_name: str) -> bool:
         return False
+
+    async def finalize_async(self) -> None:
+        """Complete the fake client's no-op asynchronous cleanup."""
+        return None
 
     def finalize(self) -> None:
         return None

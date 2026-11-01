@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 opamp.info
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # OpAMP CLI Component
 
 This component provides a prompt-driven command tool for local OpAMP workflows.
@@ -7,6 +21,11 @@ Guided starts record launched PIDs in `cli/runtime/managed_processes.json`.
 CLI-managed process logs are written under `cli/runtime/logs/`.
 Managed process entries are only recorded after the launched utility survives the CLI startup liveness check.
 The CLI can also open a separate tail shell for managed process logs when `enable-process-tail` is enabled.
+
+For the product-level choice between service command entry points, the optional
+operator CLI, and the developer CLI, see
+[Install command-line tooling](../docs/installation.md#install-command-line-tooling).
+This page focuses on the operator CLI's detailed local and developer workflows.
 
 ## Structure
 
@@ -211,7 +230,8 @@ Repository virtual environment setup:
 - `opamp-cli setup-venv` creates or updates `.venv` at the repository root.
 - It upgrades `pip`, `setuptools>=82`, `wheel`, `build`, and `hatchling>=1.25`.
 - It installs root `requirements.txt`.
-- It installs local Python components editable with their `dev` extras:
+- It installs local Python components editable with their `dev` extras; `dev-tools` also receives
+  its versioned `security` extra:
   `cli`, `provider`, `consumer`, `consumer-sim`, `config-service`,
   `catalog-service`, `agent_broker`, `mcp`, `dev-tools`,
   `svr-credentials-mgr/plaintext-keyring`, and `svr-credentials-mgr`.

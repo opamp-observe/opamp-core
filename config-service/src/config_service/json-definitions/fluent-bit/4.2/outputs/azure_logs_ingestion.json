@@ -1,0 +1,122 @@
+{
+  "title": "Azure Logs Ingestion API",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion",
+  "fields": [
+    {
+      "name": "client_id",
+      "required": true,
+      "description": "The client ID of the AAD application.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "client_secret",
+      "required": true,
+      "description": "The client secret of the AAD application (App Secret).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "compress",
+      "required": false,
+      "description": "Optional. Enable HTTP payload gzip compression.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "dce_url",
+      "required": true,
+      "description": "Data Collection Endpoint (DCE) URL.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "dcr_id",
+      "required": true,
+      "description": "Data Collection Rule (DCR) immutable ID.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "table_name",
+      "required": true,
+      "description": "The name of the custom log table (include the _CL suffix as well if applicable).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tenant_id",
+      "required": true,
+      "description": "The tenant ID of the Azure Active Directory (AAD) application.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "time_generated",
+      "required": false,
+      "description": "Optional. If enabled, the timestamp appended under time_key is formatted as an ISO 8601 string. If disabled, it's a floating-point number representing seconds since Unix epoch.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "time_key",
+      "required": false,
+      "description": "Optional. Specify the key name where the timestamp will be stored.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "@timestamp"
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_logs_ingestion#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Azure Logs Ingestion API."
+}

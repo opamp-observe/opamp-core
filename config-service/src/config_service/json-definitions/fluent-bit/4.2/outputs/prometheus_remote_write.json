@@ -1,0 +1,191 @@
+{
+  "title": "Prometheus remote write",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write",
+  "fields": [
+    {
+      "name": "add_label",
+      "required": false,
+      "description": "This lets you add custom labels to all metrics sent by the prometheus_remote_write output. You can have multiple of these fields.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "aws_auth",
+      "required": false,
+      "description": "Enable AWS SigV4 authentication.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "aws_external_id",
+      "required": false,
+      "description": "External ID for the AWS IAM Role specified with aws_role_arn, used by SigV4 authentication.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "aws_profile",
+      "required": false,
+      "description": "AWS profile name. AWS profiles can be configured with AWS CLI and are usually stored in $HOME/.aws/.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "aws_region",
+      "required": false,
+      "description": "Region of your Amazon Managed Service for Prometheus workspace.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "aws_role_arn",
+      "required": false,
+      "description": "AWS IAM Role to assume, used by SigV4 authentication.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "aws_service",
+      "required": false,
+      "description": "AWS destination service code, used by SigV4 authentication. For Amazon Managed Service for Prometheus, the service name is aps.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "aps"
+    },
+    {
+      "name": "aws_sts_endpoint",
+      "required": false,
+      "description": "Specify the custom STS endpoint to be used with STS API, used with the aws_role_arn option, used by SigV4 authentication.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "compression",
+      "required": false,
+      "description": "Payload compression algorithm. Supported options: snappy, gzip, zstd.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "snappy"
+    },
+    {
+      "name": "header",
+      "required": false,
+      "description": "Add a HTTP header key/value pair. Multiple headers can be set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "host",
+      "required": false,
+      "description": "IP address or hostname of the target HTTP server.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "http_passwd",
+      "required": false,
+      "description": "Basic Auth password. Requires http_user to be set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "http_user",
+      "required": false,
+      "description": "Basic Auth username.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "log_response_payload",
+      "required": false,
+      "description": "Log the response payload within the Fluent Bit log.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "TCP port of the target HTTP server.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 80
+    },
+    {
+      "name": "proxy",
+      "required": false,
+      "description": "Specify an HTTP proxy. The expected format of this value is http://HOST:PORT. HTTPS isn't supported. Configure the HTTP proxy environment variables instead as they support both HTTP and HTTPS.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "uri",
+      "required": false,
+      "description": "Specify an optional HTTP URI for the target web server, for example /someuri.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 2
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/prometheus-remote-write#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Prometheus remote write."
+}

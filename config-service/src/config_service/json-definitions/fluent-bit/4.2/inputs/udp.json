@@ -1,0 +1,109 @@
+{
+  "title": "UDP",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/udp",
+  "fields": [
+    {
+      "name": "buffer_size",
+      "required": false,
+      "description": "Specify the maximum buffer size in KB to receive a JSON message. If not set, the default size will be the value of chunk_size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/udp#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "chunk_size"
+    },
+    {
+      "name": "chunk_size",
+      "required": true,
+      "description": "The default buffer to store incoming JSON messages. Doesn't allocate the maximum memory allowed; instead it allocates memory when required. The rounds of allocations are set by chunk_size in KB.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/udp#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 32
+    },
+    {
+      "name": "format",
+      "required": false,
+      "description": "Specify the expected payload format. Supported values: json and none. json expects JSON maps. none splits every record using the defined separator.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/udp#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "enum",
+        "values": [
+          "none",
+          "JSON"
+        ]
+      },
+      "default": "json"
+    },
+    {
+      "name": "listen",
+      "required": false,
+      "description": "Listener network interface.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/udp#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "0.0.0.0"
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "UDP port used to listen for connections.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/udp#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 5170
+    },
+    {
+      "name": "separator",
+      "required": false,
+      "description": "When format is set to none, Fluent Bit needs a separator string to split the records.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/udp#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "LF or 0x10 (break line)"
+    },
+    {
+      "name": "source_address_key",
+      "required": false,
+      "description": "Specify the key where the source address will be injected.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/udp#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/udp#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/udp#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: UDP."
+}

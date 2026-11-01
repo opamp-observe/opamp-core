@@ -1,0 +1,18 @@
+{
+  "provider": {
+    "webui_port": 8080,
+    "log_level": "DEBUG",
+    "default_heartbeat_frequency": 3,
+    "allow-mcp": true,
+    "opamp-use-authorization": "none",
+    "ui-use-authorization": "none",
+    "metrics": {"enabled": true, "graph_history_minutes": 0},
+    "tls": {
+      "enabled": true,
+      "cert_file": "/evidence/tls/certs/provider-cert.pem",
+      "key_file": "/evidence/tls/certs/provider-key.pem",
+      "trust_anchor_mode": "none"
+    },
+    "state_persistence": {"enabled": false}
+  }
+}

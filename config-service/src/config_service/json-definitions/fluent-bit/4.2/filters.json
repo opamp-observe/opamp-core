@@ -1,0 +1,96 @@
+{
+  "artifact_manifest": {
+    "format": "config-service.composite-json/v1",
+    "base": "filters.base.json",
+    "parts": [
+      {
+        "pointer": "/aws",
+        "file": "filters/aws.json"
+      },
+      {
+        "pointer": "/checklist",
+        "file": "filters/checklist.json"
+      },
+      {
+        "pointer": "/ecs",
+        "file": "filters/ecs.json"
+      },
+      {
+        "pointer": "/expect",
+        "file": "filters/expect.json"
+      },
+      {
+        "pointer": "/geoip2",
+        "file": "filters/geoip2.json"
+      },
+      {
+        "pointer": "/grep",
+        "file": "filters/grep.json"
+      },
+      {
+        "pointer": "/kubernetes",
+        "file": "filters/kubernetes.json"
+      },
+      {
+        "pointer": "/log_to_metrics",
+        "file": "filters/log_to_metrics.json"
+      },
+      {
+        "pointer": "/lua",
+        "file": "filters/lua.json"
+      },
+      {
+        "pointer": "/modify",
+        "file": "filters/modify.json"
+      },
+      {
+        "pointer": "/multiline",
+        "file": "filters/multiline.json"
+      },
+      {
+        "pointer": "/nest",
+        "file": "filters/nest.json"
+      },
+      {
+        "pointer": "/nightfall",
+        "file": "filters/nightfall.json"
+      },
+      {
+        "pointer": "/parser",
+        "file": "filters/parser.json"
+      },
+      {
+        "pointer": "/record_modifier",
+        "file": "filters/record_modifier.json"
+      },
+      {
+        "pointer": "/rewrite_tag",
+        "file": "filters/rewrite_tag.json"
+      },
+      {
+        "pointer": "/stdout",
+        "file": "filters/stdout.json"
+      },
+      {
+        "pointer": "/sysinfo",
+        "file": "filters/sysinfo.json"
+      },
+      {
+        "pointer": "/tensorflow",
+        "file": "filters/tensorflow.json"
+      },
+      {
+        "pointer": "/throttle",
+        "file": "filters/throttle.json"
+      },
+      {
+        "pointer": "/type_converter",
+        "file": "filters/type_converter.json"
+      },
+      {
+        "pointer": "/wasm",
+        "file": "filters/wasm.json"
+      }
+    ]
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "title": "PostgreSQL",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql",
+  "fields": [
+    {
+      "name": "async",
+      "required": false,
+      "description": "Define if the plugin will use asynchronous or synchronous connections.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "cockroachdb",
+      "required": false,
+      "description": "Set to true if you will connect the plugin with a CockroachDB.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "connection_options",
+      "required": false,
+      "description": "Specifies any valid PostgreSQL connection options.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "database",
+      "required": false,
+      "description": "Database name to connect to.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "fluentbit"
+    },
+    {
+      "name": "host",
+      "required": false,
+      "description": "Hostname/IP address of the PostgreSQL instance.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "max_pool_size",
+      "required": false,
+      "description": "Maximum amount of connections in asynchronous mode.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 4
+    },
+    {
+      "name": "min_pool_size",
+      "required": false,
+      "description": "Minimum number of connections in asynchronous mode.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "password",
+      "required": false,
+      "description": "Password of PostgreSQL username.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "PostgreSQL port.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 5432
+    },
+    {
+      "name": "table",
+      "required": false,
+      "description": "Table name where to store data.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "fluentbit"
+    },
+    {
+      "name": "timestamp_key",
+      "required": false,
+      "description": "Key in the JSON object containing the record timestamp.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "date"
+    },
+    {
+      "name": "user",
+      "required": false,
+      "description": "PostgreSQL username.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "- (current user)"
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/postgresql#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: PostgreSQL."
+}

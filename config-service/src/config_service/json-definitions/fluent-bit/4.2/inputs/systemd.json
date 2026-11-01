@@ -1,0 +1,141 @@
+{
+  "title": "Systemd",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd",
+  "fields": [
+    {
+      "name": "db",
+      "required": false,
+      "description": "Specify the absolute path of a database file to keep track of the journald cursor.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "db.sync",
+      "required": false,
+      "description": "Set a default synchronization (I/O) method. Possible values: extra, full, normal, and off. This flag affects how the internal SQLite engine synchronizes to disk. For more details, see the SQLite documentation. Available in Fluent Bit v1.4.6 and later.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "enum",
+      "validation_rule": {
+        "kind": "regex_string",
+        "pattern": "^(extra|full|normal|off)$"
+      },
+      "default": "full",
+      "enum_options": [
+        "Extra",
+        "Full",
+        "Normal",
+        "Off"
+      ]
+    },
+    {
+      "name": "lowercase",
+      "required": false,
+      "description": "Lowercase the journald field (key).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "max_entries",
+      "required": false,
+      "description": "When Fluent Bit starts, the Journal might have a high number of logs in the queue. To avoid delays and reduce memory usage, use this option to specify the maximum number of log entries that can be processed per round. Once the limit is reached, Fluent Bit will continue processing the remaining log entries once journald performs the notification.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 5000
+    },
+    {
+      "name": "max_fields",
+      "required": false,
+      "description": "Set a maximum number of fields (keys) allowed per record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 8000
+    },
+    {
+      "name": "path",
+      "required": false,
+      "description": "Optional path to the Systemd journal directory. If not set, the plugin uses default paths to read local-only logs.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "read_from_tail",
+      "required": false,
+      "description": "Start reading new entries. Skip entries already stored in journald.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "strip_underscores",
+      "required": false,
+      "description": "Remove the leading underscore of the journald field (key). For example, the journald field _PID becomes the key PID.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "systemd_filter",
+      "required": true,
+      "description": "Perform a query over logs that contain specific journald key/value pairs. For example, _SYSTEMD_UNIT=UNIT. The systemd_filter option can be specified multiple times in the input section to apply multiple filters.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "systemd_filter_type",
+      "required": false,
+      "description": "Define the filter type when systemd_filter is specified multiple times. Allowed values: and, or. With and a record is matched only when all systemd_filter have a match. With or a record is matched when any systemd_filter has a match.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "or"
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Fluent Bit uses tags to route messages. For the Systemd input plugin, tags have an additional capability: if the tag includes a wildcard (*), it will be expanded with the Systemd Unit file (_SYSTEMD_UNIT, like host.* => host.UNIT_NAME) or unknown (host.unknown) if _SYSTEMD_UNIT is missing.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/systemd#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Systemd."
+}

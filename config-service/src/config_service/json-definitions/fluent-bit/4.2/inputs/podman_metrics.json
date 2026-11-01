@@ -1,0 +1,84 @@
+{
+  "title": "Podman metrics",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/podman-metrics",
+  "fields": [
+    {
+      "name": "path.config",
+      "required": false,
+      "description": "Custom path to the Podman containers configuration file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/podman-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/var/lib/containers/storage/overlay-containers/containers.json"
+    },
+    {
+      "name": "path.procfs",
+      "required": false,
+      "description": "Custom path to the proc subsystem directory.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/podman-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/proc"
+    },
+    {
+      "name": "path.sysfs",
+      "required": false,
+      "description": "Custom path to the sysfs subsystem directory.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/podman-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/sys/fs/cgroup"
+    },
+    {
+      "name": "scrape_interval",
+      "required": false,
+      "description": "Interval between each scrape of Podman data (in seconds).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/podman-metrics#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 30
+    },
+    {
+      "name": "scrape_on_start",
+      "required": false,
+      "description": "Sets whether this plugin scrapes Podman data on startup.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/podman-metrics#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/podman-metrics#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/podman-metrics#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Podman metrics."
+}

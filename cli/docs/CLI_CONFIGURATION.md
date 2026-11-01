@@ -461,7 +461,7 @@ environment:
 The command also installs repository tooling:
 
 - root `requirements.txt`
-- editable local Python components with `dev` extras
+- editable local Python components with `dev` extras, plus the `dev-tools` security extra
 - Python build tooling: `pip`, `setuptools`, `wheel`, `build`, and `hatchling`
 - Node tooling packages through `npm install`
 

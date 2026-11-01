@@ -1,0 +1,203 @@
+{
+  "title": "Kubernetes events",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events",
+  "fields": [
+    {
+      "name": "db",
+      "required": false,
+      "description": "Set a database file to keep track of recorded Kubernetes events.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "db.journal_mode",
+      "required": false,
+      "description": "Set the journal mode for databases. Values: DELETE, TRUNCATE, PERSIST, MEMORY, WAL, OFF.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "WAL"
+    },
+    {
+      "name": "db.locking",
+      "required": false,
+      "description": "Specify that the database will be accessed only by Fluent Bit. Enabling this feature helps increase performance when accessing the database but restricts external tools from querying the content.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "db.sync",
+      "required": false,
+      "description": "Set a database sync method. Values: extra, full, normal, off.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": {
+        "kind": "enum",
+        "values": [
+          "extra",
+          "full",
+          "normal",
+          "off"
+        ]
+      },
+      "default": "normal",
+      "enum_options": [
+        "extra",
+        "full",
+        "normal",
+        "off"
+      ]
+    },
+    {
+      "name": "interval_nsec",
+      "required": false,
+      "description": "Set the reconnect interval (sub seconds: nanoseconds).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 500000000
+    },
+    {
+      "name": "interval_sec",
+      "required": false,
+      "description": "Set the reconnect interval (seconds).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "kube_ca_file",
+      "required": false,
+      "description": "Kubernetes TLS CA file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+    },
+    {
+      "name": "kube_ca_path",
+      "required": false,
+      "description": "Kubernetes TLS CA path.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "kube_namespace",
+      "required": false,
+      "description": "Kubernetes namespace to query events from. Gets events from all namespaces by default.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "kube_request_limit",
+      "required": false,
+      "description": "Kubernetes limit parameter for events query. No limit applied when set to 0.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "kube_retention_time",
+      "required": false,
+      "description": "Kubernetes retention time for events.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "1h"
+    },
+    {
+      "name": "kube_token_file",
+      "required": false,
+      "description": "Kubernetes authorization token file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    },
+    {
+      "name": "kube_token_ttl",
+      "required": false,
+      "description": "Kubernetes token time to live, until it's read again from the token file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "10m"
+    },
+    {
+      "name": "kube_url",
+      "required": false,
+      "description": "API Server endpoint.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "https://kubernetes.default.svc"
+    },
+    {
+      "name": "tls.debug",
+      "required": false,
+      "description": "Set TLS debug level: 0 (no debug), 1 (error), 2 (state change), 3 (info), and 4 (verbose).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "tls.verify",
+      "required": false,
+      "description": "Enable or disable verification of TLS peer certificate.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "tls.vhost",
+      "required": false,
+      "description": "Set optional TLS virtual host.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/kubernetes-events#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Kubernetes events."
+}

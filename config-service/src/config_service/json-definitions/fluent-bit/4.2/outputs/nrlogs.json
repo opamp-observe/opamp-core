@@ -1,0 +1,80 @@
+{
+  "title": "New Relic",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/new-relic",
+  "fields": [
+    {
+      "name": "api_key",
+      "required": false,
+      "description": "Your New Relic API key. Either an api_key or license_key is required.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/new-relic#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "base_uri",
+      "required": false,
+      "description": "The New Relic API endpoint.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/new-relic#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "https://log-api.newrelic.com/log/v1"
+    },
+    {
+      "name": "compress",
+      "required": false,
+      "description": "Sets the compression mechanism for the payload. Possible values: gzip or false.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/new-relic#configuration-parameters",
+      "data_type": "enum",
+      "validation_rule": {
+        "kind": "regex_string",
+        "pattern": "^(gzip|false)$"
+      },
+      "default": "gzip"
+    },
+    {
+      "name": "license_key",
+      "required": false,
+      "description": "Your New Relic license key. Either an api_key or license_key is required.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/new-relic#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "Sets the number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/new-relic#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/new-relic#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: New Relic."
+}

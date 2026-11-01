@@ -1,0 +1,69 @@
+{
+  "title": "Process exporter metrics",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process-exporter-metrics",
+  "fields": [
+    {
+      "name": "scrape_interval",
+      "required": false,
+      "description": "The rate at which metrics are collected.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/process-exporter-metrics#configuration",
+      "default": "5s",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      }
+    },
+    {
+      "name": "path.procfs",
+      "required": false,
+      "description": "The mount point used to collect process information and metrics.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/process-exporter-metrics#configuration",
+      "default": "/proc/",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "process_include_pattern",
+      "required": false,
+      "description": "regex to determine which names of processes are included in the metrics produced by this plugin",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/process-exporter-metrics#configuration",
+      "default": "It is applied for all process unless explicitly set. Default is `.+`.",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "process_exclude_pattern",
+      "required": false,
+      "description": "regex to determine which names of processes are excluded in the metrics produced by this plugin",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/process-exporter-metrics#configuration",
+      "default": "It is not applied unless explicitly set. Default is `NULL`.",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "metrics",
+      "required": false,
+      "description": "To specify which process level of metrics are collected from the host operating system.",
+      "reference": "https://docs.fluentbit.io/manual/3.2/pipeline/inputs/process-exporter-metrics#configuration",
+      "default": "cpu,io,memory,state,context_switches,fd,start_time,thread_wchan,thread",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "no_configuration_parameters",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process-exporter-metrics#configuration-parameters",
+    "table_header": [],
+    "review_required": true,
+    "review_comment": "REVIEW REQUIRED: The documentation page did not expose the expected configuration parameter table. Fields from the previous catalog were retained where available; verify the page reference and table section before accepting this catalog."
+  },
+  "description": "Fluent Bit input plugin: Process exporter metrics."
+}

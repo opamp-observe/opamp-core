@@ -1,0 +1,676 @@
+{
+  "title": "Azure Data Explorer",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto",
+  "fields": [
+    {
+      "name": "alias",
+      "required": false,
+      "description": "Sets an alias, use to define multiple instances of the same output plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "auth_type",
+      "required": false,
+      "description": "Set the authentication type: service_principal, managed_identity, or workload_identity. For managed_identity, use system as client_id for system-assigned identity, or specify the managed identity's client ID.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "service_principal"
+    },
+    {
+      "name": "azure_kusto_buffer_key",
+      "required": false,
+      "description": "When buffering is true, set the Azure Kusto buffer key which must be specified when using multiple instances of Azure Kusto output plugin and buffering is enabled.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "key"
+    },
+    {
+      "name": "blob_uri_length",
+      "required": false,
+      "description": "Set the length of generated blob URI before ingesting to Kusto.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 64
+    },
+    {
+      "name": "buffer_dir",
+      "required": false,
+      "description": "When buffering is true, specifies the location of directory where the buffered data will be stored.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/tmp/fluent-bit/azure-kusto/"
+    },
+    {
+      "name": "buffer_file_delete_early",
+      "required": false,
+      "description": "When buffering is true, whether to delete the buffered file early after successful blob creation.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "buffering_enabled",
+      "required": false,
+      "description": "Enable buffering into disk before ingesting into Azure Kusto.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "client_id",
+      "required": true,
+      "description": "Required if managed_identity_client_id isn't set. The client ID of the AAD registered application.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "client_secret",
+      "required": true,
+      "description": "Set the client secret (Application Password) of the AAD application used for authentication.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "compression_enabled",
+      "required": false,
+      "description": "If enabled, sends compressed HTTP payload (gzip) to Kusto.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "database_name",
+      "required": true,
+      "description": "The database name.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "delete_on_max_upload_error",
+      "required": false,
+      "description": "When buffering is true, whether to delete the buffer file on maximum upload errors.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "host",
+      "required": false,
+      "description": "IP address or hostname of the target HTTP server.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "include_tag_key",
+      "required": false,
+      "description": "If enabled, a tag is appended to output. The key name is used tag_key property.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "include_time_key",
+      "required": false,
+      "description": "If enabled, a timestamp is appended to output. The key name is used time_key property.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "ingestion_endpoint",
+      "required": true,
+      "description": "The cluster's ingestion endpoint, usually in the form https://ingest-cluster_name.region.kusto.windows.net.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "ingestion_endpoint_connect_timeout",
+      "required": false,
+      "description": "The connection timeout of various Kusto endpoints in seconds.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 60
+    },
+    {
+      "name": "ingestion_mapping_reference",
+      "required": false,
+      "description": "The name of a JSON ingestion mapping that will be used to map the ingested payload into the table columns.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "ingestion_resources_refresh_interval",
+      "required": false,
+      "description": "Set the Azure Kusto ingestion resources refresh interval.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 3600
+    },
+    {
+      "name": "io_timeout",
+      "required": false,
+      "description": "Configure the HTTP IO timeout for uploads.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "60s"
+    },
+    {
+      "name": "log_key",
+      "required": false,
+      "description": "Key name of the log content.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "log"
+    },
+    {
+      "name": "log_level",
+      "required": false,
+      "description": "Specifies the log level for output plugin. If not set here, plugin uses global log level in service section.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "info"
+    },
+    {
+      "name": "log_supress_interval",
+      "required": false,
+      "description": "Suppresses log messages from output plugin that appear similar within a specified time interval. 0 no suppression.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Set a tag pattern to match records that output should process. Exact matches or wildcards (for example *).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Set a regular expression to match tags for output routing. This allows more flexible matching compared to wildcards.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "net.connect_timeout",
+      "required": false,
+      "description": "Set maximum time allowed to establish a connection, this time includes the TLS handshake.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "10s"
+    },
+    {
+      "name": "net.connect_timeout_log_error",
+      "required": false,
+      "description": "On connection timeout, specify if it should log an error. When disabled, the timeout is logged as a debug message.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "net.dns.mode",
+      "required": false,
+      "description": "Select the primary DNS connection type (TCP or UDP).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "net.dns.prefer_ipv4",
+      "required": false,
+      "description": "Select the primary DNS resolver type (LEGACY or ASYNC).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "net.dns.prefer_ipv6",
+      "required": false,
+      "description": "Prioritize IPv6 DNS results when trying to establish a connection.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "net.dns.resolver",
+      "required": false,
+      "description": "Select the primary DNS resolver type (LEGACY or ASYNC).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "net.io_timeout",
+      "required": false,
+      "description": "Set maximum time a connection can stay idle while assigned.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "duration"
+      },
+      "default": "0s"
+    },
+    {
+      "name": "net.keepalive",
+      "required": false,
+      "description": "Enable or disable Keepalive support.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "net.keepalive_idle_timeout",
+      "required": false,
+      "description": "Set maximum time allowed for an idle Keepalive connection..",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "net.keepalive_max_recycle",
+      "required": false,
+      "description": "Set maximum number of times a keepalive connection can be used before it's retried.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 2000
+    },
+    {
+      "name": "net.max_worker_connections",
+      "required": false,
+      "description": "Set the maximum number of active TCP connections that can be used per worker thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "net.proxy_env_ignore",
+      "required": false,
+      "description": "Ignore the environment variables HTTP_PROXY, HTTPS_PROXY and NO_PROXY when set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "net.source_address",
+      "required": false,
+      "description": "Specify network address to bind for data traffic.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "net.tcp_keepalive",
+      "required": false,
+      "description": "Enable or disable Keepalive support.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "off"
+    },
+    {
+      "name": "net.tcp_keepalive_interval",
+      "required": false,
+      "description": "Interval between TCP keepalive probes when no response is received on a keepidle probe.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": -1
+    },
+    {
+      "name": "net.tcp_keepalive_probes",
+      "required": false,
+      "description": "Number of unacknowledged probes to consider a connection dead.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": -1
+    },
+    {
+      "name": "net.tcp_keepalive_time",
+      "required": false,
+      "description": "Interval between the last data packet sent and the first TCP keepalive probe.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": -1
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "TCP port of the target HTTP server.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "retry_limit",
+      "required": false,
+      "description": "Set retry limit for output plugin when delivery fails. Integer, no_limits, false, or off to disable, or no_retries to disable retries entirely.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "scheduler_max_retries",
+      "required": false,
+      "description": "Optional. When buffering is On, set the maximum number of retries for ingestion using the scheduler.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 3
+    },
+    {
+      "name": "store_dir_limit_size",
+      "required": false,
+      "description": "When buffering is true, set the max size of the buffer directory.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "8G"
+    },
+    {
+      "name": "table_name",
+      "required": true,
+      "description": "The table name.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tag_key",
+      "required": false,
+      "description": "The key name of tag. If include_tag_key is false, this property is ignored.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "tag"
+    },
+    {
+      "name": "tenant_id",
+      "required": true,
+      "description": "Required if managed_identity_client_id isn't set. The tenant/domain ID of the AAD registered application.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "time_key",
+      "required": false,
+      "description": "The key name of time. If include_time_key is false, this property is ignored.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "timestamp"
+    },
+    {
+      "name": "tls",
+      "required": false,
+      "description": "Enable or disable TLS/SSL support.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "off"
+    },
+    {
+      "name": "tls.ca_file",
+      "required": false,
+      "description": "Absolute path to CA certificate file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.ca_path",
+      "required": false,
+      "description": "Absolute path to scan for certificate files.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.ciphers",
+      "required": false,
+      "description": "Specify TLS ciphers up to TLSv1.2.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.crt_file",
+      "required": false,
+      "description": "Absolute path to Certificate file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.debug",
+      "required": false,
+      "description": "Set TLS debug level. Accepts 0 (No debug), 1(Error), 2 (State change), 3 (Informational) and 4 (Verbose).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "tls.key_file",
+      "required": false,
+      "description": "Absolute path to private Key file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.key_passwd",
+      "required": false,
+      "description": "Optional password for tls.key_file file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.max_version",
+      "required": false,
+      "description": "Specify the maximum version of TLS.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.min_version",
+      "required": false,
+      "description": "Specify the minimum version of TLS.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.verify",
+      "required": false,
+      "description": "Force certificate validation.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "on"
+    },
+    {
+      "name": "tls.verify_hostname",
+      "required": false,
+      "description": "Enable or disable to verify hostname.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "off"
+    },
+    {
+      "name": "tls.vhost",
+      "required": false,
+      "description": "Hostname to be used for TLS SNI extension.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.windows.certstore_name",
+      "required": false,
+      "description": "Sets the certstore name on an output (Windows).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tls.windows.use_enterprise_store",
+      "required": false,
+      "description": "Sets whether using enterprise certificate store or not on an output (Windows).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "unify_tag",
+      "required": false,
+      "description": "This creates a single buffer file when the buffering mode is true.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "upload_file_size",
+      "required": false,
+      "description": "Specifies the size of files to be uploaded in megabytes.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "200MB"
+    },
+    {
+      "name": "upload_timeout",
+      "required": false,
+      "description": "Optionally specify a timeout for uploads. Fluent Bit will start ingesting buffer files which have been created more than x minutes and haven't reached upload_file_size limit yet.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "30m"
+    },
+    {
+      "name": "workload_identity_token_file",
+      "required": false,
+      "description": "Set the token path for workload identity authentication.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/azure_kusto#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Azure Data Explorer."
+}

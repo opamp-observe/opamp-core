@@ -1,5 +1,5 @@
 <!--
-Copyright 2026 mp3monster.org
+Copyright 2026 opamp.info
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -45,6 +45,11 @@ dist/test-reports/regression-pack/
 | `st001` | Runs the ST-001 provider/consumer simulator socket and HTTP container scenarios. |
 | `st002` | Runs the ST-002 provider/consumer simulator socket and HTTP container scenarios. |
 | `st004` | Runs the ST-004 provider/consumer Keycloak authorization container scenario. |
+| `st004b` | Runs the ST-004B no-auth, static-token scope-separation, MCP-disabled, JWT-negative, and TLS profiles. |
+| `st007` | Runs credentials-manager unit/API coverage, definition validation, assignment and reconciliation, sensitive-storage separation, assigned-only provider delivery to two live simulators, unavailable-provider JSONL fallback, and the browser author/assign/apply workflow. |
+| `st009` | Runs launcher safety and failure tests plus a real ten-simulator provider scale and clean-disconnect scenario. |
+| `st010` | Runs CLI lifecycle/config tests, builds and clean-installs all wheels, builds sdists, generates SBOMs, and checks installed help/version commands. |
+| `st011` | Runs provider MCP gates/protocol/auth, target config generation, and broker discovery/proxy behavior with local Slack and LLM doubles. |
 | `vector-plugin-e2e` | Starts a provider and Vector-backed consumer, then verifies the provider can see the Vector plugin reporting health and the Vector self-monitoring config writes output. |
 | `config-service-ui-playwright-batch` | Builds the Config Service wheel, builds the Playwright batch container, starts Config Service in-container, and runs chapter YAML validation through Playwright. |
 
@@ -63,6 +68,7 @@ Generated build and evidence artifacts are kept under:
 
 - `dist/consumer/`
 - `dist/test-reports/component-wheel-deployment/`
+- `dist/test-reports/st007/`
 - `config-service/dist/`
 - `dist/test-reports/`
 
@@ -99,7 +105,7 @@ Watch for these recurring root causes:
 | Python launcher differences | `python3` is missing on Windows-hosted shells | Use the repository Python resolver or `py -3` from PowerShell when invoking pack commands on Windows. |
 | Consumer plugin imports | `ImportError` from a partially initialized consumer module | Run `consumer-plugin-startup` first; plugin config imports should not create cycles with abstract client constants. |
 | Playwright browser image drift | Browser executable missing under `/ms-playwright/` | Keep `config-service/package.json` Playwright version and every Playwright Docker image tag on the same version. |
-| ST scenario failures | Pack passes setup tests, then fails `st001`, `st002`, or `st004` | Read that scenario's `results.md`, `verify.log`, `summary.json`, and `compose.log` before rerunning the whole pack. |
+| ST scenario failures | Pack passes setup tests, then fails an `stNNN` entry | Read that scenario's `results.md`, `verify.log`, `summary.json`, and any compose log before rerunning the whole pack. |
 
 Use `--only <test-id>` for focused reproduction and `--continue-on-failure`
 when the priority is to collect evidence for later tests after the first

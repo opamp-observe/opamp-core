@@ -1,0 +1,98 @@
+{
+  "title": "Process metrics",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process",
+  "fields": [
+    {
+      "name": "alert",
+      "required": false,
+      "description": "If enabled, the plugin will only generate messages if the target process is down.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "fd",
+      "required": false,
+      "description": "If enabled, a number of fd is appended to each record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "interval_nsec",
+      "required": false,
+      "description": "Specifies the interval between service checks, in nanoseconds. This works in conjunction with interval_sec.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "interval_sec",
+      "required": false,
+      "description": "Specifies the interval between service checks, in seconds.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "mem",
+      "required": false,
+      "description": "If enabled, memory usage of the process is appended to each record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "proc_name",
+      "required": false,
+      "description": "The name of the target process to check.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Specifies whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/process#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Process metrics."
+}

@@ -1,0 +1,129 @@
+{
+  "title": "Prometheus remote write",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write",
+  "fields": [
+    {
+      "name": "buffer_chunk_size",
+      "required": false,
+      "description": "Sets the chunk size for incoming data. These chunks are then stored and managed in the space specified by buffer_max_size. Compatibility alias for http_server.buffer_chunk_size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "512K"
+    },
+    {
+      "name": "buffer_max_size",
+      "required": false,
+      "description": "Specifies the maximum buffer size to receive a request. Compatibility alias for http_server.buffer_max_size.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "size",
+      "validation_rule": {
+        "kind": "size"
+      },
+      "default": "4M"
+    },
+    {
+      "name": "http2",
+      "required": false,
+      "description": "Enable HTTP/2 support. Compatibility alias for http_server.http2.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "http_server.workers",
+      "required": false,
+      "description": "Number of HTTP listener worker threads.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "listen",
+      "required": false,
+      "description": "The address to listen on.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "0.0.0.0"
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "The port to listen on.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 8080
+    },
+    {
+      "name": "successful_response_code",
+      "required": false,
+      "description": "Specifies the success response code. Supported values are 200, 201, and 204.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 201
+    },
+    {
+      "name": "tag_from_uri",
+      "required": true,
+      "description": "If true, a tag will be created from the uri parameter (for example, api_prom_push from /api/prom/push), and any tag specified in the configuration will be ignored. If false, you must provide a tag in the configuration for this plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": true
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Specifies whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "uri",
+      "required": false,
+      "description": "Specifies an optional HTTP URI for the target web server listening for Prometheus remote write payloads (for example, /api/prom/push).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/prometheus-remote-write#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Prometheus remote write."
+}

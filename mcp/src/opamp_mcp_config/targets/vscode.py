@@ -9,7 +9,7 @@ from typing import Any
 from opamp_mcp_config.targets.base import ApplyResult
 
 
-class VSCodeTarget:
+class VSCodeTarget:  # pylint: disable=too-few-public-methods
     """Apply OpAMP MCP settings to VS Code workspace configuration."""
 
     key = "vscode"
@@ -28,6 +28,7 @@ class VSCodeTarget:
         self._merge_server_entry = merge_server_entry
 
     def apply(self, settings: dict[str, Any], *, dry_run: bool) -> ApplyResult:
+        """Write the configured VS Code MCP server entry unless previewing."""
         cfg = dict(settings["clients"][self.key])
         config_path = self._path_or_default(
             str(cfg.get("config_path") or ""),

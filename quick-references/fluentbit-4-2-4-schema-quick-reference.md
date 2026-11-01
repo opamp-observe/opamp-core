@@ -1,7 +1,7 @@
 # Fluent Bit 4.2.4 Schema Quick Reference
 
 Generated from the local Fluent Bit 4.2.4 JSON schema only:
-- `config-service\json-schemas\fluentbit-4.2.4-config-schema.json`
+- `config-service\src\config_service\json-schemas\fluentbit-4.2.4-config-schema.json`
 
 Scope:
 1. Environment variable map definition for `env`

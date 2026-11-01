@@ -1,0 +1,69 @@
+{
+  "title": "Throttle",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/throttle",
+  "fields": [
+    {
+      "name": "interval",
+      "required": false,
+      "description": "Time interval, expressed in sleep format. For example, 3s, 1.5m, 0.5h.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/throttle#configuration-parameters",
+      "data_type": "duration",
+      "validation_rule": {
+        "kind": "regex",
+        "pattern": "^\\\\d+(ns|us|ms|s|m|h|d)?$"
+      }
+    },
+    {
+      "name": "print_status",
+      "required": false,
+      "description": "Whether to print status messages with current rate and the limits to information logs.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/throttle#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "rate",
+      "required": false,
+      "description": "Amount of messages for the time.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/throttle#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "window",
+      "required": false,
+      "description": "Amount of intervals to calculate average over. Default: 5.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/throttle#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "integer"
+      }
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/filters/throttle#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Value Format",
+      "Description"
+    ]
+  },
+  "description": "Fluent Bit filter plugin: Throttle."
+}

@@ -1,0 +1,118 @@
+{
+  "title": "Head",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head",
+  "fields": [
+    {
+      "name": "add_path",
+      "required": false,
+      "description": "If enabled, the path is appended to each record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "buf_size",
+      "required": false,
+      "description": "Buffer size to read the file.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 256
+    },
+    {
+      "name": "file",
+      "required": true,
+      "description": "Absolute path to the target file. For example: /proc/uptime.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "interval_nsec",
+      "required": false,
+      "description": "Polling interval (nanoseconds).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "interval_sec",
+      "required": false,
+      "description": "Polling interval (seconds).",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "key",
+      "required": false,
+      "description": "Rename a key.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "head"
+    },
+    {
+      "name": "lines",
+      "required": false,
+      "description": "Line number to read. If the number N is set, in_head reads first N lines like head(1) -n.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "split_line",
+      "required": false,
+      "description": "If enabled, in_head generates key-value pair per line.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/head#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Head."
+}

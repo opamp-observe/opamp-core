@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -27,7 +27,6 @@ import json
 import os
 import platform
 import shutil
-import subprocess
 import sys
 from copy import deepcopy
 from pathlib import Path
@@ -46,7 +45,6 @@ from opamp_mcp_config.targets import (  # noqa: E402
     LibreChatTarget,
     VSCodeTarget,
 )
-
 
 DEFAULT_CONFIG_FILENAME = "mcp-client-defaults.json"
 JSON_INDENT = 2

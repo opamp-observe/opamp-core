@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 
 """Bootstrap runtime for the OpAMP consumer deployment test container."""
 

@@ -1,114 +1,206 @@
-# OpAMP Server & Supervisor for Open Source Observer / Pipeline tools
+<!--
+Copyright 2026 opamp.info
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
 
-This repository hosts an implementation of the OpenTelemetry [Open Agent Management Protocol (OpAMP)](https://opentelemetry.io/docs/specs/opamp/). The OpAMP protocol allows us to perform tasks such as:
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
 
-- manage & monitor any compliant agent
-- Command and configure agents
+# OpAMP for Open-Source Observability Agents
 
-The protocol is oriented towards agents supporting the observability domain such as OTel Collectors. The protocol does not mandate that the capabilities have to be directly embedded in the agent, in fact the protocol documentation calls out explicitly the idea of a supervisor model, where a separate process manages the agent.
+This repository is an open, extensible implementation of the OpenTelemetry
+[Open Agent Management Protocol (OpAMP)](https://opentelemetry.io/docs/specs/opamp/).
+It provides both an OpAMP provider (server/control plane) and consumer
+(client/supervisor) implementations for managing heterogeneous observability agents,
+with a particular focus on bringing existing open-source tools into an OpAMP-managed
+fleet without requiring invasive changes to those tools.
 
-This repository provide an agent implementation that specifically adopts the supervisor model, but also understands the characteristics of Fluent Bit and Fluentd to service the different operations.
+## What OpAMP Is
 
-Here we have provided both the agent/client(supervisor) and server functionality. Although the protocol is defined in such a manner, that it should be possible to mix and match.
+Telemetry agents are normally good at moving logs, metrics, and traces, but operating a
+large fleet raises a different set of questions: Which agents are alive? Which version
+and configuration are they running? How can configuration or a restart be delivered
+consistently? How can these operations span different agent technologies?
 
-On the client side we support the following types of client:
-- Fluent Bit
-- Fluentd
-- Elastic Agent
-- Elastic Beats (Heart Beat initially)
-- Vector
+OpAMP defines a vendor-neutral control-plane protocol for that problem. An OpAMP client
+reports an agent's identity, capabilities, health, and configuration state to an OpAMP
+server. Subject to the capabilities negotiated by both sides, the server can return
+configuration, connection settings, commands, package offers, or implementation-specific
+custom messages. Communication uses Protobuf messages over HTTP or WebSocket.
 
-Aside from providing out of the box support for Fluent Bit and Fluentd it provides a means to extend and customize features including:
+The management client does not have to be built into the observed agent. The
+[OpAMP specification](https://opentelemetry.io/docs/specs/opamp/#communication-model) explicitly allows it to be integrated, a plugin, a sidecar, or a separate supervisor.
+That separation is important: it lets mature agents participate in a standard management
+plane while preserving their existing data plane and deployment model.
 
-- Modifying the way an agent is supervised (so the supervisor could be something other than Fluentd or Fluent Bit).
-- Dynamic deployment and execution of custom commands.
-- Easy tailoring of several areas such as full status updates - given the 'openness of the spec'.
+### Why OpAMP is valuable
 
-The following documentation provides more information, including the deployment and configuration of the server and client/agent. More detail on the design ideas, and how it the functionality could be further extended. As the protocol definition is very flexible (part of the protocol is an exchange of what client and server operations can be performed) we've identified which features are supported, and which aren't with suggestions on how the non-supported features could be addressed in a Fluentd / Fluent Bit context.
+- **One contract for a mixed fleet.** Operators can use common identity, health,
+  heartbeat, configuration, and command semantics across agent types and vendors.
+- **Fleet-level visibility and control.** A server can maintain a central view of
+  distributed agents and deliver intent through one protocol instead of bespoke node
+  integrations.
+- **Capability-led interoperability.** Clients and servers advertise what they support,
+  allowing partial implementations to cooperate without pretending every agent has the
+  same features.
+- **Separation from telemetry transport.** OpAMP manages the agents; it does not replace
+  OTLP or the other destinations to which those agents send data.
+- **A path for existing software.** The supervisor model can add management behavior
+  around an agent without first changing the agent's codebase.
 
-The documentation includes background such as the implementation philosophies that have informed the capability, such as being able to get something running quickly.
+## What This Implementation Brings
 
-## Docs
+This project turns the protocol into an operator-oriented, open-source management stack.
+It includes both ends of the OpAMP exchange and the practical services around them:
 
-- [docs/README.md](docs/README.md) — full setup and run instructions.
-- [docs/README.md#uml-component-view](docs/README.md#uml-component-view) — high-level architecture diagram showing required and optional components.
-- [docs/index.md](docs/index.md) — documentation landing page and project overview.
-- [docs/consumer_client_diagrams.md](docs/consumer_client_diagrams.md) — rendered consumer client diagrams with walkthrough notes.
-- [docs/provider_server_diagrams.md](docs/provider_server_diagrams.md) — rendered provider/server diagrams with architecture walkthrough notes.
-- [docs/features.md](docs/features.md) — feature notes and design direction.
-- [mcp/README.md](mcp/README.md) — MCP setup Python entry points, wrapper script layout, FastMCP client role, command-line parameters, and verification.
-- [scripts/README.md](scripts/README.md) — current `scripts/` folder reference, compatibility wrappers, and remaining low-level helpers.
-- [docs/dev/component_versioning.md](docs/dev/component_versioning.md) — git-derived component version metadata, help/UI exposure, and hook/build integration.
-- [cli/README.md](cli/README.md) — CLI launcher/orchestration usage and local operator workflows.
-- [consumer/README.md](consumer/README.md) — consumer configuration and CLI usage.
-- [consumer-sim/README.md](consumer-sim/README.md) — simulator launcher usage and local multi-instance test flows.
-- [provider/README.md](provider/README.md) — provider configuration and web UI notes.
-- [catalog-service/README.md](catalog-service/README.md) — optional catalog service overview and setup notes.
-- [config-service/README.md](config-service/README.md) — optional editor/config service overview and setup notes.
-- [docs/client_config_generator_service.md](docs/client_config_generator_service.md) — schema-driven consumer configuration generator deployment, API, and file-safety guide.
-- [agent_broker/README.md](agent_broker/README.md) — optional conversation broker overview, setup, and run modes.
-- [agent_broker/docs/README.md](agent_broker/docs/README.md) — broker documentation index and operational guides.
+- a provider with HTTP and WebSocket OpAMP transports, a browser console, APIs, command
+  and remote-configuration workflows, authentication options, state persistence, and
+  optional MCP exposure;
+- A specialization of the supervisor concept referred to as an observer, ideal for tapping into existing deployments to control the existing telemetry agents.
+- prebuilt consumer plugins for Fluent Bit, Fluentd, Elastic Agent, Elastic Heartbeat, Vector, (which understand how to use the telemetry agents interfaces to provide the OpAMP capabilities).
+  and scripted simulation, within a framework that supports supervisor and observer
+  lifecycle strategies;
+- built-in reporting for identity, status, health, effective configuration, remote
+  configuration status, heartbeat, restart, and custom capability/message paths, subject
+  to the selected consumer's advertised capabilities;
+- optional configuration editing and validation, a configuration catalog, a schema-driven
+  consumer configuration generator, and a server connection-credentials manager;
+- custom actions and dynamically discovered consumer plugins, so new agents and local
+  operations can be added without turning the core into a product-specific fork; and
+- an optional conversation broker that exposes constrained provider tools through
+  collaboration channels and AI-assisted planning.
 
-## Support Components
+The current built-in support is recorded in the [consumer capability matrix](docs/consumer_implementations.md), while the
+[feature and specification alignment](docs/features.md) identifies partial, planned, and deliberately unsupported areas. This is a working framework with useful end-to-end paths, not a claim that every optional OpAMP capability is complete.
 
-The core OpAMP provider/server and consumer/client can run on their own, while
-the support components below provide integrated UI, demo, validation, or
-collaboration features:
+### Design ideals
 
-- `agent_broker/` — conversation broker
-- `consumer-sim/` — simulator launcher and local demo/test helper
-- `catalog-service/` — catalog browsing and supporting service components
-- `config-service/` — editor/config validation service components
-- `client-config-generator-service/` — schema-driven consumer configuration generator included in the default server config and also usable as a standalone service
+The implementation is guided by a few practical ideals:
 
-When used, these components run as separate processes or supporting services
-with their own startup/shutdown flow and configuration.
+- **Open-source first.** Fluent Bit, Fluentd, Vector, and other accessible agent
+  ecosystems should be manageable without requiring a proprietary agent or control plane.
+- **Integrate rather than invade.** Supervisor mode can own an agent process, while
+  observer mode can attach management and reporting to an already managed process.
+- **Pluggability over hard-coding.** Consumer entry points, custom command handlers,
+  provider component entry points, collaboration adapters, and optional services keep
+  agent-specific behavior at explicit boundaries.
+- **Useful with a small footprint.** The core provider and consumer can run without a
+  mandatory heavyweight database or every optional service. Additional capabilities can
+  be deployed only where they add value.
+- **Low-friction experimentation.** Python, JSON configuration, packaged command-line
+  entry points, simulators, and local tooling make it possible to get from zero to a
+  visible OpAMP exchange quickly.
+- **Protocol alignment without protocol confinement.** Standard OpAMP behavior remains
+  the base, while documented custom messages and MCP tools provide controlled extension
+  points for agent-specific operations.
 
-## Build and packaging
+These goals expand on the project's [implementation philosophy](docs/dev/implementation_philosophy.md) and the original [OpAMP with Fluent Bit: Observability and ChatOps](https://blog.mp3monster.org/2026/03/23/opamp-with-fluent-bit/) project write-up.
 
-The repository supports independent deployable Python artefacts for:
+## Brief Demo
 
-- `provider`
-- `consumer`
-- `catalog-service`
-- `client-config-generator-service`
-- `cli`
-- `consumer-sim`
+There is a demo recorded as part of the Open Source Observability Day conference:
 
-The main build entry points are:
+ https://youtu.be/tKQjnS6wbsc 
 
-- `python dev-tools/main.py build artefact all`
-  - builds per-component `sdist` + `wheel` outputs into `dist/`
-- `python dev-tools/main.py build release-assets`
-  - builds per-component wheels
-  - writes per-component CycloneDX SBOMs
-  - supports subset builds via `--components`
-  - supports GitHub release publication via `--publish`
-- `python scripts/security_checks.py`
-  - compatibility wrapper for the consolidated repository security gate
+The recording illustrates features that contribute to the 0.6 release.
 
-For the full build matrix and output paths, start with:
+## How It Compares with the OpenTelemetry Implementations
 
-- `scripts/README.md`
-- `docs/README.md`
-- `dev-tools/README.md`
-- `docs/dev/component_versioning.md`
+OpenTelemetry currently provides several related building blocks rather than one
+all-purpose operator product:
 
-## Folder summary
+- [`opamp-go`](https://github.com/open-telemetry/opamp-go) supplies reusable Go client
+  and server protocol implementations and examples.
+- The Collector's
+  [`opamp` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/opampextension)
+  provides an in-process OpAMP client for the OpenTelemetry Collector and is currently
+  marked alpha.
+- The
+  [OpenTelemetry Collector OpAMP Supervisor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/cmd/opampsupervisor)
+  is a reference supervisor specialized for launching and managing an OpenTelemetry
+  Collector. It expects an OpAMP server and implements a broader set of Collector-focused
+  protocol capabilities than this project currently does.
 
-- `agent_broker` — optional standalone conversation broker package and docs.
-- `catalog-service` — optional catalog service package, UI assets, and docs.
-- `cli` — optional local launcher/orchestration utility and docs.
-- `config` — default configuration files (including `opamp.json`).
-- `config-service` — optional editor/config validation service package and docs.
-- `client-config-generator-service` — default server plugin and optional standalone schema-driven consumer configuration generator package, UI, and API.
-- `consumer` — the OpAMP consumer (client) package, tests, and config samples.
-- `consumer-sim` — optional simulator launcher utilities and docs.
-- `dist` — generated wheels, source distributions, manuals, and SBOMs.
-- `docs` — project documentation.
-- `logs` — runtime logs created by scripts.
-- `proto` — protobuf definitions and generated artifacts.
-- `provider` — the OpAMP provider (server) package, UI, and tests.
-- `scripts` — compatibility wrappers and low-level operational helper scripts that remain outside `dev-tools`.
-- `shared` — shared utilities used by provider/consumer.
-- `tests` — repository-level tests.
+| Area | OpenTelemetry implementation | This project |
+| --- | --- | --- |
+| Primary target | OpenTelemetry Collector and reusable Go protocol integrations | Existing open-source agents including Fluent Bit, Fluentd, Vector, and selected Elastic agents |
+| Agent integration | Native Collector extension or Collector-specific external supervisor | External consumer plugins using supervisor or observer mode |
+| Server offering | Go server library and example server; the Collector supervisor requires a separate server | Operator-facing provider with UI, API, persistence, command/config workflows, and optional MCP |
+| Protocol breadth | The reference supervisor covers more of the Collector-oriented OpAMP capability set | A deliberately partial implementation focused on working multi-agent operational paths and extensibility |
+| Extension model | Go APIs, custom builds, Collector components, and emerging supervisor extensions | Python package entry points, agent adapters, custom actions/messages, Quart component entry points, and optional services |
+| Human interface | Determined by the selected external OpAMP backend | Built-in web console plus optional CLI, MCP, ChatOps, and AI-assisted tool orchestration |
+
+The approaches are complementary. The OpenTelemetry implementations are the stronger fit
+for native Collector management and protocol-library reuse. This project explores how the
+same open protocol can manage a broader open-source estate and provide the surrounding
+operator experience. Protocol conformance is intended to make clients and servers
+interchangeable, but cross-implementation compatibility still needs systematic testing
+before it should be assumed in production.
+
+## ChatOps and AIOps
+
+The provider can expose a bounded set of operational tools through Model Context Protocol
+(MCP). The optional conversation broker discovers those tools and makes them available
+through Slack today; the collaboration layer is designed so other adapters can be added.
+Two interaction styles can coexist:
+
+- **ChatOps:** deterministic commands such as listing agents, checking state, or invoking
+  an explicitly named tool provide a shared operational interface in a team channel.
+- **AI-assisted operations:** a configured language model can translate natural language
+  into a bounded, multi-step plan that uses only the tools discovered from the provider,
+  stops on repeated work or a configured step limit, and summarizes the result.
+
+That creates a path such as:
+
+```text
+Operator -> collaboration channel -> broker/planner -> MCP tools
+         -> OpAMP provider -> selected consumer -> managed agent
+```
+
+Practical uses include fleet queries, guided diagnosis, configuration validation before
+deployment, targeted restart or custom-action workflows, and plain-language summaries of
+agent state. The design also keeps the central routing and policy boundary at the provider
+instead of requiring chat tooling to connect independently to every managed node, an idea
+described further in the
+[project ChatOps article](https://blog.mp3monster.org/2026/03/23/opamp-with-fluent-bit/).
+
+This is a foundation for AIOps, not an unrestricted autonomous control loop. Production
+deployments should combine tool allowlisting and bounded planning with provider
+authentication, network controls, human approval where appropriate, and retained
+operational evidence. See the [conversation broker](agent_broker/README.md) and its
+[strict command and AI planning model](agent_broker/docs/slack_command_syntax.md).
+
+## Components and Repository Layout
+
+The required and optional components, deployment roles, build/package entry points, and
+folder-level map have moved to
+[components and repository layout](docs/components_and_repository_layout.md).
+
+At minimum, the provider can run by itself as a server. A meaningful end-to-end OpAMP
+session requires the provider and at least one consumer. The editor, catalog, generator,
+credentials manager, CLI, broker, MCP setup tooling, and simulator are optional.
+
+## Documentation
+
+- [Product installation](docs/installation.md) — deployment scenarios, released wheels,
+  automation, and command-line tooling.
+- [Documentation hub](docs/README.md) — full setup, architecture, and run instructions.
+- [Components and repository layout](docs/components_and_repository_layout.md) — component
+  roles, required/optional status, packaging, and folder map.
+- [Features and specification alignment](docs/features.md) — implemented, partial,
+  planned, and deliberately unsupported protocol areas.
+- [Consumer implementations](docs/consumer_implementations.md) — built-in client and
+  capability matrix.
+- [Provider diagrams](docs/provider_server_diagrams.md) and
+  [consumer diagrams](docs/consumer_client_diagrams.md) — architecture walkthroughs.
+- [Provider guide](provider/README.md) and [consumer guide](consumer/README.md) — runtime
+  configuration and component-specific behavior.
+- [Conversation broker](agent_broker/README.md) — ChatOps, AI provider, MCP, and
+  collaboration-channel setup.
+- [Roadmap](docs/roadmap/index.md) — future ideas without timeline commitments.

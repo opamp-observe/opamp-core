@@ -1,0 +1,152 @@
+{
+  "title": "Dummy",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy",
+  "fields": [
+    {
+      "name": "copies",
+      "required": false,
+      "description": "Number of messages to generate each time messages are generated.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "dummy",
+      "required": false,
+      "description": "Dummy JSON record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "{\"message\":\"dummy\"}"
+    },
+    {
+      "name": "fixed_timestamp",
+      "required": false,
+      "description": "If enabled, use a fixed timestamp. This allows the message to be pre-generated once.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "flush_on_startup",
+      "required": false,
+      "description": "If set to true, the first dummy event is generated at startup.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "interval_nsec",
+      "required": false,
+      "description": "Set time interval, in nanoseconds, at which every message is generated. If set, rate configuration is ignored.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "interval_sec",
+      "required": false,
+      "description": "Set time interval, in seconds, at which every message is generated. If set, rate configuration is ignored.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "metadata",
+      "required": false,
+      "description": "Dummy JSON metadata.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "{}"
+    },
+    {
+      "name": "rate",
+      "required": false,
+      "description": "Rate at which messages are generated, expressed in how many times per second.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "samples",
+      "required": false,
+      "description": "Limit the number of events generated. For example, if samples=3, the plugin generates only three events and stops. 0 means no limit.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "start_time_nsec",
+      "required": false,
+      "description": "Set a dummy base timestamp, in nanoseconds. If set to -1, the current time is used.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": -1
+    },
+    {
+      "name": "start_time_sec",
+      "required": false,
+      "description": "Set a dummy base timestamp, in seconds. If set to -1, the current time is used.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": -1
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/dummy#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Dummy."
+}

@@ -1,3 +1,17 @@
+<!--
+Copyright 2026 opamp.info
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Consumer Restart And Hot-Deploy Implementation
 
 ## Purpose
@@ -44,7 +58,7 @@ The main implementation points are:
 
 The focused tests were added or extended in:
 
-- `consumer/tests/test_client_transport_and_disconnect.py`
+- `consumer/tests/fluentbit/test_client_transport_and_disconnect.py`
 - `consumer/tests/fluentd/test_fluentd_client.py`
 - `consumer/tests/test_common_config_handler.py`
 - `consumer/tests/test_custom_handlers_chatops.py`
@@ -86,7 +100,7 @@ If one is already present, the Fluent Bit client returns:
 Hot reload is the runtime action performed after config files have already been written successfully.
 
 - Fluent Bit: performs an HTTP `POST` to `/api/v2/reload`
-- Fluentd: logs a warning and returns `False` because the feature is not yet implemented in the consumer client
+- Fluentd: calls HTTP RPC `GET /api/config.reload` when `rpc_endpoint` is configured
 
 ## Methods to support Hot Deploy
 

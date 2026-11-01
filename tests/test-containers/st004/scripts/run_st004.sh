@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Licensed under the Apache License, Version 2.0.
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 #
 # Build, run, verify, capture evidence, and tear down the ST-004 Keycloak auth
 # scenario. This follows the ST-001/ST-002 local compose harness shape.

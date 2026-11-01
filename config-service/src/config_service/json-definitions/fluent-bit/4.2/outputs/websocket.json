@@ -1,0 +1,107 @@
+{
+  "title": "WebSocket",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/websocket",
+  "fields": [
+    {
+      "name": "format",
+      "required": false,
+      "description": "Specify the data format to be used in the HTTP request body. Supported formats: json, json_stream, json_lines, gelf, msgpack.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/websocket#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "msgpack"
+    },
+    {
+      "name": "header",
+      "required": false,
+      "description": "Add a HTTP header key/value pair. Multiple headers can be set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/websocket#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "host",
+      "required": false,
+      "description": "IP address or hostname of the target WebSocket Server.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/websocket#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "127.0.0.1"
+    },
+    {
+      "name": "json_date_format",
+      "required": false,
+      "description": "Specify the format of the date. Supported formats: double, epoch, epoch_ms, iso8601, java_sql_timestamp.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/websocket#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "double"
+    },
+    {
+      "name": "json_date_key",
+      "required": false,
+      "description": "Specify the name of the date field in output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/websocket#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "date"
+    },
+    {
+      "name": "port",
+      "required": false,
+      "description": "TCP port of the target WebSocket Server.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/websocket#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 80
+    },
+    {
+      "name": "uri",
+      "required": false,
+      "description": "Specify an optional HTTP URI for the target WebSocket server. For example, /someuri.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/websocket#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/"
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/websocket#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/websocket#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: WebSocket."
+}

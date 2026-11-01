@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,6 +10,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Parse Fluent Bit YAML while preserving its string-oriented scalar values."""
 
 from __future__ import annotations
 
@@ -64,6 +66,10 @@ class _FluentBitYamlLoader(yaml.SafeLoader):
     """
 
 
+_FluentBitYamlLoader.yaml_implicit_resolvers = deepcopy(
+    yaml.SafeLoader.yaml_implicit_resolvers
+)
+# Keep Fluent Bit's string-oriented scalar rules local to this loader subclass.
 for _first_char, _resolver_mappings in list(_FluentBitYamlLoader.yaml_implicit_resolvers.items()):
     _FluentBitYamlLoader.yaml_implicit_resolvers[_first_char] = [
         (tag, regexp)
@@ -108,7 +114,7 @@ class FluentBitYamlConfigService:
             raise ValueError("The Fluent Bit YAML file is empty.")
 
         try:
-            loaded = yaml.load(text, Loader=_FluentBitYamlLoader)
+            loaded = yaml.load(text, Loader=_FluentBitYamlLoader)  # noqa: S506
         except yaml.YAMLError as exc:
             # Convert low-level YAML parser errors into a stable domain error so
             # callers can consistently report malformed config text.

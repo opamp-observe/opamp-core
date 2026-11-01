@@ -24,8 +24,10 @@ coverage.xml
 tools
 
 /catalog-service/node_modules/
+/config-service/reports/
 config-service/frontend/node_modules/
 /config-service/node_modules/
+/config-service/backups/
 /svr-credentials-mgr/node_modules/
 /provider/node_modules/
 
@@ -39,6 +41,8 @@ config-service/frontend/node_modules/
 agent.md
 
 #Test artefacts
+/catalog-service/test-results/
+/config-service/test-results/
 consumer/test.txt
 OpAMPSupervisor.signal
 *.pem
@@ -46,6 +50,7 @@ OpAMPSupervisor.signal
 *.key
 test.txt
 server-state/
+/provider/test-results/
 *.log
 dev-tools/runtime/
 stopclaude.bat
@@ -68,3 +73,7 @@ cli/runtime/
 *.meta
 
 agents.md
+
+_gsdata_/
+
+dev-tools/reports/4-2-summary/

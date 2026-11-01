@@ -1,4 +1,4 @@
-# Copyright 2026 mp3monster.org
+# Copyright 2026 opamp.info
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -169,3 +169,17 @@ def test_heartbeat_loop_reraises_cancelled_error() -> None:
         asyncio.run(harness._heartbeat_loop(port=2020))
 
     assert harness.disconnect_calls == 1
+
+
+def test_public_heartbeat_loop_delegates_to_cancellable_runtime() -> None:
+    """Embedding hosts can use the public wrapper without accessing private methods."""
+
+    harness = _HeartbeatLoopHarness(send_outcomes=[])
+    observed_ports: list[int] = []
+
+    async def replacement(port: int) -> None:
+        observed_ports.append(port)
+
+    harness._heartbeat_loop = replacement
+    asyncio.run(harness.run_heartbeat_loop(port=2020))
+    assert observed_ports == [2020]

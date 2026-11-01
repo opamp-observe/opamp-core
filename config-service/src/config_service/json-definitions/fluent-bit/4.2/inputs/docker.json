@@ -1,0 +1,91 @@
+{
+  "title": "Docker metrics",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-metrics",
+  "fields": [
+    {
+      "name": "exclude",
+      "required": false,
+      "description": "A space-separated list of containers to exclude.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "include",
+      "required": false,
+      "description": "A space-separated list of containers to include.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "interval_nsec",
+      "required": false,
+      "description": "Polling interval in nanoseconds.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-metrics#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "interval_sec",
+      "required": false,
+      "description": "Polling interval in seconds.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-metrics#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 1
+    },
+    {
+      "name": "path.containers",
+      "required": false,
+      "description": "Container directory path, for custom Docker data-root configurations.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/var/lib/docker/containers"
+    },
+    {
+      "name": "path.sysfs",
+      "required": false,
+      "description": "Sysfs cgroup mount point.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-metrics#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null,
+      "default": "/sys/fs/cgroup"
+    },
+    {
+      "name": "threaded",
+      "required": false,
+      "description": "Indicates whether to run this input in its own thread.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-metrics#configuration-parameters",
+      "data_type": "boolean",
+      "validation_rule": {
+        "kind": "boolean"
+      },
+      "default": false
+    },
+    {
+      "name": "tag",
+      "required": true,
+      "description": "Tag assigned to records emitted by this input plugin.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/inputs/docker-metrics#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit input plugin: Docker metrics."
+}

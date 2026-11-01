@@ -1,0 +1,59 @@
+{
+  "title": "Plot",
+  "doc_url": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/plot",
+  "fields": [
+    {
+      "name": "file",
+      "required": false,
+      "description": "Set filename to store the records. If not set, the filename will be the tag associated with the records. If the file can't be opened, the plugin falls back to writing to STDOUT.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/plot#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "key",
+      "required": false,
+      "description": "Specify the key name from the record to extract as the value. The value must be a numeric type (integer or float). If not specified, the plugin uses the first field from the record.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/plot#configuration-parameters",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "workers",
+      "required": false,
+      "description": "The number of workers to perform flush operations for this output.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/plot#configuration-parameters",
+      "data_type": "integer",
+      "validation_rule": {
+        "kind": "range"
+      },
+      "default": 0
+    },
+    {
+      "name": "match",
+      "required": false,
+      "description": "Tag match pattern used to route records to this plugin. Supports '*' wildcard matching.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    },
+    {
+      "name": "match_regex",
+      "required": false,
+      "description": "Regular expression tag match used to route records to this plugin. Takes precedence over match when both are set.",
+      "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/router",
+      "data_type": "string",
+      "validation_rule": null
+    }
+  ],
+  "extraction": {
+    "status": "ok",
+    "reference": "https://docs.fluentbit.io/manual/4.2/data-pipeline/outputs/plot#configuration-parameters",
+    "table_header": [
+      "Key",
+      "Description",
+      "Default"
+    ]
+  },
+  "description": "Fluent Bit output plugin: Plot."
+}
