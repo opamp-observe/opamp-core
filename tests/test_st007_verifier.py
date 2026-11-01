@@ -26,6 +26,12 @@ import pytest
 
 SERVE_MODULE_NAME = "opamp_st007_serve_credentials_manager"
 VERIFY_MODULE_NAME = "opamp_st007_verify"
+ENTRYPOINT_PATH = (
+    Path(__file__).resolve().parent
+    / "test-containers"
+    / "st007"
+    / "entrypoint.sh"
+)
 
 
 def _load_script(module_name: str, script_name: str) -> ModuleType:
@@ -75,6 +81,16 @@ def test_complete_definition_includes_every_supported_connection_section() -> No
         definition[verifier.KEY_OPAMP][verifier.KEY_HEADERS][verifier.HEADER_ST007_ACCESS]
         == "synthetic-private-marker"
     )
+
+
+def test_entrypoint_removes_private_runtime_directories_on_exit() -> None:
+    """Prevent private root-owned scratch state from breaking retained uploads."""
+    entrypoint = ENTRYPOINT_PATH.read_text(encoding="utf-8")
+
+    assert 'readonly integration_runtime_name="integration-runtime-*"' in entrypoint
+    assert 'readonly ui_runtime_name="ui-runtime.*"' in entrypoint
+    assert 'find "${results_dir}" -maxdepth 1 -type d' in entrypoint
+    assert '-exec rm -rf -- {} +' in entrypoint
 
 
 def test_fallback_record_validation_enforces_assigned_client_set() -> None:

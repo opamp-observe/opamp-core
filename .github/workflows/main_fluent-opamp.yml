@@ -331,21 +331,21 @@ jobs:
           set -euo pipefail
           retained_bucket="$(cat dist/aws-artifact-bucket.txt)"
           connection_guide="$(find dist/aws-regression-results -name connection_details.md -type f | sort | tail -n 1)"
-          regression_report="$(find dist/test-reports -name regression-pack-results.md -type f | sort | tail -n 1)"
+          regression_report="dist/test-reports/regression-pack/regression-pack-results.md"
           {
             cat "$connection_guide"
             echo ""
             echo "## Retained AWS storage"
             echo ""
             echo "Bucket: \`$retained_bucket\`"
-            if [[ -n "$regression_report" ]]; then
+            if [[ -f "$regression_report" ]]; then
               echo ""
               cat "$regression_report"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail when AWS regression or evidence upload failed
-        if: steps.aws_regression.outputs.exit_code != '0'
+        if: always() && steps.aws_regression.outputs.exit_code != '' && steps.aws_regression.outputs.exit_code != '0'
         shell: bash
         run: |
           set -euo pipefail

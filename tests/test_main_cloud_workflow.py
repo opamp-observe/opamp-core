@@ -108,6 +108,15 @@ def test_aws_mode_runs_and_retains_regression_evidence() -> None:
     assert "regression_arguments+=(--only \"$test_id\")" in workflow
     assert "regression_arguments+=(--skip \"$test_id\")" in workflow
     assert "regression-pack-results.md" in workflow
+    assert (
+        'regression_report="dist/test-reports/regression-pack/regression-pack-results.md"'
+        in workflow
+    )
+    assert (
+        "if: always() && steps.aws_regression.outputs.exit_code != '' "
+        "&& steps.aws_regression.outputs.exit_code != '0'"
+        in workflow
+    )
     assert "AWS regression passed, but retained evidence upload failed" in workflow
     assert "AWS regression report: $regression_report" in workflow
     assert "AWS regression upload manifest: $upload_manifest" in workflow
