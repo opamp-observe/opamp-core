@@ -14,7 +14,7 @@ title: OpAMP
 author: opamp.info
 copyright: "Copyright (c) 2026-{currentYear} {author}"
 description: >-
-  Documentation for the Fluent OpAMP provider, consumers, configuration
+  Documentation for the OpAMP provider, consumers, configuration
   services, and related Open Agent Management Protocol integrations.
 url: "https://opamp.info"
 baseurl: ""
