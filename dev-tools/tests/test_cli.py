@@ -11,11 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for direct and guided developer CLI parsing and dispatch."""
+
 from __future__ import annotations
 
 from pathlib import Path
 
-import opamp_dev_tools.cli as cli
+from opamp_dev_tools import cli, dast
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -72,6 +74,7 @@ def test_main_without_arguments_prompts_for_command_group(
     monkeypatch,
     capsys,
 ) -> None:
+    """Guided mode should select and dispatch a nested command."""
     responses = iter(["1", "1", "q"])
     captured: dict[str, object] = {}
 
@@ -272,6 +275,7 @@ def test_main_without_arguments_supports_build_js_complexity_command(
     monkeypatch,
     capsys,
 ) -> None:
+    """Guided build selection should retain the JavaScript complexity command."""
     responses = iter(["3", "7", "", "", "q"])
     captured: dict[str, object] = {}
 
@@ -296,6 +300,7 @@ def test_main_without_arguments_supports_build_js_complexity_command(
 
 
 def test_main_without_arguments_can_quit_immediately(monkeypatch, capsys) -> None:
+    """Guided mode should exit cleanly when the first response requests quit."""
     monkeypatch.setattr("builtins.input", lambda _: "q")
 
     exit_code = cli.main([])
@@ -310,6 +315,7 @@ def test_main_without_arguments_quitting_submenu_returns_to_main_menu(
     monkeypatch,
     capsys,
 ) -> None:
+    """Quitting a command submenu should return to the root selection."""
     responses = iter(["1", "q", "q"])
 
     monkeypatch.setattr("builtins.input", lambda _: next(responses))
@@ -328,6 +334,7 @@ def test_main_without_arguments_quitting_nested_submenu_returns_to_main_menu(
     monkeypatch,
     capsys,
 ) -> None:
+    """Quitting a nested scope menu should return to the root selection."""
     responses = iter(["3", "1", "q", "q"])
 
     monkeypatch.setattr("builtins.input", lambda _: next(responses))
@@ -347,6 +354,7 @@ def test_main_without_arguments_supports_certificate_ensure_provider_config(
     monkeypatch,
     capsys,
 ) -> None:
+    """Guided mode should dispatch the provider certificate configuration helper."""
     responses = iter(["4", "2", "q"])
     captured: dict[str, object] = {}
 
@@ -375,6 +383,7 @@ def test_main_without_arguments_returns_to_main_menu_after_command(
     monkeypatch,
     capsys,
 ) -> None:
+    """A successful guided command should return to the root menu."""
     responses = iter(["1", "1", "q"])
     dispatch_calls: list[object] = []
 
@@ -401,6 +410,7 @@ def test_main_defaults_repo_root_to_launch_directory(
     tmp_path: Path,
     capsys,
 ) -> None:
+    """The current directory should become the default repository root."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("builtins.input", lambda _: "q")
 
@@ -416,6 +426,7 @@ def test_main_prefers_explicit_repo_root(
     tmp_path: Path,
     capsys,
 ) -> None:
+    """An explicit repository root should override the launch directory."""
     explicit_root = tmp_path / "custom-root"
     explicit_root.mkdir()
     monkeypatch.setattr("builtins.input", lambda _: "q")
@@ -449,6 +460,151 @@ def test_parser_accepts_container_image_cleanup_options(tmp_path: Path) -> None:
     assert args.include_legacy is True
     assert args.force is True
     assert args.dry_run is True
+
+
+def test_parser_accepts_dast_baseline_options(tmp_path: Path) -> None:
+    """The build command should expose portable ZAP baseline settings."""
+    parser = cli.build_parser(tmp_path)
+
+    args = parser.parse_args(
+        [
+            "build",
+            "dast",
+            "baseline",
+            "--target",
+            "http://provider:8080",
+            "--scope",
+            "provider-compose",
+            "--runtime",
+            "docker",
+            "--rules-file",
+            "security/zap/provider_rules.conf",
+            "--spider-minutes",
+            "4",
+            "--startup-timeout-minutes",
+            "6",
+            "--fail-on-warning",
+        ]
+    )
+
+    assert args.build_command == "dast"
+    assert args.dast_mode == dast.BASELINE_MODE
+    assert args.target == "http://provider:8080"
+    assert args.dast_scope == "provider-compose"
+    assert args.runtime == "docker"
+    assert args.rules_file == Path("security/zap/provider_rules.conf")
+    assert args.spider_minutes == 4
+    assert args.startup_timeout_minutes == 6
+    assert args.fail_on_warning is True
+    assert not hasattr(args, "allow_active_scan")
+
+
+def test_parser_accepts_explicit_dast_full_scan_acknowledgement(tmp_path: Path) -> None:
+    """The full mode should parse the acknowledgement required by the runner."""
+    parser = cli.build_parser(tmp_path)
+
+    args = parser.parse_args(["build", "dast", "full", "--allow-active-scan"])
+
+    assert args.dast_mode == dast.FULL_MODE
+    assert args.allow_active_scan is True
+
+
+def test_dast_dispatch_builds_scan_options(monkeypatch, tmp_path: Path) -> None:
+    """Build dispatch should transfer every parsed value to the ZAP runner."""
+    parser = cli.build_parser(tmp_path)
+    args = parser.parse_args(
+        [
+            "build",
+            "dast",
+            "full",
+            "--target",
+            "http://provider:8080",
+            "--scope",
+            "provider",
+            "--allow-active-scan",
+        ]
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_dast_scan(runtime, *, options) -> bool:  # type: ignore[no-untyped-def]
+        """Capture dispatch values without starting Docker."""
+        captured["runtime"] = runtime
+        captured["options"] = options
+        return False
+
+    monkeypatch.setattr(cli, "run_dast_scan", fake_run_dast_scan)
+    runtime = object()
+
+    result = cli._dispatch_build_command(args, runtime)  # pylint: disable=protected-access
+
+    assert result is False
+    assert captured["runtime"] is runtime
+    options = captured["options"]
+    assert options.mode == dast.FULL_MODE
+    assert options.target == "http://provider:8080"
+    assert options.allow_active_scan is True
+
+
+def test_guided_dast_baseline_uses_portable_defaults(monkeypatch) -> None:
+    """Guided baseline selection should retain defaults and requested rule generation."""
+    responses = iter(["", "", "y", "n"])
+    monkeypatch.setattr(cli, "_prompt_for_selection", lambda *args, **kwargs: "baseline")
+    monkeypatch.setattr("builtins.input", lambda prompt_text: next(responses))
+
+    tokens = cli._prompt_for_dast_tokens()  # pylint: disable=protected-access
+
+    assert tokens == [
+        "build",
+        "dast",
+        "baseline",
+        "--target",
+        dast.DEFAULT_DAST_TARGET,
+        "--scope",
+        dast.DEFAULT_DAST_SCOPE,
+        "--generate-rules",
+    ]
+
+
+def test_guided_dast_selection_can_return_to_build_menu(monkeypatch) -> None:
+    """Guided DAST selection should propagate a submenu cancellation."""
+    monkeypatch.setattr(cli, "_prompt_for_selection", lambda *args, **kwargs: None)
+
+    tokens = cli._prompt_for_dast_tokens()  # pylint: disable=protected-access
+
+    assert tokens is None
+
+
+def test_guided_dast_full_requires_disposable_target_confirmation(monkeypatch, capsys) -> None:
+    """Guided full selection should cancel when active payloads are not acknowledged."""
+    responses = iter(["", "", "n", "n", "n"])
+    monkeypatch.setattr(cli, "_prompt_for_selection", lambda *args, **kwargs: "full")
+    monkeypatch.setattr("builtins.input", lambda prompt_text: next(responses))
+
+    tokens = cli._prompt_for_dast_tokens()  # pylint: disable=protected-access
+
+    assert tokens is None
+    assert "Active scan cancelled" in capsys.readouterr().out
+
+
+def test_guided_dast_full_adds_acknowledgement(monkeypatch) -> None:
+    """Guided full selection should emit the active-scan flag after confirmation."""
+    responses = iter(["http://provider:8080", "st004", "n", "y", "y"])
+    monkeypatch.setattr(cli, "_prompt_for_selection", lambda *args, **kwargs: "full")
+    monkeypatch.setattr("builtins.input", lambda prompt_text: next(responses))
+
+    tokens = cli._prompt_for_dast_tokens()  # pylint: disable=protected-access
+
+    assert tokens == [
+        "build",
+        "dast",
+        "full",
+        "--target",
+        "http://provider:8080",
+        "--scope",
+        "st004",
+        "--fail-on-warning",
+        "--allow-active-scan",
+    ]
 
 
 def test_parser_accepts_cache_and_egg_folder_purge_options(tmp_path: Path) -> None:

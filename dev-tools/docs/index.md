@@ -16,6 +16,7 @@ limitations under the License.
 
 The developer CLI provides repository maintenance, generated-resource,
 build, release, test, security, certificate, and authentication workflows.
+The security workflows include source/dependency gates and Docker-backed OWASP ZAP runtime scans.
 It can be run as `opamp-dev-cli`, `opamp-cli-dev`, `opamp-dev-tools`, or from
 the checkout with `python3 dev-tools/main.py`.
 

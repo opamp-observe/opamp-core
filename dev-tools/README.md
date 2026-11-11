@@ -17,7 +17,7 @@ limitations under the License.
 `opamp-dev-tools` is the consolidated developer CLI for repository maintenance
 work such as schema validation, version updates, packaging, SBOM generation,
 test execution, security checks, container image cleanup, release wheel
-publishing, generated-folder cleanup, and certificate helpers.
+publishing, generated-folder cleanup, Docker-backed OWASP ZAP scans, and certificate helpers.
 
 Run from the repository root during development:
 
@@ -201,6 +201,13 @@ wheel transfer controls.
 The `build` group creates artifacts and SBOMs, runs component or repository
 tests and security gates, builds documentation and UI outputs, and assembles
 release assets.
+
+Run passive or explicitly acknowledged active ZAP scans against a running test deployment:
+
+```bash
+opamp-dev-cli build dast baseline
+opamp-dev-cli build dast full --allow-active-scan
+```
 
 See [build, test, and release commands](docs/build_test_and_release.md) for the
 workflows and examples.

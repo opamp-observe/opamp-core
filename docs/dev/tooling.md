@@ -101,12 +101,19 @@ opamp-dev-cli build test all
 opamp-dev-cli build test e2e
 opamp-dev-cli build secure named provider
 opamp-dev-cli build secure all
+opamp-dev-cli build dast baseline
 ```
 
 The security command combines the configured tests with Ruff security rules,
 `detect-secrets`, `pip-audit`, and reviewed Semgrep rules. It also produces a Bandit report for
 comparison with Ruff. See [Testing and Result Review](testing.md) for test scope, blocking policy,
 browser commands, and the exact JUnit, coverage, HTML, SARIF, and JSON result locations.
+
+Dynamic testing uses the multi-architecture `ghcr.io/zaproxy/zaproxy:2.17.0` image pinned by OCI
+digest in the developer CLI. The CLI mounts only its generated report directory, adds Docker's
+cross-platform host gateway when required, and keeps active scanning behind
+`--allow-active-scan`. See
+[Dynamic Application Security Testing](dynamic_application_security_testing.md).
 
 ## Node And Browser Tooling
 
@@ -131,7 +138,7 @@ The main local workflow surfaces are:
 - `opamp-cli`: guided start/stop/restart, status, log cleanup, config validation,
   MCP/dev helpers, container starts, and repository virtual environment setup.
 - `opamp-dev-tools`: build, validation, release asset, SBOM, certificate, and
-  maintenance workflows.
+  maintenance workflows, including Docker-backed OWASP ZAP runtime scans.
 - `mcp/configure_mcp_clients.py` and `opamp-mcp-config`: MCP client setup for
   Claude, Codex, VS Code, LibreChat, and Gemini.
 - `scripts/*`: low-level operational helpers that have not been folded into

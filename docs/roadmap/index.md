@@ -148,6 +148,13 @@ happy paths. Coverage should include:
 
 # Enhance the security aspect of the process
 
+- DAST:
+  - Implemented local Docker-backed OWASP ZAP baseline and explicitly acknowledged full scans,
+    with retained reports and reviewed packaged-scan rule inputs.
+  - Add authenticated ZAP Automation Framework plans for browser/session login and protected APIs.
+  - Add OpenAPI-driven API scans when each protected HTTP surface publishes a maintained contract.
+  - Evaluate Nuclei or complementary API fuzzing only after ZAP coverage and ownership are stable.
+
 - Dependency vulnerability scanning:
   - Python: `pip-audit` / `safety`.
   - JavaScript: `npm audit` plus Dependabot/Renovate updates.

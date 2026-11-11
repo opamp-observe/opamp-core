@@ -55,6 +55,17 @@ from .components import (
     select_components,
 )
 from .container_images import CONTAINER_RUNTIME_CHOICES, clean_project_images
+from .dast import (
+    DAST_SCAN_MODES,
+    DEFAULT_DAST_SCOPE,
+    DEFAULT_DAST_TARGET,
+    DEFAULT_SPIDER_MINUTES,
+    DEFAULT_STARTUP_TIMEOUT_MINUTES,
+    DEFAULT_ZAP_IMAGE,
+    FULL_MODE,
+    DastScanOptions,
+    run_dast_scan,
+)
 from .fluentbit_changes import report_fluentbit_changes
 from .fluentbit_online import (
     DEFAULT_DOCUMENTATION_SOURCE,
@@ -384,6 +395,22 @@ def build_parser(  # pylint: disable=too-many-locals,too-many-statements
         noun="component",
         available_components=available_components,
     )
+
+    dast_parser = build_subparsers.add_parser(
+        "dast",
+        help="Run Docker-backed OWASP ZAP dynamic security tests",
+    )
+    dast_subparsers = dast_parser.add_subparsers(dest="dast_mode", required=True)
+    for scan_mode in DAST_SCAN_MODES:
+        scan_parser = dast_subparsers.add_parser(
+            scan_mode,
+            help=(
+                "Run a passive baseline scan"
+                if scan_mode != FULL_MODE
+                else "Run an explicitly acknowledged active scan"
+            ),
+        )
+        _add_dast_scan_arguments(scan_parser, active_scan=scan_mode == FULL_MODE)
 
     test_parser = build_subparsers.add_parser("test", help="Run unit, Playwright, or e2e tests")
     test_subparsers = test_parser.add_subparsers(dest="test_scope", required=True)
@@ -716,6 +743,23 @@ def _dispatch_build_command(args: argparse.Namespace, runtime: CommandRuntime) -
         return _dispatch_component_build_command(args, runtime)
     if args.build_command == "test":
         return _dispatch_test_command(args, runtime)
+    if args.build_command == "dast":
+        return run_dast_scan(
+            runtime,
+            options=DastScanOptions(
+                mode=args.dast_mode,
+                target=args.target,
+                scope=args.dast_scope,
+                configured_runtime=args.runtime,
+                image=args.image,
+                rules_file=args.rules_file,
+                spider_minutes=args.spider_minutes,
+                startup_timeout_minutes=args.startup_timeout_minutes,
+                fail_on_warning=args.fail_on_warning,
+                generate_rules=args.generate_rules,
+                allow_active_scan=getattr(args, "allow_active_scan", False),
+            ),
+        )
     if args.build_command == "pdf":
         return build_pdf(runtime, python_exe=args.python, output=args.output)
     if args.build_command in SIMPLE_BUILD_COMMANDS:
@@ -1183,6 +1227,7 @@ def _prompt_for_build_tokens(available_components: list[str]) -> list[str] | Non
             ("docs", "Regenerate markdown quick references"),
             ("diagrams", "Render Mermaid diagrams to images"),
             ("release-assets", "Build release wheels, SBOMs, and optional GitHub assets"),
+            ("dast", "Run Docker-backed OWASP ZAP dynamic security tests"),
         ],
     )
     if command is None:
@@ -1195,6 +1240,8 @@ def _prompt_for_build_tokens(available_components: list[str]) -> list[str] | Non
         )
     if command == "test":
         return _prompt_for_test_tokens(available_components)
+    if command == "dast":
+        return _prompt_for_dast_tokens()
     if command == "pdf":
         return _prompt_for_pdf_tokens()
     return _prompt_for_simple_build_tokens(command)
@@ -1228,6 +1275,36 @@ def _prompt_for_pdf_tokens() -> list[str]:
     tokens = ["build", "pdf"]
     if output:
         tokens.extend(["--output", output])
+    return tokens
+
+
+def _prompt_for_dast_tokens() -> list[str] | None:
+    """Prompt for a safe baseline or explicitly acknowledged full ZAP scan."""
+    scan_mode = _prompt_for_selection(
+        "DAST scan mode",
+        [
+            ("baseline", "Crawl and passively inspect a running deployment"),
+            ("full", "Actively attack a disposable test deployment"),
+        ],
+    )
+    if scan_mode is None:
+        return None
+    target = input(f"Target URL [{DEFAULT_DAST_TARGET}]: ").strip() or DEFAULT_DAST_TARGET
+    scope = input(f"Report scope [{DEFAULT_DAST_SCOPE}]: ").strip() or DEFAULT_DAST_SCOPE
+    tokens = ["build", "dast", scan_mode, "--target", target, "--scope", scope]
+    if _prompt_yes_no("Generate a default ZAP rules file with the reports?", default=False):
+        tokens.append("--generate-rules")
+    if _prompt_yes_no("Fail when ZAP reports warnings?", default=False):
+        tokens.append("--fail-on-warning")
+    if scan_mode == FULL_MODE:
+        acknowledged = _prompt_yes_no(
+            "Confirm this active scan targets a disposable test deployment?",
+            default=False,
+        )
+        if not acknowledged:
+            print("Active scan cancelled because its disposable target was not confirmed.")
+            return None
+        tokens.append("--allow-active-scan")
     return tokens
 
 
@@ -1573,6 +1650,74 @@ def _add_named_or_all_parsers(
     subparsers.add_parser("all", help=f"Run against every discovered {noun}")
 
 
+def _add_dast_scan_arguments(parser: argparse.ArgumentParser, *, active_scan: bool) -> None:
+    """Add shared Docker-backed ZAP options to one scan-mode parser.
+
+    Parameters
+    ----------
+    parser:
+        Mode-specific parser that receives the shared scan arguments.
+    active_scan:
+        Whether to expose the mandatory acknowledgement for attack payloads.
+
+    """
+    parser.add_argument(
+        "--target",
+        default=DEFAULT_DAST_TARGET,
+        help="Target URL reachable from the ZAP container",
+    )
+    parser.add_argument(
+        "--scope",
+        dest="dast_scope",
+        default=DEFAULT_DAST_SCOPE,
+        help="Filesystem-safe name used for the retained report directory",
+    )
+    parser.add_argument(
+        "--runtime",
+        choices=CONTAINER_RUNTIME_CHOICES,
+        default="",
+        help="Container runtime; otherwise use OPAMP_CONTAINER_RUNTIME or auto-detection",
+    )
+    parser.add_argument(
+        "--image",
+        default=DEFAULT_ZAP_IMAGE,
+        help="OWASP ZAP container image reference",
+    )
+    parser.add_argument(
+        "--rules-file",
+        type=Path,
+        help="Optional repository-relative or absolute ZAP packaged-scan rule configuration",
+    )
+    parser.add_argument(
+        "--spider-minutes",
+        type=int,
+        default=DEFAULT_SPIDER_MINUTES,
+        help="Maximum traditional spider duration in minutes",
+    )
+    parser.add_argument(
+        "--startup-timeout-minutes",
+        type=int,
+        default=DEFAULT_STARTUP_TIMEOUT_MINUTES,
+        help="Maximum ZAP startup and passive-scan wait in minutes",
+    )
+    parser.add_argument(
+        "--fail-on-warning",
+        action="store_true",
+        help="Treat warning-only ZAP results as command failures",
+    )
+    parser.add_argument(
+        "--generate-rules",
+        action="store_true",
+        help="Generate a default ZAP rules file beside the reports",
+    )
+    if active_scan:
+        parser.add_argument(
+            "--allow-active-scan",
+            action="store_true",
+            help="Acknowledge that the full scan sends attacks to a disposable deployment",
+        )
+
+
 def _command_slug_from_args(args: argparse.Namespace) -> str:
     """Build a stable log-file slug from the parsed command hierarchy.
 
@@ -1592,6 +1737,7 @@ def _command_slug_from_args(args: argparse.Namespace) -> str:
         getattr(args, "build_command", ""),
         getattr(args, "scope", ""),
         getattr(args, "test_scope", ""),
+        getattr(args, "dast_mode", ""),
         getattr(args, "certificate_command", ""),
     ]
     return "-".join(token for token in tokens if token)

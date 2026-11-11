@@ -27,6 +27,7 @@ the same component discovery and result layout across the repository.
 | Browser end to end | Python-served HTML/CSS/JavaScript and user workflows | Playwright |
 | Repository end to end | Cross-process socket and service behavior | pytest |
 | Security gate | Tests plus SAST, secret detection, and dependency auditing | developer CLI |
+| Dynamic application security | Passive or active testing of a running disposable deployment | OWASP ZAP through the developer CLI |
 
 Generic web scanners cannot fully exercise OpAMP messages, supervised command execution, MCP
 tool boundaries, or certificate identity rules. Those trust boundaries should continue to receive
@@ -158,10 +159,20 @@ Independent gate steps continue after a failure so later tools can still write t
 command returns a failure after all steps finish and lists each failed step; a red pytest result,
 for example, does not hide the static-analysis or dependency-audit evidence.
 
-Dynamic application security testing is a separate runtime concern. ZAP, Nuclei, or API fuzzing
-must target disposable test deployments, especially for active scans. They are not part of the
-local static security gate yet; planned security work is tracked in the
-[security roadmap](../roadmap/index.md#enhance-the-security-aspect-of-the-process).
+Dynamic application security testing remains a separate runtime concern and is available through
+the Docker-backed OWASP ZAP command:
+
+```bash
+opamp-dev-cli build dast baseline
+opamp-dev-cli build dast full --allow-active-scan
+```
+
+The baseline mode crawls and passively inspects a running target. Full mode sends active attack
+payloads and must target a disposable deployment; the explicit acknowledgement prevents an
+accidental full scan. Warning-only results are initially non-blocking, while scanner failures and
+rules classified as failures remain blocking. See
+[Dynamic Application Security Testing](dynamic_application_security_testing.md) for Windows and
+Linux setup, target networking, rule triage, active-scan safety, and report commands.
 
 ## Reviewing Results
 
@@ -184,6 +195,7 @@ ingestion.
 | Bandit findings | `dev-tools/runtime/security-reports/<scope>/bandit.json` | JSON viewer; compare with Ruff findings |
 | Secret scan | `dev-tools/runtime/security-reports/<scope>/detect-secrets.json` | JSON viewer; validate every candidate without copying secrets into issues |
 | Dependency audit | `dev-tools/runtime/security-reports/<scope>/pip-audit.json` | For a named component, review native pip-audit JSON; for `repository`, use this manifest to find each project's native report under `pip-audit/` |
+| ZAP DAST reports | `dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.{html,json,xml,md}` | Start with HTML for review and use JSON or XML for automation |
 | Developer CLI issues/errors | `dev-tools/runtime/logs/*-issues.json` and `*-errors.json` | Use the paths printed at command completion |
 
 `<scope>` is `repository` for `secure all` and the component directory name for `secure named`.

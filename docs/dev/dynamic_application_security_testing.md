@@ -1,0 +1,155 @@
+<!--
+Copyright 2026 opamp.info
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+# Dynamic Application Security Testing
+
+The developer CLI runs OWASP ZAP 2.17.0, pinned by its multi-architecture OCI digest, in Docker or
+Podman against an already running test deployment. The ZAP image contains the scanner; no
+host-side Java or ZAP installation is required.
+The command is intentionally separate from `build secure`: static checks can start from source,
+whereas DAST needs a reachable runtime and a full scan sends attack payloads.
+
+## Prerequisites
+
+- Install Docker Engine, Docker Desktop, or Podman.
+- Start the target application with test data and test credentials.
+- Use only a disposable deployment for a `full` scan.
+- Keep the ZAP API and target service away from untrusted networks.
+
+The CLI selects `OPAMP_CONTAINER_RUNTIME` first, then Docker, then Podman. Use `--runtime docker`
+or `--runtime podman` to make the selection explicit.
+
+## Scan A Host-Running Provider
+
+Start the provider on a container-reachable interface:
+
+```bash
+python -m opamp_provider.server --host 0.0.0.0 --port 8080
+```
+
+Binding to `0.0.0.0` may expose the test service beyond the local machine. Retain an appropriate
+host firewall and stop the service after testing.
+
+Run a passive baseline from either PowerShell or a POSIX shell:
+
+```bash
+opamp-dev-cli build dast baseline
+```
+
+The default target is `http://host.docker.internal:8080`. For Docker, the CLI adds
+`host.docker.internal:host-gateway`, allowing the same command to work on Windows and Linux.
+Override the target when the service uses another address:
+
+```bash
+opamp-dev-cli build dast baseline --target http://host.docker.internal:4320
+```
+
+## Scan A Compose Deployment
+
+When ZAP joins an existing container network, use the target service name and network-specific
+container options outside the CLI, or publish the service port to the host and use the default
+host gateway. The current CLI deliberately does not guess or mutate an existing Compose network.
+For the published-port approach:
+
+```bash
+opamp-dev-cli build dast baseline --target http://host.docker.internal:18083 --scope st004
+```
+
+The `--scope` value controls report placement and accepts letters, numbers, dots, underscores,
+and hyphens. It cannot contain a path separator.
+
+## Rule Triage And Blocking Policy
+
+Initial baseline scans do not fail on warning-only findings. Generate ZAP's complete default rule
+file during a scan:
+
+```bash
+opamp-dev-cli build dast baseline --generate-rules
+```
+
+The generated policy is written to:
+
+```text
+dev-tools/runtime/security-reports/zap/provider/baseline/zap_generated_rules.conf
+```
+
+After reviewing every rule, copy it to a source-controlled file beneath `security/zap/`. On
+PowerShell:
+
+```powershell
+Copy-Item `
+  dev-tools/runtime/security-reports/zap/provider/baseline/zap_generated_rules.conf `
+  security/zap/provider_rules.conf
+```
+
+On Linux or another POSIX shell:
+
+```bash
+cp dev-tools/runtime/security-reports/zap/provider/baseline/zap_generated_rules.conf \
+  security/zap/provider_rules.conf
+```
+
+Use the reviewed file in subsequent scans:
+
+```bash
+opamp-dev-cli build dast baseline --rules-file security/zap/provider_rules.conf
+```
+
+The packaged ZAP format classifies rules as `FAIL`, `WARN`, `INFO`, or `IGNORE`. Prefer `FAIL`
+for reviewed security requirements, retain `WARN` while a finding is being evaluated, and add an
+explanation alongside every `IGNORE`. Add `--fail-on-warning` only after the warning baseline is
+stable:
+
+```bash
+opamp-dev-cli build dast baseline \
+  --rules-file security/zap/provider_rules.conf \
+  --fail-on-warning
+```
+
+## Active Full Scan
+
+A full scan spiders the application and sends active attack payloads. It requires an explicit
+acknowledgement so it cannot be selected accidentally:
+
+```bash
+opamp-dev-cli build dast full \
+  --target http://host.docker.internal:8080 \
+  --rules-file security/zap/provider_rules.conf \
+  --allow-active-scan
+```
+
+Do not aim this command at a production service, shared development data, or a deployment whose
+state cannot be discarded. Authentication and multi-user workflows should move to a reviewed ZAP
+Automation Framework plan rather than placing bearer tokens in shell history.
+
+## Reports And Exit Behavior
+
+Each run replaces the stable files below:
+
+```text
+dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.html
+dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.json
+dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.xml
+dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.md
+```
+
+Container startup failures, unreachable targets, invalid configuration, and findings classified
+as `FAIL` fail the command. Warning-only results are non-blocking unless `--fail-on-warning` is
+set. Use `--spider-minutes` and `--startup-timeout-minutes` to adjust the default two-minute
+spider and five-minute startup/passive-scan wait.
+
+The source for this workflow is `dev-tools/src/opamp_dev_tools/dast.py`, and its unit tests are in
+`dev-tools/tests/test_dast.py`. ZAP's upstream references are the
+[Docker scan documentation](https://www.zaproxy.org/docs/docker/) and
+[Automation Framework documentation](https://www.zaproxy.org/docs/automate/automation-framework/).
