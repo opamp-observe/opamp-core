@@ -17,7 +17,7 @@ build-backend = "hatchling.build"
 [project]
 name = "opamp-server"
 version = "0.6.0"
-description = "OpAMP Server - upstream source https://github.com/mp3monster/fluent-opamp "
+description = "OpAMP Server - upstream source https://github.com/opamp-observe/opamp-core "
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
@@ -54,7 +54,7 @@ dev = [
 opamp-provider = "opamp_provider.server:main"
 
 [project.urls]
-Repository = "https://github.com/mp3monster/fluent-opamp"
+Repository = "https://github.com/opamp-observe/opamp-core"
 Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html"
 Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
 

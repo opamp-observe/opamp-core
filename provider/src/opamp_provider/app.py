@@ -120,7 +120,7 @@ _UI_FEATURE_MENU_ITEMS: list[UiFeatureMenuItem] = ui_menu_items_from_component_e
 )
 LANDING_PAGE_REDIRECT_URL = (
     "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
-    "mp3monster/fluent-opamp/main/github-landingpage/index.html"
+    "opamp-observe/opamp-core/main/github-landingpage/index.html"
 )
 
 CONTENT_TYPE_PROTO = "application/x-protobuf"  # Content-Type for protobuf payloads.

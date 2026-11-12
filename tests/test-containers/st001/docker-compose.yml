@@ -16,7 +16,7 @@ services:
       # Local source is the default because this harness is usually used to
       # verify the current checkout before changes are committed.
       OPAMP_USE_LOCAL_SOURCE: "${ST001_USE_LOCAL_SOURCE:-true}"
-      OPAMP_SOURCE_REPO: "${ST001_SOURCE_REPO:-https://github.com/mp3monster/fluent-opamp.git}"
+      OPAMP_SOURCE_REPO: "${ST001_SOURCE_REPO:-https://github.com/opamp-observe/opamp-core.git}"
       OPAMP_SOURCE_REF: "${ST001_SOURCE_REF:-main}"
     ports:
       - "${ST001_PROVIDER_PORT:-18080}:8080"
@@ -45,7 +45,7 @@ services:
         condition: service_healthy
     environment:
       OPAMP_USE_LOCAL_SOURCE: "${ST001_USE_LOCAL_SOURCE:-true}"
-      OPAMP_SOURCE_REPO: "${ST001_SOURCE_REPO:-https://github.com/mp3monster/fluent-opamp.git}"
+      OPAMP_SOURCE_REPO: "${ST001_SOURCE_REPO:-https://github.com/opamp-observe/opamp-core.git}"
       OPAMP_SOURCE_REF: "${ST001_SOURCE_REF:-main}"
       APP_ENABLE_DEV_FEATURES: "true"
     volumes:
@@ -66,7 +66,7 @@ services:
         condition: service_healthy
     environment:
       OPAMP_USE_LOCAL_SOURCE: "${ST001_USE_LOCAL_SOURCE:-true}"
-      OPAMP_SOURCE_REPO: "${ST001_SOURCE_REPO:-https://github.com/mp3monster/fluent-opamp.git}"
+      OPAMP_SOURCE_REPO: "${ST001_SOURCE_REPO:-https://github.com/opamp-observe/opamp-core.git}"
       OPAMP_SOURCE_REF: "${ST001_SOURCE_REF:-main}"
       APP_ENABLE_DEV_FEATURES: "true"
     volumes:

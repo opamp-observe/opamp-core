@@ -127,7 +127,7 @@ Progress the Azure setup, look at OCI implementation as  well.
 # Enhanced Tooling
 
 Incorporate additions to help validate configuration of the agents such as:
-- [Log Simulator](https://github.com/mp3monster/LogGenerator)
+- [Signal Generator](https://github.com/opamp-observe/SignalGenerator)
 - New Metrics and traces simulation Complete the remote config process
 
 Introduce to the provider a configuration value called allow-remote-config - this is a boolean configuration value, with a default of true.

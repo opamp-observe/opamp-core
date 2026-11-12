@@ -31,7 +31,7 @@ from .provider_ui import compact_provider_ui_assets
 from .security import run_repo_security_checks
 from .version_metadata import main as refresh_version_metadata
 
-DEFAULT_REPO = "mp3monster/fluent-opamp"
+DEFAULT_REPO = "opamp-observe/opamp-core"
 DEFAULT_MANUAL_PATH = "dist/manual/opamp_manual.pdf"
 DEFAULT_RELEASE_COMPONENT_KEYS = (
     "shared",

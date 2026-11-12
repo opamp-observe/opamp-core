@@ -39,6 +39,7 @@ REQUIRED_SECURITY_DEPENDENCIES = {
     "semgrep>=1.182.1",
 }
 SECURITY_TOOLING_PROJECT_PATH = "dev-tools/pyproject.toml"
+EXPECTED_REPOSITORY_URL = "https://github.com/opamp-observe/opamp-core"
 
 PYTHON_PROJECT_PATHS = (
     "agent_broker/pyproject.toml",
@@ -76,6 +77,14 @@ def test_hatchling_projects_require_pep_639_support() -> None:
     for relative_path in HATCHLING_PROJECT_PATHS:
         metadata = (REPOSITORY_ROOT / relative_path).read_text(encoding="utf-8")
         assert PEP_639_HATCHLING_REQUIREMENT in metadata
+
+
+def test_python_projects_reference_canonical_repository() -> None:
+    """Keep every packaged module linked to the current OpAMP GitHub repository."""
+    for relative_path in PYTHON_PROJECT_PATHS:
+        with (REPOSITORY_ROOT / relative_path).open("rb") as project_handle:
+            payload = tomllib.load(project_handle)
+        assert payload["project"]["urls"]["Repository"] == EXPECTED_REPOSITORY_URL, relative_path
 
 
 def test_python_projects_expose_the_shared_development_baseline() -> None:

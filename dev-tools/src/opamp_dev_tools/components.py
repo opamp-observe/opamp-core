@@ -27,7 +27,7 @@ except ImportError:  # pragma: no cover - Python 3.10 fallback
 
 from .runtime import CommandRuntime, read_project_metadata
 
-DEFAULT_REPO = "mp3monster/fluent-opamp"
+DEFAULT_REPO = "opamp-observe/opamp-core"
 PYTEST_JUNIT_ARGUMENT = "--junitxml"
 TEST_RESULTS_DIRECTORY = Path("dev-tools/runtime/test-results")
 COMPONENT_EXCLUDES = {

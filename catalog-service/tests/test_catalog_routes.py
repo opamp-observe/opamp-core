@@ -295,7 +295,7 @@ async def test_standalone_catalog_unknown_route_redirects_to_landing_page(
         assert response.status_code in {301, 302, 307, 308}
         assert response.headers["Location"].startswith(
             "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
-            "mp3monster/fluent-opamp/main/github-landingpage/index.html"
+            "opamp-observe/opamp-core/main/github-landingpage/index.html"
         )
         assert response.headers[CONTENT_SECURITY_POLICY_HEADER] == FRAME_ANCESTORS_NONE_POLICY
         assert response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY

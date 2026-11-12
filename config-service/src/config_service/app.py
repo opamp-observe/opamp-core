@@ -96,14 +96,14 @@ HEADER_PRAGMA = "Pragma"
 HEADER_EXPIRES = "Expires"
 
 ENV_APP_ENABLE_DEV_FEATURES = "APP_ENABLE_DEV_FEATURES"
-CONFIG_SERVICE_DOCS_URL = "https://github.com/mp3monster/fluent-opamp/tree/main/config-service/docs"
+CONFIG_SERVICE_DOCS_URL = "https://github.com/opamp-observe/opamp-core/tree/main/config-service/docs"
 CONFIG_SERVICE_UI_CSS_OVERRIDE_PATH_ENV = "CONFIG_SERVICE_UI_CSS_OVERRIDE_PATH"
 CONFIG_SERVICE_UI_CSS_OVERRIDES_ENV = "CONFIG_SERVICE_UI_CSS_OVERRIDES"
 CONFIG_SERVICE_UI_CSS_OVERRIDES_KEY = "CONFIG_SERVICE_UI_CSS_OVERRIDES"
 _ENV_TRUE_VALUES = {"1", "true", "yes", "on"}
 LANDING_PAGE_REDIRECT_URL = (
     "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
-    "mp3monster/fluent-opamp/main/github-landingpage/index.html"
+    "opamp-observe/opamp-core/main/github-landingpage/index.html"
 )
 PLACEHOLDER_PROVIDER_UI_LINK_ATTRS = "__CONFIG_SERVICE_PROVIDER_UI_LINK_ATTRS__"
 

@@ -65,7 +65,7 @@ RESPONSE_KEY_COMPONENT_ENTRY_POINTS_REGISTERED = "component_entry_points_registe
 RESPONSE_KEY_ERROR = "error"
 LANDING_PAGE_REDIRECT_URL = (
     "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
-    "mp3monster/fluent-opamp/main/github-landingpage/index.html"
+    "opamp-observe/opamp-core/main/github-landingpage/index.html"
 )
 
 

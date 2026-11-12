@@ -45,7 +45,7 @@ COMPONENTS = (
 )
 PROJECT_KEY = "project"
 PROJECT_NAME_KEY = "name"
-REPOSITORY_NAME = "mp3monster/fluent-opamp"
+REPOSITORY_NAME = "opamp-observe/opamp-core"
 UTF8_ENCODING = "utf-8"
 VERSION_KEY = "version"
 

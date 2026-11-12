@@ -115,7 +115,7 @@ HOST_META_KEY_OS_VERSION = "os_version"  # Host metadata key for OS version.
 HOST_META_KEY_HOSTNAME = "hostname"  # Host metadata key for hostname.
 HOST_META_KEY_MAC_ADDRESS = "mac_address"  # Host metadata key for client MAC address.
 CONFIG_DOCS_URL = (
-    "https://github.com/mp3monster/fluent-opamp"  # Reference docs for consumer config.
+    "https://github.com/opamp-observe/opamp-core"  # Reference docs for consumer config.
 )
 REPLACED_CONFIG_TIMESTAMP_FORMAT = "%Y-%m-%d--%H-%M-%S"
 REPLACED_CONFIG_POSTFIX_PREFIX = "replaced_"
