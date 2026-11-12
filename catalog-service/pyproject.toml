@@ -62,7 +62,7 @@ packages = [
 ]
 
 [tool.setuptools.package-data]
-catalog_service = ["config/*.json", "html/*.html", "html/*.css", "html/*.png"]
+catalog_service = ["config/*.json", "html/*.html", "html/*.css", "html/*.js", "html/*.png"]
 
 [tool.pytest.ini_options]
 addopts = [

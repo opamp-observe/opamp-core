@@ -27,7 +27,7 @@ the same component discovery and result layout across the repository.
 | Browser end to end | Python-served HTML/CSS/JavaScript and user workflows | Playwright |
 | Repository end to end | Cross-process socket and service behavior | pytest |
 | Security gate | Tests plus SAST, secret detection, and dependency auditing | developer CLI |
-| Dynamic application security | Passive or active testing of a running disposable deployment | OWASP ZAP through the developer CLI |
+| Dynamic application security | Passive or active testing of an isolated disposable full-app container | OWASP ZAP through the developer CLI |
 
 Generic web scanners cannot fully exercise OpAMP messages, supervised command execution, MCP
 tool boundaries, or certificate identity rules. Those trust boundaries should continue to receive
@@ -167,7 +167,8 @@ opamp-dev-cli build dast baseline
 opamp-dev-cli build dast full --allow-active-scan
 ```
 
-The baseline mode crawls and passively inspects a running target. Full mode sends active attack
+The baseline mode builds and passively inspects an isolated full-app target on a private container
+network. Full mode sends active attack
 payloads and must target a disposable deployment; the explicit acknowledgement prevents an
 accidental full scan. Warning-only results are initially non-blocking, while scanner failures and
 rules classified as failures remain blocking. See

@@ -20,9 +20,10 @@ are not bundled into the catalog wheel.
 
 Standalone package for the OpAMP configuration catalog backend and Python-served UI.
 
-Standalone responses deny browser framing with `Content-Security-Policy: frame-ancestors 'none'`
-and `X-Frame-Options: DENY`. When embedded into the provider, the provider applies the same policy
-to the component routes. Deployment gateways must preserve these headers; see the
+Standalone responses deny browser framing and MIME sniffing with
+`Content-Security-Policy: frame-ancestors 'none'; form-action 'self'`, `X-Frame-Options: DENY`, and
+`X-Content-Type-Options: nosniff`. When embedded into the provider, the provider applies the same
+policy to the component routes. Deployment gateways must preserve these headers; see the
 [API gateway recommendations](../docs/api_gateway_requirements.md#browser-framing-and-clickjacking-protection).
 
 For product installation of the standalone catalog or the catalog embedded in

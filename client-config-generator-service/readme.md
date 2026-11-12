@@ -25,9 +25,10 @@ are not bundled into the generator wheel.
 
 The browser UI can select and load an existing configuration, validate edits, preview JSON, and save a configuration beneath an operator-controlled directory. The versioned API provides the same controls.
 
-Standalone responses deny browser framing with `Content-Security-Policy: frame-ancestors 'none'`
-and `X-Frame-Options: DENY`. When embedded into the provider, the provider applies the same policy
-to the component routes. Deployment gateways must preserve these headers; see the
+Standalone responses deny browser framing and MIME sniffing with
+`Content-Security-Policy: frame-ancestors 'none'; form-action 'self'`, `X-Frame-Options: DENY`, and
+`X-Content-Type-Options: nosniff`. When embedded into the provider, the provider applies the same
+policy to the component routes. Deployment gateways must preserve these headers; see the
 [API gateway recommendations](../docs/api_gateway_requirements.md#browser-framing-and-clickjacking-protection).
 
 ## Embedded deployment

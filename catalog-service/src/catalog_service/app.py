@@ -46,7 +46,7 @@ from catalog_service.runtime_config import (
 from catalog_service.service import CatalogFileIndexService
 from shared.observability import attach_observability
 from shared.opamp_config import ComponentEntryPoint, register_component_entry_points
-from shared.security_headers import register_clickjacking_protection
+from shared.security_headers import register_security_headers
 
 APP_CONFIG_KEY_MODE = "CATALOG_SERVICE_MODE"
 APP_EXTENSION_MENU_ITEMS = "catalog_service:ui_menu_items"
@@ -208,7 +208,7 @@ def create_app(*, mode: str = "standalone", config_path: str | None = None) -> Q
     """Create a standalone catalog Quart app."""
     _configure_logging()
     app = Quart(__name__)
-    register_clickjacking_protection(app)
+    register_security_headers(app)
     effective_config_path = get_effective_config_path(config_path).resolve()
     app.config[APP_CONFIG_KEY_MODE] = mode
     app.extensions[APP_EXTENSION_CONFIG_PATH] = str(effective_config_path)

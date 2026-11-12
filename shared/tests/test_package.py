@@ -12,7 +12,12 @@
 
 """Package-level tests for the independently distributed shared utilities."""
 
-from shared.security_headers import FRAME_ANCESTORS_NONE_POLICY
+from shared.security_headers import (
+    FORM_ACTION_SELF_POLICY,
+    FRAME_ANCESTORS_NONE_POLICY,
+    SHARED_CONTENT_SECURITY_POLICY,
+    X_CONTENT_TYPE_OPTIONS_NOSNIFF,
+)
 from shared.uuid_utils import generate_uuid7_bytes
 
 UUID_BYTE_LENGTH = 16
@@ -21,4 +26,9 @@ UUID_BYTE_LENGTH = 16
 def test_shared_package_exposes_runtime_helpers() -> None:
     """Verify representative runtime helpers import from the packaged namespace."""
     assert FRAME_ANCESTORS_NONE_POLICY == "frame-ancestors 'none'"
+    assert FORM_ACTION_SELF_POLICY == "form-action 'self'"
+    assert SHARED_CONTENT_SECURITY_POLICY == (
+        "frame-ancestors 'none'; form-action 'self'"
+    )
+    assert X_CONTENT_TYPE_OPTIONS_NOSNIFF == "nosniff"
     assert len(generate_uuid7_bytes()) == UUID_BYTE_LENGTH

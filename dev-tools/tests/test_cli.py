@@ -473,6 +473,7 @@ def test_parser_accepts_dast_baseline_options(tmp_path: Path) -> None:
             "baseline",
             "--target",
             "http://provider:8080",
+            "--external-target",
             "--scope",
             "provider-compose",
             "--runtime",
@@ -490,6 +491,7 @@ def test_parser_accepts_dast_baseline_options(tmp_path: Path) -> None:
     assert args.build_command == "dast"
     assert args.dast_mode == dast.BASELINE_MODE
     assert args.target == "http://provider:8080"
+    assert args.external_target is True
     assert args.dast_scope == "provider-compose"
     assert args.runtime == "docker"
     assert args.rules_file == Path("security/zap/provider_rules.conf")
@@ -519,6 +521,7 @@ def test_dast_dispatch_builds_scan_options(monkeypatch, tmp_path: Path) -> None:
             "full",
             "--target",
             "http://provider:8080",
+            "--external-target",
             "--scope",
             "provider",
             "--allow-active-scan",
@@ -543,6 +546,7 @@ def test_dast_dispatch_builds_scan_options(monkeypatch, tmp_path: Path) -> None:
     assert options.mode == dast.FULL_MODE
     assert options.target == "http://provider:8080"
     assert options.allow_active_scan is True
+    assert options.external_target is True
 
 
 def test_guided_dast_baseline_uses_portable_defaults(monkeypatch) -> None:
@@ -588,7 +592,7 @@ def test_guided_dast_full_requires_disposable_target_confirmation(monkeypatch, c
 
 def test_guided_dast_full_adds_acknowledgement(monkeypatch) -> None:
     """Guided full selection should emit the active-scan flag after confirmation."""
-    responses = iter(["http://provider:8080", "st004", "n", "y", "y"])
+    responses = iter(["y", "http://provider:8080", "st004", "n", "y", "y"])
     monkeypatch.setattr(cli, "_prompt_for_selection", lambda *args, **kwargs: "full")
     monkeypatch.setattr("builtins.input", lambda prompt_text: next(responses))
 
@@ -602,6 +606,7 @@ def test_guided_dast_full_adds_acknowledgement(monkeypatch) -> None:
         "http://provider:8080",
         "--scope",
         "st004",
+        "--external-target",
         "--fail-on-warning",
         "--allow-active-scan",
     ]

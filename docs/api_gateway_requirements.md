@@ -69,25 +69,32 @@ authorization:
 4. Machine-to-machine routes should use a distinct authorization scope and, where appropriate,
    mTLS or another workload identity mechanism.
 
-## Browser Framing And Clickjacking Protection
+## Browser Framing, Form Submission, And Clickjacking Protection
 
-Provider and standalone browser services deny framing by default on every HTTP response:
+Provider and standalone browser services deny framing, restrict form submissions to the same
+origin, and prevent browser MIME sniffing by default on every HTTP response:
 
 ```text
-Content-Security-Policy: frame-ancestors 'none'
+Content-Security-Policy: frame-ancestors 'none'; form-action 'self'
 X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
 ```
 
 The `frame-ancestors` directive is the primary modern control. `X-Frame-Options` remains as a
 compatible fallback for older clients. The provider's embedded Config Editor, Config Catalog,
 and Client Config Generator are routes in the same Quart process; they do not require an iframe
-and therefore inherit the deny policy without needing an exception.
+and therefore inherit the deny policy without needing an exception. `X-Content-Type-Options`
+prevents browsers from reinterpreting a response as a different MIME type from the declared
+`Content-Type`. The explicit `form-action 'self'` directive prevents forms from submitting to
+another origin. It must be stated separately because `form-action` does not fall back to
+`default-src`.
 
-Gateways must preserve these response headers or overwrite them with the same or a stricter
+Gateways must preserve all three response headers or overwrite them with the same or a stricter
 policy. Do not strip them, use the obsolete `X-Frame-Options: ALLOW-FROM` value, or introduce a
 second independently managed Content Security Policy. The application preserves other CSP
 directives already present on a response while replacing any `frame-ancestors` directive with
-`frame-ancestors 'none'`.
+`frame-ancestors 'none'` and any `form-action` directive with `form-action 'self'`. A gateway may
+set `X-Content-Type-Options`, but its effective value must remain `nosniff`.
 
 If a future host application has a reviewed requirement to frame an OpAMP page, treat that as a
 security design change. Same-origin framing can use `frame-ancestors 'self'` with

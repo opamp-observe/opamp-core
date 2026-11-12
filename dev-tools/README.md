@@ -216,12 +216,16 @@ The `build` group creates artifacts and SBOMs, runs component or repository
 tests and security gates, builds documentation and UI outputs, and assembles
 release assets.
 
-Run passive or explicitly acknowledged active ZAP scans against a running test deployment:
+Run passive or explicitly acknowledged active ZAP scans against the isolated full-app container:
 
 ```bash
 opamp-dev-cli build dast baseline
 opamp-dev-cli build dast full --allow-active-scan
 ```
+
+The CLI builds the runtime-only application image, joins it and ZAP to a private network, and
+removes the target after the scan. A separately managed deployment requires the explicit
+`--external-target --target <url>` options.
 
 See [build, test, and release commands](docs/build_test_and_release.md) for the
 workflows and examples.

@@ -15,31 +15,22 @@ limitations under the License.
 # Dynamic Application Security Testing
 
 The developer CLI runs OWASP ZAP 2.17.0, pinned by its multi-architecture OCI digest, in Docker or
-Podman against an already running test deployment. The ZAP image contains the scanner; no
-host-side Java or ZAP installation is required.
+Podman. By default, it builds and starts a separate full OpAMP server deployment containing the
+provider, Config Editor, Config Catalog, Client Config Generator, and Server Credentials plugins.
+The ZAP image contains the scanner; no host-side Java or ZAP installation is required.
 The command is intentionally separate from `build secure`: static checks can start from source,
 whereas DAST needs a reachable runtime and a full scan sends attack payloads.
 
 ## Prerequisites
 
 - Install Docker Engine, Docker Desktop, or Podman.
-- Start the target application with test data and test credentials.
 - Use only a disposable deployment for a `full` scan.
 - Keep the ZAP API and target service away from untrusted networks.
 
 The CLI selects `OPAMP_CONTAINER_RUNTIME` first, then Docker, then Podman. Use `--runtime docker`
 or `--runtime podman` to make the selection explicit.
 
-## Scan A Host-Running Provider
-
-Start the provider on a container-reachable interface:
-
-```bash
-python -m opamp_provider.server --host 0.0.0.0 --port 8080
-```
-
-Binding to `0.0.0.0` may expose the test service beyond the local machine. Retain an appropriate
-host firewall and stop the service after testing.
+## Scan The Isolated Full Application
 
 Run a passive baseline from either PowerShell or a POSIX shell:
 
@@ -47,13 +38,46 @@ Run a passive baseline from either PowerShell or a POSIX shell:
 opamp-dev-cli build dast baseline
 ```
 
-The default target is `http://host.docker.internal:8080`. For Docker, the CLI adds
-`host.docker.internal:host-gateway`, allowing the same command to work on Windows and Linux.
-Override the target when the service uses another address:
+The command builds `opamp-dast-full-app:local` using the locked server dependency set and installs
+only runtime dependencies. It creates a unique private container network, starts the application
+without publishing a host port, waits for its health check, runs ZAP on the same network, and then
+removes the application container and network even when the scan fails.
+
+ZAP uses `http://opamp-dast-target:8080` inside that private network. Host processes and host ports
+are not reachable through this name, so an unrelated development server cannot become the scan
+target. The runtime image does not contain source-checkout test tools, `node_modules`, coverage
+output, `/docs`, or `/dev-notes`. The root `.dockerignore` also prevents those directories from
+entering the build context.
+
+The scan hook seeds the provider UI and the Config Editor, Config Catalog, Client Config
+Generator, and Server Credentials pages before spidering. This ensures JavaScript-populated menu
+entries do not prevent the traditional spider from inspecting installed plugin surfaces.
+
+## Scan A Separately Managed Deployment
+
+Use `--external-target` only when intentionally testing a deployment managed outside the DAST
+command:
 
 ```bash
-opamp-dev-cli build dast baseline --target http://host.docker.internal:4320
+opamp-dev-cli build dast baseline \
+  --external-target \
+  --target http://host.docker.internal:8080 \
+  --scope host-provider
 ```
+
+For Docker, the CLI adds `host.docker.internal:host-gateway` when that host alias is selected,
+allowing the same external-target command to work on Windows and Linux. Ensure the selected port
+belongs to the application and never point DAST at a repository-root static file server.
+
+For a provider started directly on the host, bind it to a container-reachable interface before
+running the external scan:
+
+```bash
+python -m opamp_provider.server --host 0.0.0.0 --port 8080
+```
+
+Binding to `0.0.0.0` may expose the test service beyond the local machine. Retain an appropriate
+host firewall and stop the service after testing.
 
 ## Scan A Compose Deployment
 
@@ -63,7 +87,10 @@ host gateway. The current CLI deliberately does not guess or mutate an existing 
 For the published-port approach:
 
 ```bash
-opamp-dev-cli build dast baseline --target http://host.docker.internal:18083 --scope st004
+opamp-dev-cli build dast baseline \
+  --external-target \
+  --target http://host.docker.internal:18083 \
+  --scope st004
 ```
 
 The `--scope` value controls report placement and accepts letters, numbers, dots, underscores,
@@ -138,7 +165,6 @@ acknowledgement so it cannot be selected accidentally:
 
 ```bash
 opamp-dev-cli build dast full \
-  --target http://host.docker.internal:8080 \
   --rules-file security/zap/provider_rules.conf \
   --allow-active-scan
 ```
@@ -147,34 +173,37 @@ Do not aim this command at a production service, shared development data, or a d
 state cannot be discarded. Authentication and multi-user workflows should move to a reviewed ZAP
 Automation Framework plan rather than placing bearer tokens in shell history.
 
-## Verify Clickjacking Response Headers
+## Verify Browser Security Response Headers
 
 The provider and standalone browser services apply the following deny-by-default response
 headers globally, including successful pages, redirects, authentication failures, and error
 responses:
 
 ```text
-Content-Security-Policy: frame-ancestors 'none'
+Content-Security-Policy: frame-ancestors 'none'; form-action 'self'
 X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
 ```
 
 From PowerShell, inspect a running provider with:
 
 ```powershell
 (Invoke-WebRequest -Uri http://localhost:8080/ui -UseBasicParsing).Headers |
-  Format-List Content-Security-Policy, X-Frame-Options
+  Format-List Content-Security-Policy, X-Frame-Options, X-Content-Type-Options
 ```
 
 From Linux or another POSIX shell:
 
 ```bash
 curl --silent --show-error --head http://localhost:8080/ui \
-  | grep --extended-regexp --ignore-case '^(content-security-policy|x-frame-options):'
+  | grep --extended-regexp --ignore-case \
+      '^(content-security-policy|x-frame-options|x-content-type-options):'
 ```
 
-ZAP should no longer report `Missing Anti-clickjacking Header` for protected responses. Retain
-the header assertions in component tests as the primary regression check; use DAST to verify the
-deployed target and any gateway in front of it.
+ZAP should no longer report `Missing Anti-clickjacking Header`, a missing `form-action` directive,
+or an `X-Content-Type-Options` header that is absent or not set to `nosniff` for protected
+responses. Retain the header assertions in component tests as the primary regression check; use
+DAST to verify the deployed target and any gateway in front of it.
 
 ## Reports And Exit Behavior
 
@@ -187,13 +216,16 @@ dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.xml
 dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.md
 ```
 
-Container startup failures, unreachable targets, invalid configuration, and findings classified
-as `FAIL` fail the command. Warning-only results are non-blocking unless `--fail-on-warning` is
-set. Use `--spider-minutes` and `--startup-timeout-minutes` to adjust the default two-minute
-spider and five-minute startup/passive-scan wait.
+Image build failures, application health-check failures, unreachable targets, invalid
+configuration, and findings classified as `FAIL` fail the command. Warning-only results are
+non-blocking unless `--fail-on-warning` is set. Use `--spider-minutes` and
+`--startup-timeout-minutes` to adjust the default two-minute spider and five-minute ZAP
+startup/passive-scan wait.
 
 The source for this workflow is `dev-tools/src/opamp_dev_tools/dast.py`, and its unit tests are in
 `dev-tools/tests/test_dast.py`. The reviewed redirect filter is implemented in
-`dev-tools/src/opamp_dev_tools/dast_scan_hooks.py`. ZAP's upstream references are the
+`dev-tools/src/opamp_dev_tools/dast_scan_hooks.py`. The clean target image is defined by
+`dev-tools/docker/dast/Dockerfile` and `dev-tools/docker/dast/opamp.json`. ZAP's upstream
+references are the
 [Docker scan documentation](https://www.zaproxy.org/docs/docker/) and
 [Automation Framework documentation](https://www.zaproxy.org/docs/automate/automation-framework/).

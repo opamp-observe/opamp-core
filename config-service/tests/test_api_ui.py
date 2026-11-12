@@ -26,16 +26,17 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from shared.security_headers import (
-    CONTENT_SECURITY_POLICY_HEADER,
-    FRAME_ANCESTORS_NONE_POLICY,
-    X_FRAME_OPTIONS_DENY,
-    X_FRAME_OPTIONS_HEADER,
-)
-
 from config_service.app import create_app
 from config_service.runtime_config import (
     ENV_CONFIG_TOOL_CONFIG_PATH,
+)
+from shared.security_headers import (
+    CONTENT_SECURITY_POLICY_HEADER,
+    SHARED_CONTENT_SECURITY_POLICY,
+    X_CONTENT_TYPE_OPTIONS_HEADER,
+    X_CONTENT_TYPE_OPTIONS_NOSNIFF,
+    X_FRAME_OPTIONS_DENY,
+    X_FRAME_OPTIONS_HEADER,
 )
 
 
@@ -279,15 +280,19 @@ async def test_top_level_help_link_is_rendered() -> None:
 
 
 @pytest.mark.asyncio
-async def test_standalone_config_service_responses_deny_browser_framing() -> None:
-    """Verify standalone UI and redirect responses inherit clickjacking protection."""
+async def test_standalone_config_service_responses_apply_browser_security_policy() -> None:
+    """Verify standalone UI and redirect responses inherit all shared browser protections."""
     app = create_app(mode="standalone")
     client = app.test_client()
 
     for route_path in ("/config-service/ui", "/does-not-exist"):
         response = await client.get(route_path)
-        assert response.headers[CONTENT_SECURITY_POLICY_HEADER] == FRAME_ANCESTORS_NONE_POLICY
+        assert (
+            response.headers[CONTENT_SECURITY_POLICY_HEADER]
+            == SHARED_CONTENT_SECURITY_POLICY
+        )
         assert response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
+        assert response.headers[X_CONTENT_TYPE_OPTIONS_HEADER] == X_CONTENT_TYPE_OPTIONS_NOSNIFF
 
 
 @pytest.mark.asyncio

@@ -1,0 +1,94 @@
+{
+  "provider": {
+    "delayed_comms_seconds": 60,
+    "significant_comms_seconds": 120,
+    "webui_port": 8080,
+    "minutes_keep_disconnected": 5,
+    "retryAfterSeconds": 30,
+    "client_event_history_size": 50,
+    "log_level": "DEBUG",
+    "default_heartbeat_frequency": 30,
+    "latest_docs_url": "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html",
+    "human_in_loop_approval": false,
+    "allow-mcp": true,
+    "allow-remote-config": true,
+    "allow-effective-config": true,
+    "allow-connection-settings": true,
+    "allow-connection-settings-request": false,
+    "opamp-use-authorization": "none",
+    "ui-use-authorization": "none",
+    "metrics": {
+      "enabled": true,
+      "graph_history_minutes": 0
+    },
+    "state_persistence": {
+      "enabled": false,
+      "state_file_prefix": "/app/data/opamp_server_state",
+      "retention_count": 1,
+      "flush_mode": "graceful_shutdown",
+      "autosave_interval_seconds_since_change": 60
+    }
+  },
+  "component-entry-points": {
+    "quart": [
+      {
+        "entry_point": "config_service.opamp_integration:register_config_service_feature",
+        "label": "Config Editor",
+        "url": "/config-service/ui",
+        "enabled": true
+      },
+      {
+        "entry_point": "client_config_generator_service.opamp_integration:register_client_config_generator_feature",
+        "label": "Client Config Generator",
+        "url": "/client-config-generator-service/ui",
+        "enabled": true
+      },
+      {
+        "entry_point": "svr_credentials_manager_service.opamp_integration:register_credentials_manager_feature",
+        "label": "Server Credentials",
+        "url": "/svr-credentials-manager-service/ui",
+        "enabled": true
+      }
+    ]
+  },
+  "opamp": {
+    "config_catalog": {
+      "enabled": true,
+      "menu_label": "Config Catalog",
+      "route_path": "/catalog",
+      "help_path": "/catalog/help",
+      "ui_base_css_path": "/config-service/ui/assets/config_ui.css",
+      "ui_refresh_seconds": 120,
+      "sources": [
+        {
+          "folder": "/app/data/catalog",
+          "extensions": [
+            ".json",
+            ".yaml",
+            ".yml",
+            ".conf"
+          ]
+        }
+      ]
+    },
+    "client_config_generator": {
+      "web_port": 8095,
+      "log_level": "DEBUG",
+      "read_only": false,
+      "storage": {
+        "configuration_directory": "/app/data/generated-client-configs"
+      }
+    },
+    "svr_credentials_manager": {
+      "storage": {
+        "plaintext_path": "/app/data/credentials.json",
+        "mapping_path": "/app/data/client-mappings.json",
+        "file_directory": "/app/data/connection-files",
+        "keyring_backend": "plaintext"
+      },
+      "authorization": {
+        "ui_use_authorization": "none"
+      }
+    }
+  }
+}

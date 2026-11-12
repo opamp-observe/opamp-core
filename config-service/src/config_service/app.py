@@ -68,7 +68,7 @@ from shared.opamp_config import ComponentEntryPoint
 from shared.opamp_config import (
     register_component_entry_points as shared_register_component_entry_points,
 )
-from shared.security_headers import register_clickjacking_protection
+from shared.security_headers import register_security_headers
 
 APP_CONFIG_KEY_MODE = "CONFIG_SERVICE_MODE"
 APP_CONFIG_KEY_READ_ONLY = "CONFIG_SERVICE_READ_ONLY"
@@ -448,7 +448,7 @@ def create_app(*, mode: str = "standalone") -> Quart:
     """
     _configure_logging()
     app = Quart(__name__)
-    register_clickjacking_protection(app)
+    register_security_headers(app)
     effective_config_path = get_effective_config_path().resolve()
     app.config[APP_CONFIG_KEY_MODE] = mode
     app.config[APP_CONFIG_KEY_READ_ONLY] = resolve_read_only(str(effective_config_path))

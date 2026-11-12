@@ -25,7 +25,6 @@ from pathlib import Path
 from typing import Any
 
 from quart import Quart, Response, jsonify, redirect, request, send_from_directory
-from shared.security_headers import register_clickjacking_protection
 
 from client_config_generator_service.auth_integration import evaluate_ui_http_auth
 from client_config_generator_service.runtime_config import (
@@ -44,6 +43,7 @@ from client_config_generator_service.service import (
     KEY_VALID,
     ConfigurationFileService,
 )
+from shared.security_headers import register_security_headers
 
 APP_MODE_EMBEDDED = "embedded"
 DEFAULT_BIND_HOST = "0.0.0.0"  # noqa: S104 - standalone service must be container reachable.
@@ -378,7 +378,7 @@ def create_app(
     settings = load_settings(config_path)
     _configure_logging(settings)
     app = Quart(__name__)
-    register_clickjacking_protection(app)
+    register_security_headers(app)
     app.logger.setLevel(getattr(logging, settings.log_level, logging.DEBUG))
     register_client_config_generator_component(app, config_path=config_path, mode=mode)
 

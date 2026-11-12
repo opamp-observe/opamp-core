@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from urllib.parse import urljoin, urlparse
 
 BIG_REDIRECT_RULE_ID = "10044"
 HTMLPREVIEW_REDIRECT_MARKER = "https://htmlpreview.github.io"
@@ -29,28 +30,46 @@ ALERT_OTHER_INFO_KEYS = (
     ALERT_OTHER_INFO_CAMEL_KEY,
     ALERT_OTHER_INFO_LOWER_KEY,
 )
-HOOK_STATE_ZAP_CLIENT_KEY = "zap_client"
+HOOK_STATE_ZAP_CONNECTION_FIELD = "zap_connection"
+MANAGED_TARGET_HOSTNAME = "opamp-dast-target"
+MANAGED_TARGET_SEED_PATHS = (
+    "/ui",
+    "/config-service/ui",
+    "/catalog",
+    "/catalog/help",
+    "/client-config-generator-service/ui",
+    "/svr-credentials-manager-service/ui",
+)
 LOGGER = logging.getLogger(__name__)
 
-_HOOK_STATE: dict[str, Any | None] = {HOOK_STATE_ZAP_CLIENT_KEY: None}
+_HOOK_STATE: dict[str, Any | None] = {HOOK_STATE_ZAP_CONNECTION_FIELD: None}
 
 
 def zap_started(zap_client: Any, target: str) -> None:
-    """Retain the active ZAP API client for report-time alert deletion.
+    """Retain the ZAP client and seed every managed full-app browser surface.
 
     The packaged scan invokes this hook after ZAP starts and before crawling. Retaining the
     client allows the later alert hook to remove reviewed false positives from both packaged
     scan counts and the HTML, JSON, XML, and Markdown reports generated from the ZAP session.
+    Managed scans also access each installed plugin UI explicitly because the provider menu is
+    populated through JavaScript and is not fully discoverable by the traditional spider.
 
     Parameters:
         zap_client: ZAP Python API client created by the packaged scan.
-        target: Scan target supplied by the packaged scan; retained only by the scanner itself.
+        target: Scan target used to recognize and seed the managed full-app deployment.
 
     Returns:
-        ``None``; the ZAP client is stored as module state for the report-time hook.
+        ``None``; the ZAP client is stored and managed application routes are added to its tree.
     """
-    del target
-    _HOOK_STATE[HOOK_STATE_ZAP_CLIENT_KEY] = zap_client
+    _HOOK_STATE[HOOK_STATE_ZAP_CONNECTION_FIELD] = zap_client
+    if urlparse(target).hostname != MANAGED_TARGET_HOSTNAME:
+        return
+    for seed_path in MANAGED_TARGET_SEED_PATHS:
+        seed_url = urljoin(target, seed_path)
+        try:
+            zap_client.urlopen(seed_url)
+        except Exception as error:  # pylint: disable=broad-exception-caught
+            LOGGER.warning("Unable to seed managed DAST route url=%s error=%s", seed_url, error)
 
 
 def _alert_other_info(alert: dict[str, Any]) -> str:
@@ -105,7 +124,7 @@ def zap_get_alerts_wrap(alert_dict: dict[str, list[dict[str, Any]]]) -> None:
             retained_alerts.append(alert)
             continue
         alert_id = alert.get(ALERT_ID_KEY)
-        zap_client = _HOOK_STATE[HOOK_STATE_ZAP_CLIENT_KEY]
+        zap_client = _HOOK_STATE[HOOK_STATE_ZAP_CONNECTION_FIELD]
         if zap_client is not None and alert_id is not None:
             zap_client.alert.delete_alert(alert_id)
         LOGGER.debug(

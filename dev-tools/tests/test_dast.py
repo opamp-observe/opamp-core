@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -22,6 +23,7 @@ import pytest
 from opamp_dev_tools import dast, dast_scan_hooks
 
 UNRELATED_ZAP_RULE_ID = "10020"
+EXTERNAL_TARGET_URL = "http://host.docker.internal:8080"
 
 
 class _RecordingRuntime:
@@ -62,7 +64,15 @@ class _RecordingRuntime:
         """
         self.messages.append(message)
 
-    def run(self, command: list[str], *, cwd: Path) -> None:
+    def run(
+        self,
+        command: list[str],
+        *,
+        cwd: Path | None = None,
+        check: bool = True,
+        capture_output: bool = False,
+        text: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
         """Record one container command and its expected working directory.
 
         Parameters
@@ -71,10 +81,19 @@ class _RecordingRuntime:
             Shell-independent argument vector prepared for the container runtime.
         cwd:
             Repository working directory supplied to the process runner.
+        check:
+            Whether the production runtime would raise for a non-zero exit.
+        capture_output:
+            Whether the production runtime would retain command output.
+        text:
+            Whether the production runtime would decode process streams as text.
 
         """
-        assert cwd == self.repo_root
+        del check, capture_output, text
+        assert cwd is None or cwd == self.repo_root
         self.commands.append(command)
+        stdout = dast.MANAGED_TARGET_STATUS_HEALTHY if "inspect" in command else ""
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
 
 
 class _RecordingAlertApi:
@@ -102,11 +121,131 @@ class _RecordingZapClient:
 
     Attributes:
         alert: Recording alert API exposed using the ZAP client attribute name.
+        opened_urls: URLs added to the managed full-app scan tree.
     """
 
     def __init__(self) -> None:
         """Initialize the recording alert API."""
         self.alert = _RecordingAlertApi()
+        self.opened_urls: list[str] = []
+
+    def urlopen(self, url: str) -> bytes:
+        """Record one URL opened to seed the traditional ZAP spider.
+
+        Parameters:
+            url: Absolute managed application URL added to the ZAP site tree.
+
+        Returns:
+            Empty response body used by the recording client.
+        """
+        self.opened_urls.append(url)
+        return b""
+
+
+class _FailingSeedZapClient(_RecordingZapClient):
+    """Simulate a ZAP client that cannot access managed route seeds."""
+
+    def urlopen(self, url: str) -> bytes:
+        """Raise the generic API failure shape handled by the packaged scan hook.
+
+        Parameters:
+            url: Managed route URL whose access is being simulated.
+        """
+        raise RuntimeError(f"unavailable: {url}")
+
+
+class _UnhealthyRecordingRuntime(_RecordingRuntime):
+    """Simulate a target container whose health check fails with retained logs."""
+
+    def run(
+        self,
+        command: list[str],
+        *,
+        cwd: Path | None = None,
+        check: bool = True,
+        capture_output: bool = False,
+        text: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        """Return terminal health status and diagnostic logs for managed-target inspection.
+
+        Parameters:
+            command: Container command requested by the DAST runner.
+            cwd: Optional repository working directory.
+            check: Whether command failure should raise in the production runtime.
+            capture_output: Whether command output is requested by the caller.
+            text: Whether streams should be decoded as text.
+        """
+        completed = super().run(
+            command,
+            cwd=cwd,
+            check=check,
+            capture_output=capture_output,
+            text=text,
+        )
+        if "inspect" in command:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                stdout=dast.MANAGED_TARGET_STATUS_UNHEALTHY,
+                stderr="",
+            )
+        if "logs" in command:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                stdout="application bootstrap failed",
+                stderr="",
+            )
+        return completed
+
+
+class _StartingThenHealthyRuntime(_RecordingRuntime):
+    """Simulate one pending health poll before the target becomes healthy.
+
+    Attributes:
+        inspect_count: Number of container health inspections requested by the runner.
+    """
+
+    def __init__(self, repo_root: Path) -> None:
+        """Initialize the recording runtime with no completed health inspections.
+
+        Parameters:
+            repo_root: Temporary repository root used by the scan under test.
+        """
+        super().__init__(repo_root)
+        self.inspect_count = 0
+
+    def run(
+        self,
+        command: list[str],
+        *,
+        cwd: Path | None = None,
+        check: bool = True,
+        capture_output: bool = False,
+        text: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        """Return a starting status for the first health inspection.
+
+        Parameters:
+            command: Container command requested by the DAST runner.
+            cwd: Optional repository working directory.
+            check: Whether command failure should raise in the production runtime.
+            capture_output: Whether command output is requested by the caller.
+            text: Whether streams should be decoded as text.
+        """
+        completed = super().run(
+            command,
+            cwd=cwd,
+            check=check,
+            capture_output=capture_output,
+            text=text,
+        )
+        if "inspect" not in command:
+            return completed
+        self.inspect_count += 1
+        if self.inspect_count == 1:
+            return subprocess.CompletedProcess(command, 0, stdout="starting", stderr="")
+        return completed
 
 
 def test_baseline_scan_builds_portable_docker_command(monkeypatch, tmp_path: Path) -> None:
@@ -116,7 +255,12 @@ def test_baseline_scan_builds_portable_docker_command(monkeypatch, tmp_path: Pat
 
     result = dast.run_dast_scan(
         runtime,  # type: ignore[arg-type]
-        options=dast.DastScanOptions(mode=dast.BASELINE_MODE, generate_rules=True),
+        options=dast.DastScanOptions(
+            mode=dast.BASELINE_MODE,
+            target=EXTERNAL_TARGET_URL,
+            generate_rules=True,
+            external_target=True,
+        ),
     )
 
     assert result is False
@@ -148,6 +292,138 @@ def test_baseline_scan_builds_portable_docker_command(monkeypatch, tmp_path: Pat
         encoding="utf-8"
     )
     assert any(message.startswith("DEBUG:") for message in runtime.messages)
+
+
+def test_managed_scan_builds_private_full_app_and_cleans_resources(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Default scans should isolate ZAP and the installed full app from host development tools.
+
+    Parameters:
+        monkeypatch: Pytest fixture used to select the recording container runtime.
+        tmp_path: Temporary repository root used by the recording runtime.
+    """
+    dockerfile_path = tmp_path / dast.MANAGED_TARGET_DOCKERFILE
+    dockerfile_path.parent.mkdir(parents=True)
+    dockerfile_path.write_text("FROM scratch\n", encoding="utf-8")
+    runtime = _RecordingRuntime(tmp_path)
+    monkeypatch.setattr(dast, "resolve_container_runtime", lambda configured_runtime: "docker")
+
+    dast.run_dast_scan(
+        runtime,  # type: ignore[arg-type]
+        options=dast.DastScanOptions(mode=dast.BASELINE_MODE),
+    )
+
+    build_command = next(command for command in runtime.commands if "build" in command)
+    target_command = next(
+        command
+        for command in runtime.commands
+        if command[:2] == ["docker", "run"] and dast.MANAGED_TARGET_IMAGE in command
+    )
+    zap_command = next(
+        command for command in runtime.commands if dast.DEFAULT_ZAP_IMAGE in command
+    )
+    assert str(dockerfile_path.resolve()) in build_command
+    assert "--publish" not in target_command
+    assert "-p" not in target_command
+    assert dast.MANAGED_TARGET_NETWORK_ALIAS in target_command
+    assert "--network" in zap_command
+    assert any(command[1:4] == ["container", "rm", "--force"] for command in runtime.commands)
+    assert any(command[1:3] == ["network", "rm"] for command in runtime.commands)
+
+
+def test_managed_target_requires_packaged_dockerfile(tmp_path: Path) -> None:
+    """A missing target definition should fail before creating container resources.
+
+    Parameters:
+        tmp_path: Temporary repository root without a DAST Dockerfile.
+    """
+    runtime = _RecordingRuntime(tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="DAST target Dockerfile"):
+        dast._start_managed_target(  # pylint: disable=protected-access
+            runtime,  # type: ignore[arg-type]
+            runtime_executable="docker",
+            options=dast.DastScanOptions(mode=dast.BASELINE_MODE),
+        )
+
+    assert not runtime.commands
+
+
+def test_managed_target_start_failure_removes_created_resources(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A failed readiness check should remove both the app container and private network.
+
+    Parameters:
+        monkeypatch: Pytest fixture used to force readiness failure.
+        tmp_path: Temporary repository root containing a placeholder Dockerfile.
+    """
+    dockerfile_path = tmp_path / dast.MANAGED_TARGET_DOCKERFILE
+    dockerfile_path.parent.mkdir(parents=True)
+    dockerfile_path.write_text("FROM scratch\n", encoding="utf-8")
+    runtime = _RecordingRuntime(tmp_path)
+
+    def fail_readiness(*args, **kwargs) -> None:  # type: ignore[no-untyped-def]
+        """Simulate an application that cannot complete its readiness check."""
+        del args, kwargs
+        raise RuntimeError("not ready")
+
+    monkeypatch.setattr(dast, "_wait_for_managed_target", fail_readiness)
+
+    with pytest.raises(RuntimeError, match="not ready"):
+        dast._start_managed_target(  # pylint: disable=protected-access
+            runtime,  # type: ignore[arg-type]
+            runtime_executable="docker",
+            options=dast.DastScanOptions(mode=dast.BASELINE_MODE),
+        )
+
+    assert any(command[1:4] == ["container", "rm", "--force"] for command in runtime.commands)
+    assert any(command[1:3] == ["network", "rm"] for command in runtime.commands)
+
+
+def test_managed_target_health_failure_includes_container_logs(tmp_path: Path) -> None:
+    """Terminal health failure should report application logs for diagnosis.
+
+    Parameters:
+        tmp_path: Temporary repository root used by the unhealthy recording runtime.
+    """
+    runtime = _UnhealthyRecordingRuntime(tmp_path)
+    deployment = dast.ManagedDastDeployment("private-network", "full-app")
+
+    with pytest.raises(RuntimeError, match="application bootstrap failed"):
+        dast._wait_for_managed_target(  # pylint: disable=protected-access
+            runtime,  # type: ignore[arg-type]
+            runtime_executable="docker",
+            deployment=deployment,
+        )
+
+
+def test_managed_target_waits_while_health_check_is_starting(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A pending health status should be polled again after the configured interval.
+
+    Parameters:
+        monkeypatch: Pytest fixture used to bypass the real polling delay.
+        tmp_path: Temporary repository root used by the recording runtime.
+    """
+    runtime = _StartingThenHealthyRuntime(tmp_path)
+    deployment = dast.ManagedDastDeployment("private-network", "full-app")
+    sleep_intervals: list[int] = []
+    monkeypatch.setattr(dast.time, "sleep", sleep_intervals.append)
+
+    dast._wait_for_managed_target(  # pylint: disable=protected-access
+        runtime,  # type: ignore[arg-type]
+        runtime_executable="docker",
+        deployment=deployment,
+    )
+
+    assert runtime.inspect_count == 2
+    assert sleep_intervals == [dast.MANAGED_TARGET_STATUS_POLL_SECONDS]
 
 
 def test_scan_hook_removes_only_htmlpreview_big_redirect_alerts() -> None:
@@ -183,6 +459,31 @@ def test_scan_hook_removes_only_htmlpreview_big_redirect_alerts() -> None:
         UNRELATED_ZAP_RULE_ID: [unrelated_rule_alert],
     }
     assert zap_client.alert.deleted_alert_ids == ["7"]
+
+
+def test_scan_hook_seeds_all_managed_full_app_routes() -> None:
+    """Managed scans should explicitly add JavaScript-discovered plugin routes to ZAP."""
+    zap_client = _RecordingZapClient()
+
+    dast_scan_hooks.zap_started(zap_client, dast.DEFAULT_DAST_TARGET)
+
+    assert zap_client.opened_urls == [
+        f"{dast.DEFAULT_DAST_TARGET}{seed_path}"
+        for seed_path in dast_scan_hooks.MANAGED_TARGET_SEED_PATHS
+    ]
+
+
+def test_scan_hook_seed_failures_do_not_abort_scan(caplog: pytest.LogCaptureFixture) -> None:
+    """A failed optional route seed should be logged without stopping packaged ZAP startup.
+
+    Parameters:
+        caplog: Pytest fixture used to verify the route-specific warning.
+    """
+    zap_client = _FailingSeedZapClient()
+
+    dast_scan_hooks.zap_started(zap_client, dast.DEFAULT_DAST_TARGET)
+
+    assert "Unable to seed managed DAST route" in caplog.text
 
 
 def test_scan_hook_removes_empty_big_redirect_rule_group() -> None:
@@ -266,7 +567,9 @@ def test_baseline_scan_copies_relative_rules_file(monkeypatch, tmp_path: Path) -
         runtime,  # type: ignore[arg-type]
         options=dast.DastScanOptions(
             mode=dast.BASELINE_MODE,
+            target=EXTERNAL_TARGET_URL,
             rules_file=Path("security/zap/provider_rules.conf"),
+            external_target=True,
         ),
     )
 
@@ -291,7 +594,12 @@ def test_baseline_scan_accepts_absolute_rules_file(monkeypatch, tmp_path: Path) 
 
     dast.run_dast_scan(
         runtime,  # type: ignore[arg-type]
-        options=dast.DastScanOptions(mode=dast.BASELINE_MODE, rules_file=rules_path.resolve()),
+        options=dast.DastScanOptions(
+            mode=dast.BASELINE_MODE,
+            target=EXTERNAL_TARGET_URL,
+            rules_file=rules_path.resolve(),
+            external_target=True,
+        ),
     )
 
     copied_path = (
@@ -314,7 +622,9 @@ def test_missing_rules_file_fails_before_container_start(monkeypatch, tmp_path: 
             runtime,  # type: ignore[arg-type]
             options=dast.DastScanOptions(
                 mode=dast.BASELINE_MODE,
+                target=EXTERNAL_TARGET_URL,
                 rules_file=Path("security/zap/missing.conf"),
+                external_target=True,
             ),
         )
 
@@ -384,6 +694,7 @@ def test_full_scan_can_fail_on_warnings(monkeypatch, tmp_path: Path) -> None:
             allow_active_scan=True,
             fail_on_warning=True,
             target="http://provider:8080",
+            external_target=True,
         ),
     )
 
@@ -398,6 +709,10 @@ def test_full_scan_can_fail_on_warnings(monkeypatch, tmp_path: Path) -> None:
     [
         (dast.DastScanOptions(mode="unknown"), "Unsupported DAST mode"),
         (dast.DastScanOptions(mode=dast.BASELINE_MODE, target="localhost:8080"), "absolute"),
+        (
+            dast.DastScanOptions(mode=dast.BASELINE_MODE, target=EXTERNAL_TARGET_URL),
+            "external-target",
+        ),
         (dast.DastScanOptions(mode=dast.BASELINE_MODE, scope="../escape"), "scope"),
         (dast.DastScanOptions(mode=dast.BASELINE_MODE, spider_minutes=0), "spider"),
         (

@@ -800,6 +800,7 @@ def _dispatch_build_command(args: argparse.Namespace, runtime: CommandRuntime) -
                 fail_on_warning=args.fail_on_warning,
                 generate_rules=args.generate_rules,
                 allow_active_scan=getattr(args, "allow_active_scan", False),
+                external_target=args.external_target,
             ),
         )
     if args.build_command == "pdf":
@@ -1331,9 +1332,20 @@ def _prompt_for_dast_tokens() -> list[str] | None:
     )
     if scan_mode is None:
         return None
-    target = input(f"Target URL [{DEFAULT_DAST_TARGET}]: ").strip() or DEFAULT_DAST_TARGET
+    external_target = _prompt_yes_no(
+        "Scan a separately managed deployment instead of the isolated full-app container?",
+        default=False,
+    )
+    target = DEFAULT_DAST_TARGET
+    if external_target:
+        target = input("External target URL: ").strip()
+        if not target:
+            print("External scan cancelled because no target URL was supplied.")
+            return None
     scope = input(f"Report scope [{DEFAULT_DAST_SCOPE}]: ").strip() or DEFAULT_DAST_SCOPE
     tokens = ["build", "dast", scan_mode, "--target", target, "--scope", scope]
+    if external_target:
+        tokens.append("--external-target")
     if _prompt_yes_no("Generate a default ZAP rules file with the reports?", default=False):
         tokens.append("--generate-rules")
     if _prompt_yes_no("Fail when ZAP reports warnings?", default=False):
@@ -1706,7 +1718,12 @@ def _add_dast_scan_arguments(parser: argparse.ArgumentParser, *, active_scan: bo
     parser.add_argument(
         "--target",
         default=DEFAULT_DAST_TARGET,
-        help="Target URL reachable from the ZAP container",
+        help="Target URL reachable from ZAP; defaults to the isolated full-app container",
+    )
+    parser.add_argument(
+        "--external-target",
+        action="store_true",
+        help="Scan a separately managed deployment instead of starting the isolated full app",
     )
     parser.add_argument(
         "--scope",

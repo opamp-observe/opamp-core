@@ -40,6 +40,14 @@ REQUIRED_SECURITY_DEPENDENCIES = {
 }
 SECURITY_TOOLING_PROJECT_PATH = "dev-tools/pyproject.toml"
 EXPECTED_REPOSITORY_URL = "https://github.com/opamp-observe/opamp-core"
+CATALOG_PROJECT_PATH = "catalog-service/pyproject.toml"
+CATALOG_REQUIRED_PACKAGE_DATA = {
+    "config/*.json",
+    "html/*.css",
+    "html/*.html",
+    "html/*.js",
+    "html/*.png",
+}
 
 PYTHON_PROJECT_PATHS = (
     "agent_broker/pyproject.toml",
@@ -106,3 +114,13 @@ def test_developer_tools_declares_the_security_toolchain() -> None:
         payload["project"]["optional-dependencies"]["security"]
     )
     assert REQUIRED_SECURITY_DEPENDENCIES == security_dependencies
+
+
+def test_catalog_service_packages_all_browser_assets() -> None:
+    """Keep every catalog UI asset type available in installed wheel deployments."""
+    with (REPOSITORY_ROOT / CATALOG_PROJECT_PATH).open("rb") as project_handle:
+        payload = tomllib.load(project_handle)
+
+    package_data = set(payload["tool"]["setuptools"]["package-data"]["catalog_service"])
+
+    assert CATALOG_REQUIRED_PACKAGE_DATA <= package_data

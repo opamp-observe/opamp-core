@@ -75,11 +75,13 @@ failures remain blocking. Independent security steps continue after a failure so
 report is retained, then the command returns one consolidated failure. Every CLI invocation also
 prints the timestamped issue and error log paths written beneath `dev-tools/runtime/logs`.
 
-The DAST command runs a pinned OWASP ZAP container against an already running deployment. Baseline
-mode is passive and warning-only results are non-blocking by default. Full mode sends attack
-payloads, must target a disposable deployment, and requires `--allow-active-scan`. ZAP reports are
-retained beneath `dev-tools/runtime/security-reports/zap/<scope>/<mode>/` in HTML, JSON, XML, and
-Markdown formats.
+The DAST command runs a pinned OWASP ZAP container against an isolated full-application container
+on a private network by default. The target contains installed runtime packages without test
+tools, `node_modules`, coverage output, documentation, or developer notes, and it is removed after
+the scan. Use `--external-target --target <url>` only for an intentionally separately managed
+deployment. Baseline mode is passive and warning-only results are non-blocking by default. Full
+mode sends attack payloads and requires `--allow-active-scan`. ZAP reports are retained beneath
+`dev-tools/runtime/security-reports/zap/<scope>/<mode>/` in HTML, JSON, XML, and Markdown formats.
 
 See the repository [testing and result review guide](../../docs/dev/testing.md) for the complete
 workflow and review order.
