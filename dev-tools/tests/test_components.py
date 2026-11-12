@@ -35,6 +35,8 @@ def test_discover_build_components_finds_known_projects() -> None:
     assert "provider" in component_keys
     assert "config-service" in component_keys
     assert "client-config-generator-service" in component_keys
+    assert "opamp-suite" in component_keys
+    assert "shared" in component_keys
     assert "dev-tools" not in component_keys
 
 
@@ -148,18 +150,17 @@ def test_build_artifacts_installs_build_backend_requires_for_no_isolation(tmp_pa
     )
 
     assert issues_found is False
-    assert runtime.module_checks == [("python", "build", "build")]
+    assert runtime.module_checks == []
     assert runtime.commands[0] == ["python", "-m", "pip", "install", "hatchling>=1.25"]
-    assert runtime.commands[1][0:7] == [
-        "python",
-        "-m",
+    assert runtime.commands[1][0:6] == [
+        "uv",
         "build",
         "--sdist",
         "--wheel",
-        "--outdir",
+        "--out-dir",
         str(tmp_path / "dist" / "agent_broker"),
     ]
-    assert "--no-isolation" in runtime.commands[1]
+    assert "--no-build-isolation" in runtime.commands[1]
     assert not stale_build_file.exists()
 
 

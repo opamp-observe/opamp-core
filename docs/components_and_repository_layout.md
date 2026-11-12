@@ -44,7 +44,8 @@ the entire repository.
 | `consumer-sim` | Multi-instance simulator launcher for demonstrations, tests, and repeatable validation | Optional; development and test use only | [Simulator guide](../consumer-sim/README.md) |
 | `mcp` | Installable MCP client configuration tool and compatibility wrappers | Optional integration tooling | [MCP setup guide](../mcp/README.md) |
 | `dev-tools` | Developer CLI for testing, security gates, packaging, SBOMs, releases, generated assets, and maintenance | Development/build tooling | [Developer tools guide](../dev-tools/README.md) |
-| `shared` | Common utilities used across runtime packages | Internal library code | [Shared package notes](../shared/README.md) |
+| `shared` | Independently published `opamp-shared` runtime library used across component wheels | Required transitively by importing components | [Shared package notes](../shared/README.md) |
+| `opamp-suite` | Metadata-only installation profiles for the server, freestanding editors, consumer, or complete suite | Optional installation convenience | [Product installation](installation.md#install-with-the-suite-meta-package) |
 | `proto` | OpAMP Protobuf definitions and generated protocol artifacts | Internal build/runtime input | Source folder |
 
 ## Runtime Relationships
@@ -82,10 +83,10 @@ python scripts/security_checks.py
 - `build artefact all` discovers buildable top-level components with a `pyproject.toml`
   and creates source distributions and wheels under `dist/<component>/`. This includes
   the broker, catalog, CLI, client config generator, config service, consumer, simulator,
-  MCP tooling, provider, and credentials manager.
+  MCP tooling, provider, credentials manager, shared runtime library, and suite meta-package.
 - `build release-assets` runs the repository security gate before packaging and, by
-  default, builds release wheels and CycloneDX SBOMs for `provider`, `consumer`,
-  `catalog-service`, `client-config-generator-service`, `cli`, and `consumer-sim`.
+  default, builds release wheels and CycloneDX SBOMs for the shared library,
+  complete server component set, consumer, suite meta-package, CLI, and simulator.
   Its `--components` option can select a subset of those release targets.
 - `scripts/security_checks.py` is the compatibility entry point for the full repository
   security gate.
@@ -122,7 +123,8 @@ For the detailed command matrix and output paths, see the
 | `quick-references/` | Generated or curated agent configuration reference material. |
 | `scripts/` | Compatibility wrappers and low-level operational helpers that remain outside `dev-tools`. |
 | `security/` | Repository security configuration and supporting policy files. |
-| `shared/` | Shared runtime utilities used by provider and consumer code. |
+| `shared/` | Source, metadata, and tests for the independently published `opamp-shared` runtime library. |
+| `opamp-suite/` | Metadata package defining server, editor, consumer, and complete installation profiles. |
 | `svr-credentials-mgr/` | Optional connection-settings credentials manager and nested keyring backend package. |
 | `tests/` | Repository-level tests, Playwright prompt template, and container regression scenarios. |
 

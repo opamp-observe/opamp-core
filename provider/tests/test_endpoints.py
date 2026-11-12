@@ -41,6 +41,12 @@ from opamp_provider.metrics import PROVIDER_METRICS
 from opamp_provider.proto import opamp_pb2
 from opamp_provider.state import STORE
 from opamp_provider.transport import decode_message, encode_message
+from shared.security_headers import (
+    CONTENT_SECURITY_POLICY_HEADER,
+    FRAME_ANCESTORS_NONE_POLICY,
+    X_FRAME_OPTIONS_DENY,
+    X_FRAME_OPTIONS_HEADER,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -3618,3 +3624,16 @@ async def test_unknown_provider_route_redirects_to_landing_page() -> None:
             "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
             "mp3monster/fluent-opamp/main/github-landingpage/index.html"
         )
+        assert resp.headers[CONTENT_SECURITY_POLICY_HEADER] == FRAME_ANCESTORS_NONE_POLICY
+        assert resp.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
+
+
+@pytest.mark.asyncio
+async def test_provider_ui_and_api_responses_deny_browser_framing() -> None:
+    """Verify successful provider browser and API routes inherit the global framing policy."""
+    async with app.test_client() as client:
+        for route_path in ("/ui", "/help", "/api/clients"):
+            response = await client.get(route_path)
+            assert response.status_code == HTTPStatus.OK
+            assert response.headers[CONTENT_SECURITY_POLICY_HEADER] == FRAME_ANCESTORS_NONE_POLICY
+            assert response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY

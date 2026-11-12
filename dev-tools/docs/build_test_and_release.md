@@ -26,7 +26,8 @@ opamp-dev-cli build sbom named provider
 opamp-dev-cli build sbom all
 ```
 
-Artifact and SBOM builds support `--no-isolation` when existing environments
+Artifact and SBOM builds use `uv build` and support `--no-isolation` when existing
+environments
 must supply the build backend. Before packaging, the CLI clears the selected
 component's local `build` tree so deleted or renamed source modules cannot be
 copied into a new wheel from stale setuptools output.
@@ -112,3 +113,25 @@ runs the security gate before packaging, optionally builds the PDF manual and
 compacted UI, and can publish the resulting assets to GitHub. Publishing,
 release tag/name, draft/prerelease state, release notes, component selection,
 and explicit SBOM paths are controlled through contextual options.
+
+The default release set contains `opamp-shared`, the complete server plugin
+set, `opamp-consumer`, and the `opamp-suite` meta-package so public dependency
+closure can be validated before publication.
+
+## Publish wheels to PyPI
+
+Build the release wheels, validate them against TestPyPI without uploading,
+then publish when the result has been reviewed:
+
+```bash
+opamp-dev-cli build release-assets
+opamp-dev-cli dev publish-pypi --index testpypi --dry-run
+opamp-dev-cli dev publish-pypi --index testpypi
+opamp-dev-cli dev publish-pypi --index pypi
+```
+
+Set `UV_PUBLISH_TOKEN` for local token authentication, or use PyPI trusted
+publishing in CI. The command checks the standard first-party project set and
+its internal wheel dependency closure before calling `uv publish`. Use
+`--allow-partial` only for an intentional subset; dependencies referenced by a
+selected first-party wheel are still required in that publication set.

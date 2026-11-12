@@ -108,9 +108,13 @@ Enhance the CLI tooling so that the version bump also drives:
 - minification of the UI is actioned
 - OpenAPI doc spec generated
 
-### PyPI incorporation
+### PyPI release automation
 
-Add project to [PyPI](https://pypi.org/). Need to consider whether it's a single PyPI project or several with different parts e.g. Consumer(s), Server, plugs
+The repository now builds separate component distributions, an `opamp-shared`
+runtime dependency, and an `opamp-suite` installation-profile package. The
+developer CLI validates wheel completeness and dependency closure before using
+`uv publish`. Follow-up work is to connect that command to trusted publishing
+in the release pipeline after the public project names have been reserved.
 
 ### Uninstall clean
 

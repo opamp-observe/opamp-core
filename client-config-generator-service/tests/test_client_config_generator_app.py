@@ -19,6 +19,12 @@ from pathlib import Path
 
 import pytest
 from quart import Quart
+from shared.security_headers import (
+    CONTENT_SECURITY_POLICY_HEADER,
+    FRAME_ANCESTORS_NONE_POLICY,
+    X_FRAME_OPTIONS_DENY,
+    X_FRAME_OPTIONS_HEADER,
+)
 
 from client_config_generator_service import app as app_module
 from client_config_generator_service.app import (
@@ -237,6 +243,9 @@ async def test_root_unknown_route_and_duplicate_registration_are_safe(tmp_path: 
     assert root_response.status_code == 302
     assert root_response.location.endswith(UI_PATH)
     assert unknown_response.status_code == 302
+    for response in (root_response, unknown_response):
+        assert response.headers[CONTENT_SECURITY_POLICY_HEADER] == FRAME_ANCESTORS_NONE_POLICY
+        assert response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
 
 
 @pytest.mark.asyncio

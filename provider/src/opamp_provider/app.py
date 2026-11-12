@@ -96,9 +96,11 @@ from shared.opamp_config import (
     UTF8_ENCODING,
     ServerCapabilities,
 )
+from shared.security_headers import register_clickjacking_protection
 
 app = Quart("opamp_server")
 app.config.setdefault("DIAGNOSTIC_MODE", False)
+register_clickjacking_protection(app)
 register_tool_routes(app)
 # Expose both SSE and streamable HTTP wiring; /mcp itself is still gated at
 # request time by provider.allow-mcp so operators can disable direct streamable

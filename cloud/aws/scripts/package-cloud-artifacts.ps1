@@ -37,6 +37,7 @@ if (-not $resolvedOutputDirectory.StartsWith($expectedOutputPrefix, [StringCompa
 }
 
 $componentPaths = @(
+    "shared",
     "provider",
     "consumer",
     "consumer-sim",
@@ -48,7 +49,8 @@ $componentPaths = @(
     "mcp",
     "svr-credentials-mgr/plaintext-keyring",
     "svr-credentials-mgr",
-    "dev-tools"
+    "dev-tools",
+    "opamp-suite"
 )
 $runtimeScripts = @(
     "install-opamp.sh",
@@ -56,7 +58,10 @@ $runtimeScripts = @(
     "start-opamp-server.sh",
     "upgrade-opamp-wheels.sh"
 )
-$pythonCommand = if (Get-Command py -ErrorAction SilentlyContinue) { "py" } else { "python" }
+$uvCommand = Get-Command uv -ErrorAction SilentlyContinue
+if (-not $uvCommand) {
+    throw "uv is required to build cloud package artifacts."
+}
 $wheelDirectory = Join-Path $resolvedOutputDirectory "wheels"
 $scriptDirectory = Join-Path $resolvedOutputDirectory "scripts"
 
@@ -70,12 +75,8 @@ New-Item -ItemType Directory -Path $wheelDirectory, $scriptDirectory -Force | Ou
 
 # Build each independently packaged component into one wheel directory. VMs
 # install role-specific subsets from this common artifact.
-& $pythonCommand -m pip install --upgrade build
-if ($LASTEXITCODE -ne 0) {
-    throw "Unable to install the Python build package."
-}
 foreach ($componentPath in $componentPaths) {
-    & $pythonCommand -m build --wheel --outdir $wheelDirectory (Join-Path $resolvedRepoRoot $componentPath)
+    & $uvCommand.Source build --wheel --out-dir $wheelDirectory (Join-Path $resolvedRepoRoot $componentPath)
     if ($LASTEXITCODE -ne 0) {
         throw "Wheel build failed for $componentPath."
     }

@@ -50,7 +50,9 @@ PYTHON_PROJECT_PATHS = (
     "consumer-sim/pyproject.toml",
     "dev-tools/pyproject.toml",
     "mcp/pyproject.toml",
+    "opamp-suite/pyproject.toml",
     "provider/pyproject.toml",
+    "shared/pyproject.toml",
     "svr-credentials-mgr/pyproject.toml",
     "svr-credentials-mgr/plaintext-keyring/pyproject.toml",
 )

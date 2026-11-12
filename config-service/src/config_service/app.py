@@ -28,14 +28,10 @@ from pathlib import Path
 from quart import Quart, Response, jsonify, redirect, request, send_from_directory
 
 ROOT_PATH = Path(__file__).resolve().parents[3]
-if str(ROOT_PATH) not in sys.path:
-    sys.path.insert(0, str(ROOT_PATH))
-
-from shared.observability import attach_observability
-from shared.opamp_config import ComponentEntryPoint
-from shared.opamp_config import (
-    register_component_entry_points as shared_register_component_entry_points,
-)
+SHARED_SOURCE_PATH = ROOT_PATH / "shared" / "src"
+for import_path in (ROOT_PATH, SHARED_SOURCE_PATH):
+    if str(import_path) not in sys.path:
+        sys.path.insert(0, str(import_path))
 
 from config_service.agent_validation.service import ExternalAgentValidationService
 from config_service.auth_integration import evaluate_ui_http_auth
@@ -67,6 +63,12 @@ from config_service.services.service_definition_service import ServiceDefinition
 from config_service.services.ui_document_service import UiDocumentService
 from config_service.services.validation_service import ValidationService
 from config_service.services.yaml_render_service import YamlRenderService
+from shared.observability import attach_observability
+from shared.opamp_config import ComponentEntryPoint
+from shared.opamp_config import (
+    register_component_entry_points as shared_register_component_entry_points,
+)
+from shared.security_headers import register_clickjacking_protection
 
 APP_CONFIG_KEY_MODE = "CONFIG_SERVICE_MODE"
 APP_CONFIG_KEY_READ_ONLY = "CONFIG_SERVICE_READ_ONLY"
@@ -107,7 +109,17 @@ PLACEHOLDER_PROVIDER_UI_LINK_ATTRS = "__CONFIG_SERVICE_PROVIDER_UI_LINK_ATTRS__"
 
 
 def _config_service_root() -> Path:
-    """Resolve packaged assets before considering a legacy repository-level tree."""
+    """Return the directory containing config-service runtime assets.
+
+    Packaged module and source-layout candidates are checked before the legacy
+    environment directory so installed wheels and source checkouts behave alike.
+
+    Returns
+    -------
+    Path
+        First directory containing both ``config`` and ``json-definitions`` assets,
+        or the component source root when no complete asset directory is found.
+    """
     module_dir = Path(__file__).resolve().parent
     source_root = module_dir.parents[1]
     for candidate in (module_dir, source_root, Path(sys.prefix) / "config_service"):
@@ -117,6 +129,21 @@ def _config_service_root() -> Path:
 
 
 def _resolve_css_overrides(app: Quart) -> list[str]:
+    """Resolve additional UI stylesheets using runtime-first precedence.
+
+    Runtime JSON settings take precedence over Quart application configuration,
+    the plural environment variable, and the legacy single-path environment variable.
+
+    Parameters
+    ----------
+    app:
+        Quart application whose in-memory configuration may provide stylesheet paths.
+
+    Returns
+    -------
+    list[str]
+        Ordered, non-blank stylesheet paths to inject into the UI.
+    """
     configured_runtime = resolve_ui_css_overrides()
     if configured_runtime:
         return configured_runtime
@@ -138,12 +165,31 @@ def _resolve_css_overrides(app: Quart) -> list[str]:
 
 
 def _app_enable_dev_features_enabled() -> bool:
+    """Return whether development-only UI behavior is enabled.
+
+    Returns
+    -------
+    bool
+        ``True`` when ``APP_ENABLE_DEV_FEATURES`` contains a recognized true value.
+    """
     raw_value = os.environ.get(ENV_APP_ENABLE_DEV_FEATURES, "")
     normalized = str(raw_value or "").strip().lower()
     return normalized in _ENV_TRUE_VALUES
 
 
 def _apply_no_cache_headers(response: Response) -> Response:
+    """Apply development-mode headers that prevent browser response caching.
+
+    Parameters
+    ----------
+    response:
+        Quart response whose cache headers should be replaced.
+
+    Returns
+    -------
+    Response
+        The supplied response with cache prevention headers applied.
+    """
     response.headers[HEADER_CACHE_CONTROL] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers[HEADER_PRAGMA] = "no-cache"
     response.headers[HEADER_EXPIRES] = "0"
@@ -151,12 +197,33 @@ def _apply_no_cache_headers(response: Response) -> Response:
 
 
 def _asset_suffix() -> str:
+    """Return a development cache-busting query suffix for static assets.
+
+    Returns
+    -------
+    str
+        Empty text outside development mode, otherwise a nanosecond timestamp query.
+    """
     if not _app_enable_dev_features_enabled():
         return ""
     return "?v=" + str(int(Path(__file__).stat().st_mtime_ns))
 
 
 def _append_suffix(url: str, suffix: str) -> str:
+    """Append a query suffix to a URL without corrupting existing parameters.
+
+    Parameters
+    ----------
+    url:
+        Base URL or asset path to update.
+    suffix:
+        Optional query fragment, with or without a leading question mark.
+
+    Returns
+    -------
+    str
+        Original URL when the suffix is blank, otherwise the combined URL.
+    """
     if not suffix:
         return url
     joiner = "&" if "?" in url else "?"
@@ -164,16 +231,45 @@ def _append_suffix(url: str, suffix: str) -> str:
 
 
 def _standalone_mode(app: Quart) -> bool:
+    """Return whether the Quart application is running as a standalone service.
+
+    Parameters
+    ----------
+    app:
+        Quart application whose config-service mode should be inspected.
+
+    Returns
+    -------
+    bool
+        ``True`` only when the normalized application mode is ``standalone``.
+    """
     return str(app.config.get(APP_CONFIG_KEY_MODE) or "").strip().lower() == APP_MODE_STANDALONE
 
 
 def _provider_ui_link_attrs(app: Quart) -> str:
+    """Return HTML attributes controlling visibility of the provider UI link.
+
+    Parameters
+    ----------
+    app:
+        Quart application whose standalone or embedded mode controls link visibility.
+
+    Returns
+    -------
+    str
+        Accessibility-safe hidden attributes in standalone mode, otherwise empty text.
+    """
     if _standalone_mode(app):
         return 'style="display:none" aria-hidden="true" tabindex="-1"'
     return ""
 
 
 def _configure_logging() -> None:
+    """Configure process logging from the effective config-service log level.
+
+    Existing root handlers are replaced so a standalone process consistently uses
+    the configured level and timestamped diagnostic format.
+    """
     level_name = resolve_log_level_name()
     level = getattr(logging, level_name, logging.INFO)
     logging.basicConfig(
@@ -184,21 +280,51 @@ def _configure_logging() -> None:
 
 
 def register_component_entry_points(app: Quart) -> None:
-    """Register config-service Quart components declared in runtime config."""
+    """Register config-service Quart components declared in runtime configuration.
+
+    Parameters
+    ----------
+    app:
+        Quart application passed to each configured registration callback.
+    """
     configured = resolve_component_entry_points()
     entries = [ComponentEntryPoint(entry_point=item) for item in configured]
     shared_register_component_entry_points(app, entries=entries)
 
 
 def register_api_component(app: Quart) -> None:
+    """Register the versioned config-service API blueprint.
+
+    Parameters
+    ----------
+    app:
+        Quart application that will own the ``/config-service/api/v1`` routes.
+    """
     app.register_blueprint(create_api_blueprint(), url_prefix="/config-service/api/v1")
 
 
 def register_ui_component(app: Quart) -> None:
+    """Register config-service UI, help, and static-asset routes.
+
+    Template placeholders are resolved at request time so runtime UI settings and
+    development cache behavior remain current.
+
+    Parameters
+    ----------
+    app:
+        Quart application that will own the browser-facing routes.
+    """
     html_dir = Path(__file__).resolve().with_name("html")
 
     @app.get("/config-service/ui")
     async def config_service_ui() -> Response:
+        """Render the main configuration editor with effective runtime settings.
+
+        Returns
+        -------
+        Response
+            HTML editor response, with no-cache headers when development mode is enabled.
+        """
         css_overrides = _resolve_css_overrides(app)
         base_css_path = resolve_ui_base_css_path()
         asset_suffix = _asset_suffix()
@@ -234,6 +360,13 @@ def register_ui_component(app: Quart) -> None:
 
     @app.get("/config-service/ui/docs/help")
     async def config_service_ui_help() -> Response:
+        """Render the config-service help page with versioned asset references.
+
+        Returns
+        -------
+        Response
+            HTML help response, with no-cache headers when development mode is enabled.
+        """
         base_css_path = resolve_ui_base_css_path()
         asset_suffix = _asset_suffix()
         html_template = (html_dir / "config_ui_help.html").read_text(encoding="utf-8")
@@ -252,6 +385,13 @@ def register_ui_component(app: Quart) -> None:
 
     @app.get("/config-service/ui/docs/metadata-env")
     async def config_service_ui_metadata_env_help() -> Response:
+        """Render help for metadata and environment-variable expansion.
+
+        Returns
+        -------
+        Response
+            HTML help response, with no-cache headers when development mode is enabled.
+        """
         base_css_path = resolve_ui_base_css_path()
         asset_suffix = _asset_suffix()
         html_template = (html_dir / "metadata_env_help.html").read_text(encoding="utf-8")
@@ -270,6 +410,18 @@ def register_ui_component(app: Quart) -> None:
 
     @app.get("/config-service/ui/assets/<path:filename>")
     async def config_service_ui_assets(filename: str) -> Response:
+        """Serve a packaged browser asset from the config-service HTML directory.
+
+        Parameters
+        ----------
+        filename:
+            Route-relative asset path validated by Quart's file-serving helper.
+
+        Returns
+        -------
+        Response
+            Static-file response, with no-cache headers when development mode is enabled.
+        """
         response = await send_from_directory(html_dir, filename)
         if _app_enable_dev_features_enabled():
             return _apply_no_cache_headers(response)
@@ -277,8 +429,26 @@ def register_ui_component(app: Quart) -> None:
 
 
 def create_app(*, mode: str = "standalone") -> Quart:
+    """Create and fully initialize a config-service Quart application.
+
+    The factory configures logging and security headers, resolves the active config,
+    loads registries, creates service objects, optionally attaches standalone
+    observability and authentication, and finally registers configured components.
+
+    Parameters
+    ----------
+    mode:
+        ``standalone`` to enable process-owned observability and UI authentication;
+        any embedded mode leaves those responsibilities to the host application.
+
+    Returns
+    -------
+    Quart
+        Initialized application with services stored in ``app.extensions``.
+    """
     _configure_logging()
     app = Quart(__name__)
+    register_clickjacking_protection(app)
     effective_config_path = get_effective_config_path().resolve()
     app.config[APP_CONFIG_KEY_MODE] = mode
     app.config[APP_CONFIG_KEY_READ_ONLY] = resolve_read_only(str(effective_config_path))
@@ -349,6 +519,14 @@ def create_app(*, mode: str = "standalone") -> Quart:
     if mode == "standalone":
         @app.before_request
         async def enforce_ui_bearer_auth() -> tuple[object, int] | None:
+            """Enforce configured HTTP authentication for standalone requests.
+
+            Returns
+            -------
+            tuple[object, int] | None
+                ``None`` for an allowed request, otherwise a JSON error response and
+                status code, including ``WWW-Authenticate`` when supplied by the policy.
+            """
             result = evaluate_ui_http_auth(
                 path=request.path,
                 method=request.method,
@@ -363,8 +541,21 @@ def create_app(*, mode: str = "standalone") -> Quart:
             return response, result.status_code
 
     @app.errorhandler(404)
-    async def redirect_unknown_config_service_route(_: object) -> Response:
-        """Redirect unknown config-service routes to the shared landing page."""
+    async def redirect_unknown_config_service_route(error: object) -> Response:
+        """Redirect unknown config-service routes to the shared landing page.
+
+        Parameters
+        ----------
+        error:
+            Quart error object supplied to the registered 404 handler and intentionally
+            ignored because every unknown route uses the same redirect response.
+
+        Returns
+        -------
+        Response
+            Redirect response targeting the project landing page.
+        """
+        del error
         app.logger.info(
             "config-service 404 redirect path=%s remote_addr=%s target=%s",
             request.path,
@@ -379,6 +570,11 @@ def create_app(*, mode: str = "standalone") -> Quart:
 
 
 def main() -> None:
+    """Parse standalone server arguments and run config-service in debug mode.
+
+    An explicit config path is promoted to ``CONFIG_TOOL_CONFIG_PATH`` before the
+    app is constructed so every runtime resolver observes the same selected file.
+    """
     parser = argparse.ArgumentParser(
         description="Config Service standalone server",
         epilog=f"Documentation: {CONFIG_SERVICE_DOCS_URL}",

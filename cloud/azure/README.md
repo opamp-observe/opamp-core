@@ -113,6 +113,7 @@ Install these on your workstation:
 - Azure CLI
 - Docker, only needed if you also run the local wheel regression containers
 - Python 3.10 or newer
+- `uv` for cross-platform wheel builds
 - Bash, or PowerShell on Windows
 - an Azure subscription
 - an SSH key pair
@@ -208,7 +209,8 @@ least-privilege access manually.
 
 ## Package The Artifacts
 
-The deploy scripts package and upload the scripts and wheels automatically.
+The deploy scripts package and upload the scripts and wheels automatically,
+including `opamp-shared` and the `opamp-suite` installation profiles.
 Run a packager directly only when you need to inspect or reuse its output:
 
 From the repository root:

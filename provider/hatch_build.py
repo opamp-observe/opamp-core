@@ -30,8 +30,10 @@ class CustomBuildHook(BuildHookInterface[Any]):
         del version, build_data
 
         repo_root = Path(self.root).resolve().parent
-        if str(repo_root) not in sys.path:
-            sys.path.insert(0, str(repo_root))
+        shared_source_root = repo_root / "shared" / "src"
+        for import_root in (repo_root, shared_source_root):
+            if str(import_root) not in sys.path:
+                sys.path.insert(0, str(import_root))
 
         try:
             from shared.packaging_warnings import warn_if_cli_missing

@@ -374,7 +374,8 @@ See:
 - `proto/` - protobuf definitions
 - `provider/` - required server package
 - `scripts/` - compatibility wrappers and low-level operational helper scripts
-- `shared/` - internal shared Python utilities
+- `shared/` - independently packaged `opamp-shared` runtime utilities
+- `opamp-suite/` - PyPI installation profiles for server, editors, consumer, and all components
 - `tests/` - repository-level tests and container scenarios
 
 ## Core documentation map

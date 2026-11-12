@@ -40,7 +40,18 @@ CLI_MISSING_WARNING_TEMPLATE = (
 
 
 def _detect_cli_source(repo_root: Path) -> str | None:
-    """Return the CLI source marker path when the workspace includes the CLI component."""
+    """Return the CLI source path when the workspace includes the CLI component.
+
+    Parameters
+    ----------
+    repo_root:
+        Repository root expected to contain the CLI project directory.
+
+    Returns
+    -------
+    str | None
+        Resolved CLI directory when all source markers exist; otherwise ``None``.
+    """
     cli_root = repo_root / CLI_DIR_NAME
     markers = [
         cli_root / CLI_PYPROJECT_FILE,
@@ -72,7 +83,20 @@ def _detect_cli_distribution() -> str | None:
 
 
 def build_cli_missing_warning(*, component_label: str, repo_root: Path) -> str | None:
-    """Return a packaging warning when the OpAMP CLI is not available."""
+    """Return a packaging warning when the OpAMP CLI is not available.
+
+    Parameters
+    ----------
+    component_label:
+        Human-readable component name included in a generated warning.
+    repo_root:
+        Repository root inspected for a source checkout of the CLI.
+
+    Returns
+    -------
+    str | None
+        Warning text when neither source nor installed CLI is found; otherwise ``None``.
+    """
     LOGGER.info("building CLI availability warning component_label=%s", component_label)
     source_path = _detect_cli_source(repo_root)
     installed_dist = _detect_cli_distribution()
@@ -91,8 +115,23 @@ def build_cli_missing_warning(*, component_label: str, repo_root: Path) -> str |
 
 
 def warn_if_cli_missing(*, component_label: str, repo_root: Path) -> bool:
-    """Print a packaging warning when the OpAMP CLI is not available."""
-    LOGGER.info("checking whether CLI warning should be printed component_label=%s", component_label)
+    """Print a packaging warning when the OpAMP CLI is not available.
+
+    Parameters
+    ----------
+    component_label:
+        Human-readable component name included in a generated warning.
+    repo_root:
+        Repository root inspected for a source checkout of the CLI.
+
+    Returns
+    -------
+    bool
+        ``True`` when a warning was written to stderr; otherwise ``False``.
+    """
+    LOGGER.info(
+        "checking whether CLI warning should be printed component_label=%s", component_label
+    )
     warning = build_cli_missing_warning(
         component_label=component_label,
         repo_root=repo_root,

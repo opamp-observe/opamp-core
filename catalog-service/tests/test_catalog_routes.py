@@ -17,16 +17,22 @@ Test-case reference: catalog-service/docs/TEST_CASES.md
 
 from __future__ import annotations
 
-from http import HTTPStatus
 import json
+from http import HTTPStatus
 from pathlib import Path
 
 import pytest
 from quart import Quart
+from shared.security_headers import (
+    CONTENT_SECURITY_POLICY_HEADER,
+    FRAME_ANCESTORS_NONE_POLICY,
+    X_FRAME_OPTIONS_DENY,
+    X_FRAME_OPTIONS_HEADER,
+)
 
+from catalog_service.app import APP_EXTENSION_INDEX_SERVICE, create_app
 from catalog_service.auth_integration import UIAuthResult
 from catalog_service.config import CatalogServiceConfig, CatalogSource
-from catalog_service.app import APP_EXTENSION_INDEX_SERVICE, create_app
 from catalog_service.routes import register_catalog_routes
 from catalog_service.service import CatalogFileIndexService
 
@@ -291,6 +297,8 @@ async def test_standalone_catalog_unknown_route_redirects_to_landing_page(
             "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
             "mp3monster/fluent-opamp/main/github-landingpage/index.html"
         )
+        assert response.headers[CONTENT_SECURITY_POLICY_HEADER] == FRAME_ANCESTORS_NONE_POLICY
+        assert response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
 
 
 @pytest.mark.asyncio

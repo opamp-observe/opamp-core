@@ -108,7 +108,9 @@ REPO_PYTHON_PROJECT_PATHS = (
     Path("consumer-sim"),
     Path("dev-tools"),
     Path("mcp"),
+    Path("opamp-suite"),
     Path("provider"),
+    Path("shared"),
     Path("svr-credentials-mgr"),
     Path("svr-credentials-mgr/plaintext-keyring"),
 )

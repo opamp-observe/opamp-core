@@ -80,6 +80,13 @@ from .javascript_complexity import (
     run_javascript_complexity_checks,
 )
 from .provider_ui import compact_provider_ui_assets
+from .pypi_publish import (
+    DEFAULT_PYPI_DIST_ROOT,
+    INDEX_TEST_PYPI,
+    PYPI_INDEX_CHOICES,
+    PyPIPublishOptions,
+    publish_wheels_to_pypi,
+)
 from .release_assets import (
     add_release_assets_arguments,
     build_release_assets,
@@ -337,6 +344,31 @@ def build_parser(  # pylint: disable=too-many-locals,too-many-statements
         action="store_true",
         help="Show selected wheels and cloud destinations without uploading",
     )
+    publish_pypi_parser = dev_subparsers.add_parser(
+        "publish-pypi",
+        help="Validate and publish first-party wheels to PyPI or TestPyPI with uv",
+    )
+    publish_pypi_parser.add_argument(
+        "--dist-root",
+        default=DEFAULT_PYPI_DIST_ROOT,
+        help="Host directory searched recursively for wheel files",
+    )
+    publish_pypi_parser.add_argument(
+        "--index",
+        choices=PYPI_INDEX_CHOICES,
+        default=INDEX_TEST_PYPI,
+        help="Python package index destination; defaults to TestPyPI",
+    )
+    publish_pypi_parser.add_argument(
+        "--allow-partial",
+        action="store_true",
+        help="Allow publication without the complete standard first-party wheel set",
+    )
+    publish_pypi_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate the selected wheels and run uv publish without uploading",
+    )
 
     fluent_resources_parser = command_parsers.add_parser(
         FLUENT_RESOURCES_COMMAND_GROUP,
@@ -376,7 +408,7 @@ def build_parser(  # pylint: disable=too-many-locals,too-many-statements
         available_components=available_components,
     )
     artefact_parser.add_argument(
-        "--no-isolation", action="store_true", help="Pass --no-isolation to python -m build"
+        "--no-isolation", action="store_true", help="Pass --no-build-isolation to uv build"
     )
 
     sbom_parser = build_subparsers.add_parser("sbom", help="Generate SBOMs")
@@ -386,7 +418,7 @@ def build_parser(  # pylint: disable=too-many-locals,too-many-statements
         available_components=available_components,
     )
     sbom_parser.add_argument(
-        "--no-isolation", action="store_true", help="Pass --no-isolation to python -m build"
+        "--no-isolation", action="store_true", help="Pass --no-build-isolation to uv build"
     )
 
     secure_parser = build_subparsers.add_parser("secure", help="Run security checks")
@@ -695,6 +727,16 @@ def _dispatch_dev_command(  # pylint: disable=too-many-return-statements
                 aws_region=args.aws_region,
                 azure_container=args.azure_container,
                 azure_auth_mode=args.azure_auth_mode,
+                dry_run=args.dry_run,
+            ),
+        )
+    if args.dev_command == "publish-pypi":
+        return publish_wheels_to_pypi(
+            runtime,
+            PyPIPublishOptions(
+                dist_root=args.dist_root,
+                index=args.index,
+                allow_partial=args.allow_partial,
                 dry_run=args.dry_run,
             ),
         )
@@ -1415,7 +1457,7 @@ def _prompt_for_named_or_all_tokens(
         available.
     include_no_isolation:
         Whether the prompt should ask if ``--no-isolation`` should be passed
-        through to ``python -m build``.
+        through to ``uv build``.
 
     """
     scope_options = [("all", "Run against every discovered component")]
@@ -1426,7 +1468,7 @@ def _prompt_for_named_or_all_tokens(
         return None
     tokens = ["build", command]
     if include_no_isolation and _prompt_yes_no(
-        "Pass --no-isolation to python -m build?",
+        "Pass --no-build-isolation to uv build?",
         default=False,
     ):
         tokens.append("--no-isolation")

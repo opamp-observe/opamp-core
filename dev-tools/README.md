@@ -193,6 +193,20 @@ opamp-dev-cli dev push-to-cloud --origin azure --release v5.1.0
 Cloud pushes write to `releases/<release>/wheels/`. Use `--dry-run` on either
 command to inspect the transfer before it runs.
 
+PyPI and TestPyPI publication use `uv publish` after validating the standard
+first-party wheel set and dependency closure:
+
+```bash
+opamp-dev-cli dev publish-pypi --index testpypi --dry-run
+opamp-dev-cli dev publish-pypi --index testpypi
+opamp-dev-cli dev publish-pypi --index pypi
+```
+
+Authentication comes from PyPI trusted publishing or `UV_PUBLISH_TOKEN`; tokens
+are never placed in the logged command line. The default publication requires
+the shared library, server and plugin wheels, consumer, and suite meta-package.
+Use `--allow-partial` for deliberate partial releases.
+
 See [developer maintenance commands](docs/developer_maintenance.md) for all
 wheel transfer controls.
 

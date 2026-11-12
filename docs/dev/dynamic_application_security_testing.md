@@ -133,6 +133,35 @@ Do not aim this command at a production service, shared development data, or a d
 state cannot be discarded. Authentication and multi-user workflows should move to a reviewed ZAP
 Automation Framework plan rather than placing bearer tokens in shell history.
 
+## Verify Clickjacking Response Headers
+
+The provider and standalone browser services apply the following deny-by-default response
+headers globally, including successful pages, redirects, authentication failures, and error
+responses:
+
+```text
+Content-Security-Policy: frame-ancestors 'none'
+X-Frame-Options: DENY
+```
+
+From PowerShell, inspect a running provider with:
+
+```powershell
+(Invoke-WebRequest -Uri http://localhost:8080/ui -UseBasicParsing).Headers |
+  Format-List Content-Security-Policy, X-Frame-Options
+```
+
+From Linux or another POSIX shell:
+
+```bash
+curl --silent --show-error --head http://localhost:8080/ui \
+  | grep --extended-regexp --ignore-case '^(content-security-policy|x-frame-options):'
+```
+
+ZAP should no longer report `Missing Anti-clickjacking Header` for protected responses. Retain
+the header assertions in component tests as the primary regression check; use DAST to verify the
+deployed target and any gateway in front of it.
+
 ## Reports And Exit Behavior
 
 Each run replaces the stable files below:

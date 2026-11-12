@@ -102,6 +102,7 @@ AWS references:
 
 - AWS CLI v2 configured for the target account
 - Python 3.10 or newer
+- `uv` for cross-platform wheel builds
 - Bash, Windows PowerShell 5.1, or PowerShell 7
 - `tar`
 - an existing EC2 key pair in the target region, or permission to create one
@@ -259,7 +260,8 @@ The generating identity requires `ec2:CreateKeyPair` and `ec2:CreateTags`.
 `ec2:DeleteKeyPair` is also required for explicit deletion and for automatic
 cleanup when private key material cannot be stored locally.
 
-The deployment script builds all component wheels, creates
+The deployment script builds all component wheels, including `opamp-shared`
+and the `opamp-suite` installation profiles, creates
 `dist/opamp-cloud-artifacts.tar.gz`, creates or reuses private retained S3
 storage, validates the template, deploys it, and prints the stack outputs. It
 also generates

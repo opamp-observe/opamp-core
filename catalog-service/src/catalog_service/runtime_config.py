@@ -11,6 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Resolve standalone and embedded catalog-service runtime configuration."""
+
+# Source-checkout imports intentionally follow the local shared-package path bootstrap.
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import os
@@ -19,15 +24,20 @@ from pathlib import Path
 from typing import Any
 
 ROOT_PATH = Path(__file__).resolve().parents[3]
-if str(ROOT_PATH) not in sys.path:
-    sys.path.insert(0, str(ROOT_PATH))
-
-from shared.opamp_config import CFG_COMPONENT_ENTRY_POINTS_QUART, ComponentEntryPoint, resolve_component_entry_points_from_payload
-from shared.observability import ObservabilityConfig, load_observability_config_from_payload
+SHARED_SOURCE_PATH = ROOT_PATH / "shared" / "src"
+for import_path in (ROOT_PATH, SHARED_SOURCE_PATH):
+    if str(import_path) not in sys.path:
+        sys.path.insert(0, str(import_path))
 
 from catalog_service.config import (
     catalog_component_entry_from_payload,
     load_catalog_service_config,
+)
+from shared.observability import ObservabilityConfig, load_observability_config_from_payload
+from shared.opamp_config import (
+    CFG_COMPONENT_ENTRY_POINTS_QUART,
+    ComponentEntryPoint,
+    resolve_component_entry_points_from_payload,
 )
 
 ENV_CATALOG_SERVICE_CONFIG_PATH = "CATALOG_SERVICE_CONFIG_PATH"

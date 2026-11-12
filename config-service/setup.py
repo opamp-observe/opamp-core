@@ -22,13 +22,22 @@ from setuptools import find_packages, setup
 
 ROOT = Path(__file__).resolve().parent
 REPO_ROOT = ROOT.parent
-SHARED_PACKAGE_NAME = "shared"
-for candidate in (ROOT, ROOT / "src", REPO_ROOT):
+for candidate in (ROOT, ROOT / "src", REPO_ROOT / "shared" / "src", REPO_ROOT):
     if str(candidate) not in sys.path:
         sys.path.insert(0, str(candidate))
 
 
 def _load_build_config() -> tuple[list[str], list[str], str, str, str]:
+    """Load the config-service package metadata after source paths are available.
+
+    The import remains inside this helper because wheel builds can invoke ``setup.py`` from
+    outside the component directory. Populating ``sys.path`` first ensures the component's
+    canonical ``build_config`` module is imported consistently in those build environments.
+
+    Returns:
+        Tuple containing development dependencies, runtime dependencies, package description,
+        distribution name, and package version, in that order.
+    """
     import build_config
 
     return (
@@ -65,9 +74,8 @@ setup(
     packages=find_packages(
         where="src",
         include=["config_service", "config_service.*", "opamp_tools", "opamp_tools.*"],
-    )
-    + [SHARED_PACKAGE_NAME],
-    package_dir={"": "src", SHARED_PACKAGE_NAME: "../shared"},
+    ),
+    package_dir={"": "src"},
     include_package_data=True,
     package_data={
         "config_service": [

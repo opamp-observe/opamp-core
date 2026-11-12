@@ -14,7 +14,16 @@ limitations under the License.
 
 # catalog-service
 
+The service depends on the independently published `opamp-shared` runtime
+library. Local `uv` development resolves it from `../shared`; shared modules
+are not bundled into the catalog wheel.
+
 Standalone package for the OpAMP configuration catalog backend and Python-served UI.
+
+Standalone responses deny browser framing with `Content-Security-Policy: frame-ancestors 'none'`
+and `X-Frame-Options: DENY`. When embedded into the provider, the provider applies the same policy
+to the component routes. Deployment gateways must preserve these headers; see the
+[API gateway recommendations](../docs/api_gateway_requirements.md#browser-framing-and-clickjacking-protection).
 
 For product installation of the standalone catalog or the catalog embedded in
 the provider, use the

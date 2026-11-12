@@ -68,6 +68,36 @@ authorization:
    that browser.
 4. Machine-to-machine routes should use a distinct authorization scope and, where appropriate,
    mTLS or another workload identity mechanism.
+
+## Browser Framing And Clickjacking Protection
+
+Provider and standalone browser services deny framing by default on every HTTP response:
+
+```text
+Content-Security-Policy: frame-ancestors 'none'
+X-Frame-Options: DENY
+```
+
+The `frame-ancestors` directive is the primary modern control. `X-Frame-Options` remains as a
+compatible fallback for older clients. The provider's embedded Config Editor, Config Catalog,
+and Client Config Generator are routes in the same Quart process; they do not require an iframe
+and therefore inherit the deny policy without needing an exception.
+
+Gateways must preserve these response headers or overwrite them with the same or a stricter
+policy. Do not strip them, use the obsolete `X-Frame-Options: ALLOW-FROM` value, or introduce a
+second independently managed Content Security Policy. The application preserves other CSP
+directives already present on a response while replacing any `frame-ancestors` directive with
+`frame-ancestors 'none'`.
+
+If a future host application has a reviewed requirement to frame an OpAMP page, treat that as a
+security design change. Same-origin framing can use `frame-ancestors 'self'` with
+`X-Frame-Options: SAMEORIGIN`. Cross-origin framing requires an explicit HTTPS source allowlist
+in `frame-ancestors`; `X-Frame-Options` cannot express a reliable cross-origin allowlist. Keep
+authorization, CSRF protection, and sensitive-action confirmation independent of framing policy.
+
+See the
+[OWASP Clickjacking Defense Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Clickjacking_Defense_Cheat_Sheet.html)
+for the rationale and browser compatibility guidance.
 5. UI, automation, agent, and MCP routes should remain partitioned so rate limits, request-shape
    validation, audit policy, and incident response can differ by caller class.
 

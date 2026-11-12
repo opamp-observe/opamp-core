@@ -17,7 +17,26 @@ limitations under the License.
 This page is the repository-level tooling inventory for local development. Use
 it with the component-specific READMEs when setting up or auditing a machine.
 
-## One Command Setup
+## Preferred uv Workflow
+
+Each deployable Python component is an independent project. Runtime packages
+declare `opamp-shared` normally for published installations and use
+`[tool.uv.sources]` to resolve the repository's `shared/` project during local
+development. This keeps component wheels independent without copying the
+`shared` import package into them.
+
+Run component commands from the repository root on Windows or Linux:
+
+```bash
+uv sync --project provider --extra dev
+uv run --project provider --locked python -m pytest -q -s
+uv build --wheel provider
+```
+
+Use the same pattern with another component directory. The developer CLI also
+uses `uv build` for repository artifact and release-wheel builds.
+
+## Aggregate Environment Setup
 
 The OpAMP CLI can create or update a repository-level virtual environment:
 
@@ -54,12 +73,15 @@ The setup command installs these Python component directories when their
 
 | Path | Package | Build backend | Console scripts |
 |---|---|---|---|
+| `shared` | `opamp-shared` | `setuptools.build_meta` | library only |
+| `opamp-suite` | `opamp-suite` | `setuptools.build_meta` | metadata package only |
 | `cli` | `opamp-cli` | `setuptools.build_meta` | `opamp-cli` |
 | `provider` | `opamp-server` | `hatchling.build` | `opamp-provider` |
 | `consumer` | `opamp-consumer` | `hatchling.build` | `opamp-consumer`, `opamp-consumer-fluentd`, `opamp-consumer-simulator` |
 | `consumer-sim` | `opamp-consumer-sim` | `setuptools.build_meta` | `opamp-consumer-sim` |
 | `config-service` | `config-service` | `setuptools.build_meta` | `config-service` |
 | `catalog-service` | `catalog-service` | `setuptools.build_meta` | `catalog-service` |
+| `client-config-generator-service` | `client-config-generator-service` | `setuptools.build_meta` | `client-config-generator-service` |
 | `agent_broker` | `opamp-broker` | `hatchling.build` | `opamp-broker` |
 | `mcp` | `opamp-mcp-config` | `setuptools.build_meta` | `opamp-mcp-config` |
 | `dev-tools` | `opamp-dev-tools` | `setuptools.build_meta` | `opamp-dev-tools` |
@@ -85,7 +107,7 @@ Development extras are mostly shared across components:
 - Static checks: `ruff`, `pylint`.
 - Security: `bandit`, `detect-secrets`, `pip-audit`, and `semgrep` from the versioned
   `dev-tools[security]` extra.
-- Packaging/SBOM support: `build`, `hatchling`, component build backends, and dev-tools helpers.
+- Packaging/SBOM support: `uv`, `hatchling`, component build backends, and dev-tools helpers.
 
 The repository also contains `pyrightconfig.json` and `.flake8`; those files
 document supported checker configuration even though the current setup command

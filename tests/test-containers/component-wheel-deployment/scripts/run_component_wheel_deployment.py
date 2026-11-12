@@ -57,19 +57,25 @@ ENV_PYTHONPATH = "PYTHONPATH"
 
 @dataclass(frozen=True)
 class Component:
-    """Describe one packaged component that must install and import cleanly."""
+    """Describe one packaged component that must install and import cleanly.
+
+    Attributes:
+        component_id: Stable identifier used in test results and scratch-directory names.
+        path: Repository-relative path to the component's Python package root.
+        imports: Primary modules that must import successfully from the installed wheel.
+    """
 
     component_id: str
-    """Stable test/report identifier for the component."""
-
     path: str
-    """Repository-relative path to the component's Python package root."""
-
     imports: tuple[str, ...]
-    """Primary modules that must import successfully from the installed wheel."""
 
 
 COMPONENTS: tuple[Component, ...] = (
+    Component(
+        "shared",
+        "shared",
+        ("shared.opamp_config", "shared.security_headers"),
+    ),
     Component("provider", "provider", ("opamp_provider.server", "shared.opamp_config")),
     Component(
         "consumer",
@@ -105,6 +111,7 @@ COMPONENTS: tuple[Component, ...] = (
         ("connection_settings_builder.builder", "svr_credentials_manager_service.app"),
     ),
     Component("dev-tools", "dev-tools", ("opamp_dev_tools.cli",)),
+    Component("opamp-suite", "opamp-suite", ("opamp_suite",)),
 )
 
 
@@ -115,6 +122,25 @@ def _run(
     env: dict[str, str] | None = None,
     timeout: int = 900,
 ) -> dict[str, object]:
+    """Run a deployment-check command and capture a serializable execution record.
+
+    Commands do not raise for non-zero exits because the harness must preserve their output in
+    its reports and continue producing results for the remaining components.
+
+    Parameters:
+        command: Executable and arguments to pass directly to the subprocess.
+        cwd: Working directory in which the command runs.
+        env: Complete environment mapping for the child, or ``None`` to inherit the parent.
+        timeout: Maximum command duration in seconds before ``subprocess`` terminates the run.
+
+    Returns:
+        Mapping containing the command, exit code, elapsed seconds, standard output, and
+        standard error.
+
+    Raises:
+        subprocess.TimeoutExpired: If the command exceeds ``timeout`` seconds.
+        OSError: If the requested executable cannot be started.
+    """
     started = time.monotonic()
     completed = subprocess.run(
         command,
@@ -137,6 +163,17 @@ def _run(
 
 
 def _fail_result(component: Component, stage: str, detail: str, commands: list[dict[str, object]]) -> dict[str, object]:
+    """Build a consistent failed-component result for the JSON and Markdown reports.
+
+    Parameters:
+        component: Component whose deployment check failed.
+        stage: Stable name of the stage at which processing stopped.
+        detail: Human-readable explanation of the failure.
+        commands: Command records collected before the failure.
+
+    Returns:
+        Serializable result mapping with ``passed`` set to ``False``.
+    """
     return {
         "component_id": component.component_id,
         "path": component.path,
@@ -150,6 +187,23 @@ def _fail_result(component: Component, stage: str, detail: str, commands: list[d
 
 
 def _read_project_metadata(component_path: Path) -> tuple[str, list[str], dict[str, list[str]]]:
+    """Read the distribution and entry-point contract from a component's ``pyproject.toml``.
+
+    The expected metadata comes from project source rather than an installed distribution so
+    the later wheel check can detect missing or incorrectly generated entry points.
+
+    Parameters:
+        component_path: Component package root containing ``pyproject.toml``.
+
+    Returns:
+        Distribution name, sorted console-script names, and sorted names grouped by custom
+        entry-point group.
+
+    Raises:
+        OSError: If the project metadata file cannot be read.
+        tomllib.TOMLDecodeError: If ``pyproject.toml`` is malformed.
+        KeyError: If the project table does not declare a distribution name.
+    """
     pyproject = component_path / "pyproject.toml"
     with pyproject.open("rb") as handle:
         payload = tomllib.load(handle)
@@ -164,11 +218,29 @@ def _read_project_metadata(component_path: Path) -> tuple[str, list[str], dict[s
 
 
 def _venv_python(venv_dir: Path) -> Path:
+    """Return the platform-specific Python executable inside a virtual environment.
+
+    Parameters:
+        venv_dir: Root directory of a virtual environment created by this harness.
+
+    Returns:
+        Expected Windows or POSIX Python executable path.
+    """
     return venv_dir / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
 def _clear_directory_contents(directory: Path) -> None:
-    """Remove existing report files without deleting a possible mount point."""
+    """Remove existing report files without deleting a possible mounted directory.
+
+    Preserving the directory itself is required when the container output path is a host mount;
+    only its children belong to the current test result set.
+
+    Parameters:
+        directory: Report directory whose child files and directories are removed.
+
+    Returns:
+        ``None``; directory contents are removed as a side effect.
+    """
     directory.mkdir(parents=True, exist_ok=True)
     for child in directory.iterdir():
         if child.is_dir() and not child.is_symlink():
@@ -178,6 +250,19 @@ def _clear_directory_contents(directory: Path) -> None:
 
 
 def _build_all_wheels(repo_root: Path, wheelhouse: Path) -> tuple[list[dict[str, object]], dict[str, Path]]:
+    """Build every configured component wheel into the shared temporary wheelhouse.
+
+    Building all wheels first lets package installation resolve local inter-component
+    dependencies from one directory without falling back to unpublished PyPI releases.
+
+    Parameters:
+        repo_root: Root of the OpAMP source checkout.
+        wheelhouse: Existing output directory for all generated wheel files.
+
+    Returns:
+        Command records for every attempted build and a mapping from component identifier to
+        its most recently produced wheel.
+    """
     commands: list[dict[str, object]] = []
     wheels_by_component: dict[str, Path] = {}
     for component in COMPONENTS:
@@ -213,6 +298,14 @@ def _build_all_wheels(repo_root: Path, wheelhouse: Path) -> tuple[list[dict[str,
 
 
 def _check_imports(imports: tuple[str, ...]) -> str:
+    """Generate isolated Python source that imports each required component module.
+
+    Parameters:
+        imports: Fully qualified module names expected to be present in the installed wheel.
+
+    Returns:
+        Python source suitable for execution with the isolated interpreter's ``-c`` option.
+    """
     joined = ", ".join(repr(value) for value in imports)
     return (
         "import importlib\n"
@@ -223,6 +316,16 @@ def _check_imports(imports: tuple[str, ...]) -> str:
 
 
 def _check_entry_points(distribution: str, scripts: list[str], entry_points: dict[str, list[str]]) -> str:
+    """Generate Python source that verifies installed wheel entry-point metadata.
+
+    Parameters:
+        distribution: Installed distribution name queried through ``importlib.metadata``.
+        scripts: Console-script names declared by the source project.
+        entry_points: Expected custom entry-point names grouped by entry-point group.
+
+    Returns:
+        Python source that asserts every expected entry point exists in the wheel metadata.
+    """
     payload = json.dumps(
         {
             "distribution": distribution,
@@ -249,7 +352,11 @@ def _check_entry_points(distribution: str, scripts: list[str], entry_points: dic
 def _write_import_config(clean_root: Path) -> Path:
     """Create the minimal runtime config needed by import-time module checks.
 
-    Args:
+    Some component imports load runtime configuration immediately. The generated payload keeps
+    those imports deterministic and disables TLS and state persistence so no external files or
+    writable service state are required.
+
+    Parameters:
         clean_root: Scratch directory owned by this harness run.
 
     Returns:
@@ -286,7 +393,10 @@ def _write_import_config(clean_root: Path) -> Path:
 def _isolated_import_environment(config_path: Path) -> dict[str, str]:
     """Build an import-check environment that cannot see the source checkout.
 
-    Args:
+    User-site packages and ``PYTHONPATH`` are excluded so a successful import proves the module
+    came from the newly installed wheel and its declared dependencies.
+
+    Parameters:
         config_path: Generated OpAMP config path to expose through the standard
             runtime override.
 
@@ -308,6 +418,23 @@ def _test_component(
     wheelhouse: Path,
     wheels_by_component: dict[str, Path],
 ) -> dict[str, object]:
+    """Install and validate one component wheel in a newly created virtual environment.
+
+    Validation covers dependency consistency, representative module imports, and the entry
+    points declared by the component's source metadata. The function returns at the first
+    failed stage so reports identify the actionable boundary.
+
+    Parameters:
+        component: Component definition to validate.
+        repo_root: Root of the OpAMP source checkout.
+        clean_root: Scratch root used for virtual environments and isolated working folders.
+        wheelhouse: Directory containing every locally built component wheel.
+        wheels_by_component: Mapping from component identifiers to their generated wheels.
+
+    Returns:
+        Serializable success or failure result including every command executed for the
+        component.
+    """
     commands: list[dict[str, object]] = []
     component_path = repo_root / component.path
     if not component_path.exists():
@@ -385,6 +512,19 @@ def _test_component(
 
 
 def _write_reports(results: list[dict[str, object]], build_commands: list[dict[str, object]], results_dir: Path) -> None:
+    """Write detailed JSON and human-readable Markdown deployment reports.
+
+    Overall success requires both every build command and every component validation to pass,
+    keeping the two report formats aligned with the process exit code.
+
+    Parameters:
+        results: Per-component validation result mappings.
+        build_commands: Command records from the initial wheel build phase.
+        results_dir: Output directory that receives the JSON and Markdown reports.
+
+    Returns:
+        ``None``; both report files are written as a side effect.
+    """
     results_dir.mkdir(parents=True, exist_ok=True)
     passed = all(bool(result["passed"]) for result in results) and all(
         int(command["exit_code"]) == 0 for command in build_commands
@@ -425,6 +565,18 @@ def _write_reports(results: list[dict[str, object]], build_commands: list[dict[s
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the complete clean-wheel build, installation, and validation workflow.
+
+    The selected scratch root is recreated from an empty state and the results directory is
+    cleared before work begins. Callers must therefore provide paths dedicated to this test.
+
+    Parameters:
+        argv: Optional command-line arguments excluding the executable name. ``None`` reads
+            arguments from ``sys.argv``.
+
+    Returns:
+        Zero when all builds and validations pass; otherwise one after reports are written.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=Path("/workspace/opamp"))
     parser.add_argument("--results-dir", type=Path, default=Path("/host-output"))

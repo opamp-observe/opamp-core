@@ -35,14 +35,14 @@ COMPONENT_RUNNER_PATH = (
 CONSUMER_PYPROJECT_PATH = REPOSITORY_ROOT / "consumer" / "pyproject.toml"
 AGENT_BROKER_PYPROJECT_PATH = REPOSITORY_ROOT / "agent_broker" / "pyproject.toml"
 CATALOG_SERVICE_PYPROJECT_PATH = REPOSITORY_ROOT / "catalog-service" / "pyproject.toml"
+CLIENT_CONFIG_GENERATOR_PYPROJECT_PATH = (
+    REPOSITORY_ROOT / "client-config-generator-service" / "pyproject.toml"
+)
 CONFIG_SERVICE_SETUP_PATH = REPOSITORY_ROOT / "config-service" / "setup.py"
-SHARED_FORCE_INCLUDE = {
-    "../shared/__init__.py": "shared/__init__.py",
-    "../shared/agent_remote_config.py": "shared/agent_remote_config.py",
-    "../shared/observability.py": "shared/observability.py",
-    "../shared/opamp_config.py": "shared/opamp_config.py",
-    "../shared/uuid_utils.py": "shared/uuid_utils.py",
-}
+CONFIG_SERVICE_PYPROJECT_PATH = REPOSITORY_ROOT / "config-service" / "pyproject.toml"
+PROVIDER_PYPROJECT_PATH = REPOSITORY_ROOT / "provider" / "pyproject.toml"
+SHARED_PYPROJECT_PATH = REPOSITORY_ROOT / "shared" / "pyproject.toml"
+SHARED_DISTRIBUTION_REQUIREMENT = "opamp-shared==0.6.0"
 
 
 def _load_component_runner_module() -> ModuleType:
@@ -153,25 +153,52 @@ def test_component_import_check_uses_isolated_config_and_workdir(
     assert expected_config_path.is_file()
 
 
-def test_hatch_wheels_force_include_shared_runtime_package() -> None:
-    """Ensure Hatch-built wheels carry the shared package imported at runtime."""
-    pyproject_paths = [CONSUMER_PYPROJECT_PATH, AGENT_BROKER_PYPROJECT_PATH]
+def test_runtime_components_depend_on_shared_distribution() -> None:
+    """Ensure component wheels depend on rather than bundle the shared package."""
+    pyproject_paths = [
+        PROVIDER_PYPROJECT_PATH,
+        CONSUMER_PYPROJECT_PATH,
+        AGENT_BROKER_PYPROJECT_PATH,
+        CATALOG_SERVICE_PYPROJECT_PATH,
+        CLIENT_CONFIG_GENERATOR_PYPROJECT_PATH,
+        CONFIG_SERVICE_PYPROJECT_PATH,
+    ]
 
     for pyproject_path in pyproject_paths:
         pyproject_payload = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-        force_include = pyproject_payload["tool"]["hatch"]["build"]["targets"]["wheel"][
-            "force-include"
-        ]
-        assert force_include == SHARED_FORCE_INCLUDE
+        assert SHARED_DISTRIBUTION_REQUIREMENT in pyproject_payload["project"]["dependencies"]
+        assert pyproject_payload["tool"]["uv"]["sources"]["opamp-shared"]["path"] == "../shared"
 
 
-def test_setuptools_wheels_include_shared_runtime_package() -> None:
-    """Ensure setuptools-built service wheels carry shared runtime imports."""
+def test_component_builds_do_not_claim_shared_package_files() -> None:
+    """Ensure component build configuration leaves shared files to opamp-shared."""
+    provider_payload = tomllib.loads(PROVIDER_PYPROJECT_PATH.read_text(encoding="utf-8"))
+    consumer_payload = tomllib.loads(CONSUMER_PYPROJECT_PATH.read_text(encoding="utf-8"))
+    broker_payload = tomllib.loads(AGENT_BROKER_PYPROJECT_PATH.read_text(encoding="utf-8"))
     catalog_payload = tomllib.loads(CATALOG_SERVICE_PYPROJECT_PATH.read_text(encoding="utf-8"))
+    generator_payload = tomllib.loads(
+        CLIENT_CONFIG_GENERATOR_PYPROJECT_PATH.read_text(encoding="utf-8")
+    )
     setuptools_config = catalog_payload["tool"]["setuptools"]
+    generator_setuptools_config = generator_payload["tool"]["setuptools"]
     config_service_setup = CONFIG_SERVICE_SETUP_PATH.read_text(encoding="utf-8")
 
-    assert setuptools_config["package-dir"]["shared"] == "../shared"
-    assert "shared" in setuptools_config["packages"]
-    assert 'SHARED_PACKAGE_NAME = "shared"' in config_service_setup
-    assert 'package_dir={"": "src", SHARED_PACKAGE_NAME: "../shared"}' in config_service_setup
+    assert provider_payload["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == [
+        "src/opamp_provider"
+    ]
+    assert "force-include" not in consumer_payload["tool"]["hatch"]["build"]["targets"]["wheel"]
+    assert "force-include" not in broker_payload["tool"]["hatch"]["build"]["targets"]["wheel"]
+    assert setuptools_config["package-dir"] == {"": "src"}
+    assert "shared" not in setuptools_config["packages"]
+    assert 'SHARED_PACKAGE_NAME = "shared"' not in config_service_setup
+    assert 'package_dir={"": "src"}' in config_service_setup
+    assert generator_setuptools_config["package-dir"] == {"": "src"}
+    assert "shared" not in generator_setuptools_config["packages"]
+
+
+def test_shared_distribution_owns_shared_import_package() -> None:
+    """Verify opamp-shared is the sole package metadata owner for shared imports."""
+    shared_payload = tomllib.loads(SHARED_PYPROJECT_PATH.read_text(encoding="utf-8"))
+
+    assert shared_payload["project"]["name"] == "opamp-shared"
+    assert shared_payload["tool"]["setuptools"]["packages"] == ["shared"]

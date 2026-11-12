@@ -24,6 +24,7 @@ license = "Apache-2.0"
 authors = [{ name = "Phil Wilkins" }]
 keywords = ["opamp", "observability", "configuration", "editor", "validation"]
 dependencies = [
+  "opamp-shared==0.6.0",
   "quart>=0.19.4",
   "pydantic>=2,<3",
   "PyYAML>=6.0",
@@ -52,6 +53,9 @@ config-service = "config_service.app:main"
 Repository = "https://github.com/mp3monster/fluent-opamp"
 Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html"
 Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
+
+[tool.uv.sources]
+opamp-shared = { path = "../shared", editable = true }
 
 [tool.pytest.ini_options]
 addopts = [
@@ -91,4 +95,4 @@ select = ["E", "F", "I", "UP", "S"]
 ignore = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["config_service"]
+known-first-party = ["config_service", "shared"]

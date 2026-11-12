@@ -26,8 +26,10 @@ from typing import Any
 from quart import current_app, has_app_context
 
 ROOT_PATH = Path(__file__).resolve().parents[3]
-if str(ROOT_PATH) not in sys.path:
-    sys.path.insert(0, str(ROOT_PATH))
+SHARED_SOURCE_PATH = ROOT_PATH / "shared" / "src"
+for import_path in (ROOT_PATH, SHARED_SOURCE_PATH):
+    if str(import_path) not in sys.path:
+        sys.path.insert(0, str(import_path))
 
 from shared.observability import ObservabilityConfig, load_observability_config_from_payload
 from shared.opamp_config import (
@@ -76,7 +78,17 @@ APP_EXTENSION_CONFIG_PATH = "config_service:config_path"
 
 
 def _config_service_root() -> Path:
-    """Resolve packaged assets before considering a legacy repository-level tree."""
+    """Return the directory containing config-service runtime assets.
+
+    Packaged module and source-layout candidates are checked before the legacy
+    environment directory so installed wheels and source checkouts behave alike.
+
+    Returns
+    -------
+    Path
+        First directory containing both ``config`` and ``json-definitions`` assets,
+        or the component source root when no complete asset directory is found.
+    """
     module_dir = Path(__file__).resolve().parent
     source_root = module_dir.parents[1]
     for candidate in (module_dir, source_root, Path(sys.prefix) / "config_service"):
@@ -86,10 +98,25 @@ def _config_service_root() -> Path:
 
 
 def _repo_root() -> Path:
+    """Return the parent directory used for legacy repository configuration lookup.
+
+    Returns
+    -------
+    Path
+        Parent of the resolved config-service runtime root.
+    """
     return _config_service_root().parent
 
 
 def _config_path_from_app_context() -> Path | None:
+    """Return the configuration path retained by the current Quart application.
+
+    Returns
+    -------
+    Path | None
+        Configured application-extension path when an app context is active and
+        contains a non-blank value; otherwise ``None``.
+    """
     if has_app_context() is not True:
         return None
     configured = str(current_app.extensions.get(APP_EXTENSION_CONFIG_PATH) or "").strip()
@@ -99,6 +126,22 @@ def _config_path_from_app_context() -> Path | None:
 
 
 def get_effective_config_path(config_path: str | None = None) -> Path:
+    """Resolve the configuration path using the documented precedence order.
+
+    Precedence is an explicit argument, the current Quart app extension,
+    ``CONFIG_TOOL_CONFIG_PATH``, ``OPAMP_CONFIG_PATH``, the packaged standalone
+    configuration, and finally the legacy repository ``config/opamp.json`` path.
+
+    Parameters
+    ----------
+    config_path:
+        Optional caller-supplied path that overrides every other source.
+
+    Returns
+    -------
+    Path
+        Effective configuration file path. The fallback path need not exist yet.
+    """
     configured = str(config_path or "").strip()
     if configured:
         return Path(configured)
@@ -123,6 +166,20 @@ def get_effective_config_path(config_path: str | None = None) -> Path:
 
 
 def _coerce_port(value: Any, default: int) -> int:
+    """Normalize a configured network port to a positive integer.
+
+    Parameters
+    ----------
+    value:
+        Raw environment or JSON configuration value.
+    default:
+        Port returned when conversion fails or the converted value is not positive.
+
+    Returns
+    -------
+    int
+        Positive configured port or ``default``.
+    """
     try:
         port = int(value)
     except (TypeError, ValueError):
@@ -131,6 +188,20 @@ def _coerce_port(value: Any, default: int) -> int:
 
 
 def _coerce_bool(value: Any, default: bool = False) -> bool:
+    """Normalize common boolean configuration representations.
+
+    Parameters
+    ----------
+    value:
+        Boolean, text, numeric, or absent value to normalize.
+    default:
+        Value returned for missing or unrecognized input.
+
+    Returns
+    -------
+    bool
+        Parsed boolean value or ``default``.
+    """
     if isinstance(value, bool):
         return value
     if value is None:
@@ -144,6 +215,18 @@ def _coerce_bool(value: Any, default: bool = False) -> bool:
 
 
 def resolve_component_entry_points(config_path: str | None = None) -> list[str]:
+    """Return enabled Quart component registration targets.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment and packaged defaults.
+
+    Returns
+    -------
+    list[str]
+        Configured Quart entrypoint strings, or the config-service defaults when absent.
+    """
     raw = load_json_config(get_effective_config_path(config_path))
     entries = resolve_component_entry_points_from_payload(
         raw,
@@ -154,6 +237,21 @@ def resolve_component_entry_points(config_path: str | None = None) -> list[str]:
 
 
 def resolve_web_port(config_path: str | None = None) -> int:
+    """Resolve the config-service HTTP port with environment-first precedence.
+
+    The environment override is followed by ``config-tool.web_port``, the legacy
+    ``config_service.web_port``, ``provider.webui_port``, and the code default.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment-selected file paths.
+
+    Returns
+    -------
+    int
+        Positive HTTP port for the standalone config-service.
+    """
     env_value = os.environ.get(ENV_CONFIG_SERVICE_WEB_PORT, "").strip()
     if env_value:
         return _coerce_port(env_value, DEFAULT_CONFIG_SERVICE_WEB_PORT)
@@ -184,6 +282,21 @@ def resolve_web_port(config_path: str | None = None) -> int:
 
 
 def resolve_ui_base_css_path(config_path: str | None = None) -> str:
+    """Resolve the base stylesheet path for the configuration editor UI.
+
+    Precedence is the dedicated environment variable, ``config-tool`` settings,
+    the legacy ``config_service`` object, and the packaged stylesheet default.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment-selected file paths.
+
+    Returns
+    -------
+    str
+        URL or asset path used as the editor's base stylesheet.
+    """
     env_value = os.environ.get(ENV_CONFIG_SERVICE_UI_BASE_CSS_PATH, "").strip()
     if env_value:
         return env_value
@@ -205,6 +318,19 @@ def resolve_ui_base_css_path(config_path: str | None = None) -> str:
 
 
 def resolve_ui_show_save_as(config_path: str | None = None) -> bool:
+    """Resolve whether the UI exposes the Save As workflow.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment-selected file paths.
+
+    Returns
+    -------
+    bool
+        Environment override when present, then ``config-tool.ui_show_save_as``,
+        otherwise ``False``.
+    """
     env_value = os.environ.get(ENV_CONFIG_SERVICE_UI_SHOW_SAVE_AS, "").strip()
     if env_value:
         return _coerce_bool(env_value, False)
@@ -217,6 +343,21 @@ def resolve_ui_show_save_as(config_path: str | None = None) -> bool:
 
 
 def resolve_save_ignore_validation(config_path: str | None = None) -> bool:
+    """Resolve whether saves may proceed when validation reports errors.
+
+    Correctly spelled environment and JSON names take precedence while historical
+    ``INGORE`` spellings remain supported for backward compatibility.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment-selected file paths.
+
+    Returns
+    -------
+    bool
+        Parsed compatibility setting, defaulting to ``False``.
+    """
     for env_name in (
         ENV_CONFIG_SERVICE_SAVE_IGNORE_VALIDATION,
         ENV_CONFIG_SERVICE_SAVE_INGORE_VALIDATION,
@@ -241,6 +382,18 @@ def resolve_save_ignore_validation(config_path: str | None = None) -> bool:
 
 
 def resolve_ui_css_overrides(config_path: str | None = None) -> list[str]:
+    """Return additional stylesheet paths configured for the editor UI.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment-selected file paths.
+
+    Returns
+    -------
+    list[str]
+        Non-blank stylesheet paths normalized from a comma-delimited string or list.
+    """
     raw = load_json_config(get_effective_config_path(config_path))
     config_tool_raw = raw.get(CFG_CONFIG_TOOL, {})
     if isinstance(config_tool_raw, dict):
@@ -253,7 +406,18 @@ def resolve_ui_css_overrides(config_path: str | None = None) -> list[str]:
 
 
 def resolve_ui_collapsed_sections(config_path: str | None = None) -> list[str]:
-    """Return configured UI section keys that should render collapsed by default."""
+    """Return UI section keys that should render collapsed by default.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment-selected file paths.
+
+    Returns
+    -------
+    list[str]
+        Non-blank section keys normalized from a comma-delimited string or list.
+    """
     raw = load_json_config(get_effective_config_path(config_path))
     config_tool_raw = raw.get(CFG_CONFIG_TOOL, {})
     if isinstance(config_tool_raw, dict):
@@ -266,6 +430,18 @@ def resolve_ui_collapsed_sections(config_path: str | None = None) -> list[str]:
 
 
 def resolve_read_only(config_path: str | None = None) -> bool:
+    """Resolve whether config-service must reject configuration mutations.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment-selected file paths.
+
+    Returns
+    -------
+    bool
+        Parsed ``config-tool.read_only`` value, defaulting to ``False``.
+    """
     raw = load_json_config(get_effective_config_path(config_path))
     config_tool_raw = raw.get(CFG_CONFIG_TOOL, {})
     if isinstance(config_tool_raw, dict):
@@ -274,11 +450,20 @@ def resolve_read_only(config_path: str | None = None) -> bool:
 
 
 def resolve_validation_agent_entries(config_path: str | None = None) -> list[dict[str, Any]]:
-    """
-    Return configured external validation agent entries.
+    """Return configured external validation-agent records.
 
-    Expected path:
-    - `config-tool.agent_validation.entries`
+    The expected JSON path is ``config-tool.agent_validation.entries``. Invalid
+    container types and non-object list entries are ignored safely.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment-selected file paths.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        Mapping entries that can be passed to the external agent-validation service.
     """
     raw = load_json_config(get_effective_config_path(config_path))
     config_tool_raw = raw.get(CFG_CONFIG_TOOL, {})
@@ -294,6 +479,21 @@ def resolve_validation_agent_entries(config_path: str | None = None) -> list[dic
 
 
 def resolve_log_level_name(config_path: str | None = None) -> str:
+    """Resolve the uppercase logging level name for config-service.
+
+    Precedence is ``CONFIG_TOOL_LOG_LEVEL``, ``config-tool.log_level``, the
+    provider log-level fallback, and ``INFO``.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment-selected file paths.
+
+    Returns
+    -------
+    str
+        Uppercase logging level name suitable for Python logging configuration.
+    """
     env_value = os.environ.get(ENV_CONFIG_TOOL_LOG_LEVEL, "").strip()
     if env_value:
         return str(env_value).strip().upper()
@@ -315,6 +515,17 @@ def resolve_log_level_name(config_path: str | None = None) -> str:
 
 
 def resolve_observability_config(config_path: str | None = None) -> ObservabilityConfig:
-    """Return normalized OTLP endpoint settings for config-service."""
+    """Return normalized OTLP endpoint settings for config-service.
+
+    Parameters
+    ----------
+    config_path:
+        Optional configuration path overriding environment-selected file paths.
+
+    Returns
+    -------
+    ObservabilityConfig
+        Shared per-signal OTLP endpoints and metric export interval.
+    """
     raw = load_json_config(get_effective_config_path(config_path))
     return load_observability_config_from_payload(raw)
