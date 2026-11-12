@@ -134,7 +134,8 @@ browser commands, and the exact JUnit, coverage, HTML, SARIF, and JSON result lo
 Dynamic testing uses the multi-architecture `ghcr.io/zaproxy/zaproxy:2.17.0` image pinned by OCI
 digest in the developer CLI. The CLI mounts only its generated report directory, adds Docker's
 cross-platform host gateway when required, and keeps active scanning behind
-`--allow-active-scan`. See
+`--allow-active-scan`. A packaged scan hook suppresses only reviewed rule `10044` findings whose
+redirect details name `https://htmlpreview.github.io`; other redirect findings remain enabled. See
 [Dynamic Application Security Testing](dynamic_application_security_testing.md).
 
 ## Node And Browser Tooling

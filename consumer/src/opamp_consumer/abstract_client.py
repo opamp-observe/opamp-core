@@ -27,7 +27,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 import httpx  # noqa: F401 - legacy monkeypatch seam for auth token tests
-from shared.uuid_utils import generate_uuid7_bytes
 
 from opamp_consumer import config as consumer_config
 from opamp_consumer.client_bootstrap import (
@@ -87,6 +86,7 @@ from opamp_consumer.remote_config_status import (
     set_remote_config_status,
 )
 from opamp_consumer.reporting_flag import ReportingFlag
+from shared.uuid_utils import generate_uuid7_bytes
 
 if TYPE_CHECKING:
     from opamp_consumer.custom_handlers.handler_interface import (

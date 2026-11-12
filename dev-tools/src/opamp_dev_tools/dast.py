@@ -44,6 +44,7 @@ JSON_REPORT_FILE_NAME = "zap_report.json"
 MARKDOWN_REPORT_FILE_NAME = "zap_report.md"
 RULES_COPY_FILE_NAME = "zap_rules.conf"
 RULES_GENERATED_FILE_NAME = "zap_generated_rules.conf"
+SCAN_HOOK_COPY_FILE_NAME = "zap_scan_hooks.py"
 XML_REPORT_FILE_NAME = "zap_report.xml"
 ZAP_CONTAINER_WORK_DIRECTORY = "/zap/wrk"
 ZAP_REPORT_DIRECTORY = Path("dev-tools/runtime/security-reports/zap")
@@ -58,6 +59,7 @@ HTTP_SCHEMES = frozenset({"http", "https"})
 SCOPE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
+SCAN_HOOK_SOURCE_PATH = Path(__file__).with_name("dast_scan_hooks.py")
 
 
 @dataclass(frozen=True)
@@ -126,11 +128,13 @@ def run_dast_scan(runtime: CommandRuntime, *, options: DastScanOptions) -> bool:
         source_path=options.rules_file,
         report_directory=report_directory,
     )
+    copied_scan_hook = _copy_scan_hook(report_directory=report_directory)
     command = _build_zap_command(
         runtime_executable=runtime_executable,
         report_directory=report_directory,
         options=options,
         copied_rules_file=copied_rules_file,
+        copied_scan_hook=copied_scan_hook,
     )
     runtime.info(f"DEBUG: OWASP ZAP mode={options.mode} target={options.target}")
     runtime.info(f"DEBUG: OWASP ZAP reports={report_directory}")
@@ -205,12 +209,35 @@ def _copy_rules_file(
     return copied_rules_path
 
 
+def _copy_scan_hook(*, report_directory: Path) -> Path:
+    """Copy the packaged false-positive filter into the mounted ZAP workspace.
+
+    ZAP's packaged scans load hook files from the mounted working directory. Copying the hook
+    beside the reports works for source and installed-wheel executions on Windows and Linux.
+
+    Parameters:
+        report_directory: Host directory mounted as the ZAP working directory.
+
+    Returns:
+        Path to the copied scan hook inside the report workspace.
+
+    Raises:
+        FileNotFoundError: If the installed developer-tools package omits the hook module.
+    """
+    if not SCAN_HOOK_SOURCE_PATH.is_file():
+        raise FileNotFoundError(f"Packaged ZAP scan hook was not found: {SCAN_HOOK_SOURCE_PATH}")
+    copied_hook_path = report_directory / SCAN_HOOK_COPY_FILE_NAME
+    shutil.copyfile(SCAN_HOOK_SOURCE_PATH, copied_hook_path)
+    return copied_hook_path
+
+
 def _build_zap_command(
     *,
     runtime_executable: str,
     report_directory: Path,
     options: DastScanOptions,
     copied_rules_file: Path | None,
+    copied_scan_hook: Path,
 ) -> list[str]:
     """Build a shell-independent Docker or Podman argument vector for ZAP.
 
@@ -224,6 +251,8 @@ def _build_zap_command(
         Validated scan settings rendered as packaged-scan arguments.
     copied_rules_file:
         Optional policy copy located inside the mounted report workspace.
+    copied_scan_hook:
+        False-positive filter hook located inside the mounted report workspace.
 
     """
     command = [runtime_executable, "run", "--rm"]
@@ -238,6 +267,7 @@ def _build_zap_command(
             f"{volume_source}:{ZAP_CONTAINER_WORK_DIRECTORY}:{ZAP_WORK_VOLUME_MODE}",
             options.image,
             SCAN_SCRIPT_BY_MODE[options.mode],
+            f"--hook={copied_scan_hook.name}",
             "-t",
             options.target,
             "-m",

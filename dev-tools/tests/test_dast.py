@@ -19,7 +19,9 @@ from pathlib import Path
 
 import pytest
 
-from opamp_dev_tools import dast
+from opamp_dev_tools import dast, dast_scan_hooks
+
+UNRELATED_ZAP_RULE_ID = "10020"
 
 
 class _RecordingRuntime:
@@ -75,6 +77,38 @@ class _RecordingRuntime:
         self.commands.append(command)
 
 
+class _RecordingAlertApi:
+    """Record alert identifiers deleted through the simulated ZAP API.
+
+    Attributes:
+        deleted_alert_ids: Alert identifiers removed by the scan hook.
+    """
+
+    def __init__(self) -> None:
+        """Initialize an empty alert-deletion record."""
+        self.deleted_alert_ids: list[str] = []
+
+    def delete_alert(self, alert_id: str) -> None:
+        """Record one alert deletion requested by the scan hook.
+
+        Parameters:
+            alert_id: ZAP alert identifier selected for removal.
+        """
+        self.deleted_alert_ids.append(alert_id)
+
+
+class _RecordingZapClient:
+    """Provide the alert API surface used by the packaged-scan hook.
+
+    Attributes:
+        alert: Recording alert API exposed using the ZAP client attribute name.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the recording alert API."""
+        self.alert = _RecordingAlertApi()
+
+
 def test_baseline_scan_builds_portable_docker_command(monkeypatch, tmp_path: Path) -> None:
     """Baseline scans should mount reports and bridge the cross-platform host alias."""
     runtime = _RecordingRuntime(tmp_path)
@@ -99,10 +133,124 @@ def test_baseline_scan_builds_portable_docker_command(monkeypatch, tmp_path: Pat
     assert dast.BASELINE_SCAN_SCRIPT in command
     assert "-I" in command
     assert command[-2:] == ["-g", dast.RULES_GENERATED_FILE_NAME]
+    assert f"--hook={dast.SCAN_HOOK_COPY_FILE_NAME}" in command
     volume_value = command[command.index("--volume") + 1]
     assert volume_value.endswith(":/zap/wrk:rw")
     assert "security-reports/zap/provider/baseline" in volume_value
+    copied_hook = (
+        tmp_path
+        / dast.ZAP_REPORT_DIRECTORY
+        / dast.DEFAULT_DAST_SCOPE
+        / dast.BASELINE_MODE
+        / dast.SCAN_HOOK_COPY_FILE_NAME
+    )
+    assert copied_hook.read_text(encoding="utf-8") == dast.SCAN_HOOK_SOURCE_PATH.read_text(
+        encoding="utf-8"
+    )
     assert any(message.startswith("DEBUG:") for message in runtime.messages)
+
+
+def test_scan_hook_removes_only_htmlpreview_big_redirect_alerts() -> None:
+    """The hook should remove reviewed redirects while retaining unrelated rule findings."""
+    zap_client = _RecordingZapClient()
+    dast_scan_hooks.zap_started(zap_client, "http://target.example")
+    reviewed_alert = {
+        dast_scan_hooks.ALERT_ID_KEY: "7",
+        dast_scan_hooks.ALERT_OTHER_INFO_KEY: (
+            "Location header URI length: 120 "
+            "[https://htmlpreview.github.io/?https://raw.githubusercontent.com/example/docs]."
+        ),
+    }
+    unrelated_redirect = {
+        dast_scan_hooks.ALERT_ID_KEY: "8",
+        dast_scan_hooks.ALERT_OTHER_INFO_KEY: (
+            "Location header URI length: 40 [https://example.org/docs]."
+        ),
+    }
+    unrelated_rule_alert = {
+        dast_scan_hooks.ALERT_ID_KEY: "9",
+        dast_scan_hooks.ALERT_OTHER_INFO_KEY: "unrelated",
+    }
+    alert_dict = {
+        dast_scan_hooks.BIG_REDIRECT_RULE_ID: [reviewed_alert, unrelated_redirect],
+        UNRELATED_ZAP_RULE_ID: [unrelated_rule_alert],
+    }
+
+    dast_scan_hooks.zap_get_alerts_wrap(alert_dict)
+
+    assert alert_dict == {
+        dast_scan_hooks.BIG_REDIRECT_RULE_ID: [unrelated_redirect],
+        UNRELATED_ZAP_RULE_ID: [unrelated_rule_alert],
+    }
+    assert zap_client.alert.deleted_alert_ids == ["7"]
+
+
+def test_scan_hook_removes_empty_big_redirect_rule_group() -> None:
+    """Removing the final reviewed redirect should remove its empty rule group."""
+    zap_client = _RecordingZapClient()
+    dast_scan_hooks.zap_started(zap_client, "http://target.example")
+    alert_dict = {
+        dast_scan_hooks.BIG_REDIRECT_RULE_ID: [
+            {
+                dast_scan_hooks.ALERT_ID_KEY: "11",
+                dast_scan_hooks.ALERT_OTHER_INFO_CAMEL_KEY: (
+                    "Redirected to https://htmlpreview.github.io/?example"
+                ),
+            }
+        ]
+    }
+
+    dast_scan_hooks.zap_get_alerts_wrap(alert_dict)
+
+    assert alert_dict == {}
+    assert zap_client.alert.deleted_alert_ids == ["11"]
+
+
+def test_scan_hook_leaves_unrelated_alert_groups_unchanged() -> None:
+    """The hook should be a no-op when rule 10044 has no alerts."""
+    unrelated_rule_alert = {
+        dast_scan_hooks.ALERT_ID_KEY: "13",
+        dast_scan_hooks.ALERT_OTHER_INFO_LOWER_KEY: "unrelated",
+    }
+    alert_dict = {UNRELATED_ZAP_RULE_ID: [unrelated_rule_alert]}
+
+    dast_scan_hooks.zap_get_alerts_wrap(alert_dict)
+
+    assert alert_dict == {UNRELATED_ZAP_RULE_ID: [unrelated_rule_alert]}
+    assert dast_scan_hooks._alert_other_info({}) == ""  # pylint: disable=protected-access
+
+
+@pytest.mark.parametrize(
+    ("zap_client", "alert_id"),
+    [
+        (None, "15"),
+        (_RecordingZapClient(), None),
+    ],
+)
+def test_scan_hook_can_filter_alert_without_deletion_api_call(
+    zap_client: _RecordingZapClient | None,
+    alert_id: str | None,
+) -> None:
+    """Filtering should remain safe when the client or alert identifier is unavailable.
+
+    Parameters:
+        zap_client: Optional recording client retained by the packaged-scan startup hook.
+        alert_id: Optional alert identifier supplied by ZAP.
+    """
+    dast_scan_hooks.zap_started(zap_client, "http://target.example")
+    reviewed_alert = {
+        dast_scan_hooks.ALERT_ID_KEY: alert_id,
+        dast_scan_hooks.ALERT_OTHER_INFO_LOWER_KEY: (
+            "Redirected to https://htmlpreview.github.io/?example"
+        ),
+    }
+    alert_dict = {dast_scan_hooks.BIG_REDIRECT_RULE_ID: [reviewed_alert]}
+
+    dast_scan_hooks.zap_get_alerts_wrap(alert_dict)
+
+    assert alert_dict == {}
+    if zap_client is not None:
+        assert zap_client.alert.deleted_alert_ids == []
 
 
 def test_baseline_scan_copies_relative_rules_file(monkeypatch, tmp_path: Path) -> None:
@@ -188,6 +336,23 @@ def test_rules_file_already_in_report_workspace_is_not_recopied(tmp_path: Path) 
     )
 
     assert copied_path == rules_path
+
+
+def test_missing_packaged_scan_hook_fails_before_container_start(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A packaging error should fail clearly before ZAP starts.
+
+    Parameters:
+        monkeypatch: Pytest fixture used to simulate an omitted packaged hook module.
+        tmp_path: Pytest-provided directory used as the report workspace.
+    """
+    missing_hook_path = tmp_path / "missing_scan_hook.py"
+    monkeypatch.setattr(dast, "SCAN_HOOK_SOURCE_PATH", missing_hook_path)
+
+    with pytest.raises(FileNotFoundError, match="Packaged ZAP scan hook was not found"):
+        dast._copy_scan_hook(report_directory=tmp_path)  # pylint: disable=protected-access
 
 
 def test_full_scan_requires_explicit_active_scan_acknowledgement(tmp_path: Path) -> None:

@@ -117,6 +117,20 @@ opamp-dev-cli build dast baseline \
   --fail-on-warning
 ```
 
+## Reviewed External Documentation Redirects
+
+Every baseline and full scan loads the packaged `zap_scan_hooks.py` hook from its retained report
+directory. The hook removes only `Big Redirect Detected` rule `10044` alerts whose ZAP
+`Other Info` field identifies `https://htmlpreview.github.io` as the redirect destination. This
+covers expected redirects from unknown local routes, including `/robots.txt` and `/sitemap.xml`,
+to the externally rendered project documentation.
+
+The local response is still requested and passively scanned. Rule `10044` remains enabled for
+redirects to every other destination, and every other alert raised on the same local response is
+retained. The hook deletes a matching reviewed alert from the live ZAP session before packaged
+scan counts and HTML, JSON, XML, and Markdown reports are generated; it does not globally ignore
+the redirect rule or exclude either local route from the spider.
+
 ## Active Full Scan
 
 A full scan spiders the application and sends active attack payloads. It requires an explicit
@@ -179,6 +193,7 @@ set. Use `--spider-minutes` and `--startup-timeout-minutes` to adjust the defaul
 spider and five-minute startup/passive-scan wait.
 
 The source for this workflow is `dev-tools/src/opamp_dev_tools/dast.py`, and its unit tests are in
-`dev-tools/tests/test_dast.py`. ZAP's upstream references are the
+`dev-tools/tests/test_dast.py`. The reviewed redirect filter is implemented in
+`dev-tools/src/opamp_dev_tools/dast_scan_hooks.py`. ZAP's upstream references are the
 [Docker scan documentation](https://www.zaproxy.org/docs/docker/) and
 [Automation Framework documentation](https://www.zaproxy.org/docs/automate/automation-framework/).
