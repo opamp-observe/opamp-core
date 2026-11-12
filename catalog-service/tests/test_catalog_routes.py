@@ -31,7 +31,9 @@ from catalog_service.routes import register_catalog_routes
 from catalog_service.service import CatalogFileIndexService
 from shared.security_headers import (
     CONTENT_SECURITY_POLICY_HEADER,
+    CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER,
     SHARED_CONTENT_SECURITY_POLICY,
+    STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY,
     X_CONTENT_TYPE_OPTIONS_HEADER,
     X_CONTENT_TYPE_OPTIONS_NOSNIFF,
     X_FRAME_OPTIONS_DENY,
@@ -68,23 +70,29 @@ async def test_catalog_routes_render_ui_help_and_api(tmp_path: Path) -> None:
         ui_resp = await client.get("/catalog")
         assert ui_resp.status_code == 200
         ui_html = (await ui_resp.get_data()).decode("utf-8")
+        javascript_resp = await client.get("/catalog/assets/catalog_ui.js")
+        assert javascript_resp.status_code == 200
+        assert javascript_resp.mimetype == "text/javascript"
+        ui_javascript = (await javascript_resp.get_data()).decode("utf-8")
         assert "Config Catalog" in ui_html
         assert "/catalog/assets/catalog_ui_api.js" in ui_html
-        assert "Selection checkbox state" in ui_html
-        assert "Unselected" in ui_html
-        assert "config type (metadata)" in ui_html
-        assert "engine (inferred)" in ui_html
+        assert "/catalog/assets/catalog_ui.js" in ui_html
+        assert "/catalog/assets/catalog_ui.css" in ui_html
+        assert "Selection checkbox state" in ui_javascript
+        assert "Unselected" in ui_javascript
+        assert "config type (metadata)" in ui_javascript
+        assert "engine (inferred)" in ui_javascript
         assert 'id="catalogSelectionActions"' in ui_html
         assert 'id="catalogApplySelectionBtn"' in ui_html
-        assert "selection_callback" in ui_html
+        assert "selection_callback" in ui_javascript
         assert 'id="featureMenuGroup"' in ui_html
         assert "catalogReadonlyOverlay" in ui_html
         assert "CONFIG_SERVICE_ENTRY_POINT" not in ui_html
-        assert "config_service.opamp_integration:register_config_service_feature" in ui_html
+        assert "config_service.opamp_integration:register_config_service_feature" in ui_javascript
         assert 'data-history-back-button="true"' in ui_html
         assert 'hidden' in ui_html
         assert 'href="/ui" >Server Console</a>' in ui_html
-        assert "const CONFIGURED_UI_REFRESH_SECONDS = parseInt('45', 10);" in ui_html
+        assert "const CONFIGURED_UI_REFRESH_SECONDS = parseInt(45, 10);" in ui_javascript
 
         help_resp = await client.get("/catalog/help")
         assert help_resp.status_code == 200
@@ -303,6 +311,10 @@ async def test_standalone_catalog_unknown_route_redirects_to_landing_page(
             response.headers[CONTENT_SECURITY_POLICY_HEADER]
             == SHARED_CONTENT_SECURITY_POLICY
         )
+        assert (
+            response.headers[CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER]
+            == STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY
+        )
         assert response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
         assert response.headers[X_CONTENT_TYPE_OPTIONS_HEADER] == X_CONTENT_TYPE_OPTIONS_NOSNIFF
 
@@ -369,12 +381,16 @@ async def test_standalone_catalog_app_exposes_config_service_feature_when_config
         ui_resp = await client.get("/catalog")
         assert ui_resp.status_code == 200
         ui_html = (await ui_resp.get_data()).decode("utf-8")
+        javascript_resp = await client.get("/catalog/assets/catalog_ui.js")
+        assert javascript_resp.status_code == 200
+        ui_javascript = (await javascript_resp.get_data()).decode("utf-8")
 
     assert [item["label"] for item in feature_payload["items"]] == [
         "Config Catalog",
         "Config Editor",
     ]
-    assert "config_service.opamp_integration:register_config_service_feature" in ui_html
+    assert "/catalog/assets/catalog_ui.js" in ui_html
+    assert "config_service.opamp_integration:register_config_service_feature" in ui_javascript
 
 
 @pytest.mark.asyncio

@@ -13,9 +13,11 @@
 """Package-level tests for the independently distributed shared utilities."""
 
 from shared.security_headers import (
+    CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER,
     FORM_ACTION_SELF_POLICY,
     FRAME_ANCESTORS_NONE_POLICY,
     SHARED_CONTENT_SECURITY_POLICY,
+    STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY,
     X_CONTENT_TYPE_OPTIONS_NOSNIFF,
 )
 from shared.uuid_utils import generate_uuid7_bytes
@@ -29,6 +31,12 @@ def test_shared_package_exposes_runtime_helpers() -> None:
     assert FORM_ACTION_SELF_POLICY == "form-action 'self'"
     assert SHARED_CONTENT_SECURITY_POLICY == (
         "frame-ancestors 'none'; form-action 'self'"
+    )
+    assert CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER == (
+        "Content-Security-Policy-Report-Only"
+    )
+    assert STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY.startswith(
+        "default-src 'self'; base-uri 'none'; object-src 'none'"
     )
     assert X_CONTENT_TYPE_OPTIONS_NOSNIFF == "nosniff"
     assert len(generate_uuid7_bytes()) == UUID_BYTE_LENGTH

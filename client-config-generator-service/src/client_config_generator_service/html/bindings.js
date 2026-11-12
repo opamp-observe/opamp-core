@@ -15,6 +15,29 @@
 (function bindClientConfigGenerator(globalObject) {
   "use strict";
 
+  /** Show and bind the provider-history button when browser history is available. */
+  function initializeHistoryBackButton() {
+    const button = globalObject.document.querySelector('[data-history-back-button="true"]');
+    if (!button || button.getAttribute("aria-hidden") === "true") {
+      return;
+    }
+    if (globalObject.history.length > 1) {
+      button.removeAttribute("hidden");
+    } else {
+      button.setAttribute("hidden", "hidden");
+    }
+    button.addEventListener("click", function navigateBack() {
+      globalObject.history.back();
+    });
+    globalObject.addEventListener("pageshow", function refreshBackButton() {
+      if (globalObject.history.length > 1) {
+        button.removeAttribute("hidden");
+      } else {
+        button.setAttribute("hidden", "hidden");
+      }
+    });
+  }
+
   /** Wire static controls to the injected behavior API and start the UI. */
   function initializeBindings() {
     const context = globalObject.ClientConfigGeneratorFramework.create();
@@ -31,6 +54,7 @@
     globalObject.document.getElementById("processMode").addEventListener("change", function changeMode(event) {
       functions.setMode(event.target.value);
     });
+    initializeHistoryBackButton();
     functions.initialize();
   }
 

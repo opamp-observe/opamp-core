@@ -25,9 +25,30 @@
   var PARSER_FORMATS = [];
   var serviceOptionsLoadInFlight = null;
   var dryRunAvailabilityRequestSerial = 0;
+  var runtimeSettings = window.ConfigServiceRuntime || {};
+
+  /** Show and bind the provider-history button when browser history is available. */
+  function initializeHistoryBackButton() {
+    var button = document.querySelector('[data-history-back-button="true"]');
+    if (!button || button.getAttribute("aria-hidden") === "true") {
+      return;
+    }
+    function syncVisibility() {
+      if (window.history.length > 1) {
+        button.removeAttribute("hidden");
+      } else {
+        button.setAttribute("hidden", "hidden");
+      }
+    }
+    button.addEventListener("click", function navigateBack() {
+      window.history.back();
+    });
+    window.addEventListener("pageshow", syncVisibility);
+    syncVisibility();
+  }
 
   function normalizedCollapsedSectionSet() {
-    var raw = window.__CONFIG_SERVICE_UI_COLLAPSED_SECTIONS__;
+    var raw = runtimeSettings.collapsedSections;
     var values = [];
     if (Array.isArray(raw)) {
       values = raw.slice();
@@ -145,7 +166,7 @@
   rebuildParserFormatIndex();
 
   function applyCssOverrides() {
-    var overrides = window.__CONFIG_SERVICE_UI_CSS_OVERRIDES__;
+    var overrides = runtimeSettings.cssOverrides;
     if (!Array.isArray(overrides) || overrides.length === 0) {
       return;
     }
@@ -162,7 +183,7 @@
   }
 
   function saveAsEnabled() {
-    return Boolean(window.__CONFIG_SERVICE_UI_SHOW_SAVE_AS__ === true);
+    return Boolean(runtimeSettings.showSaveAs === true);
   }
 
   // Cache DOM lookups once during startup.
@@ -3807,6 +3828,7 @@ function renderPlugins() {
   }
 
   function init() {
+    initializeHistoryBackButton();
     api.installGlobalUiErrorHandlers();
     applyCssOverrides();
     repopulateServiceOptionSelect();

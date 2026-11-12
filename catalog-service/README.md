@@ -22,8 +22,10 @@ Standalone package for the OpAMP configuration catalog backend and Python-served
 
 Standalone responses deny browser framing and MIME sniffing with
 `Content-Security-Policy: frame-ancestors 'none'; form-action 'self'`, `X-Frame-Options: DENY`, and
-`X-Content-Type-Options: nosniff`. When embedded into the provider, the provider applies the same
-policy to the component routes. Deployment gateways must preserve these headers; see the
+`X-Content-Type-Options: nosniff`. They also send the shared strict
+`Content-Security-Policy-Report-Only` migration policy without blocking incompatible resources.
+When embedded into the provider, the provider applies the same policy to the component routes.
+Deployment gateways must preserve these headers; see the
 [API gateway recommendations](../docs/api_gateway_requirements.md#browser-framing-and-clickjacking-protection).
 
 For product installation of the standalone catalog or the catalog embedded in

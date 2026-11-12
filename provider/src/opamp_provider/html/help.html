@@ -5,80 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OpAMP Server Help</title>
   <link rel="icon" type="image/x-icon" href="/create.ico" />
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #1b1f24;
-      --muted: #4c5563;
-      --panel: #ffffff;
-      --accent: #425cc7;
-      --bg: #f5f7fb;
-    }
-    body {
-      margin: 0;
-      font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
-      background: radial-gradient(circle at top left, #e8efff 0%, #f5f7fb 55%, #fff4d8 100%);
-      color: var(--ink);
-    }
-    main {
-      max-width: 880px;
-      margin: 48px auto;
-      padding: 32px;
-      background: var(--panel);
-      border: 2px solid #d7deee;
-      border-radius: 18px;
-      box-shadow: 0 20px 60px rgba(36, 58, 120, 0.12);
-    }
-    h1 { margin: 0 0 12px; font-size: 2rem; }
-    p { color: var(--muted); line-height: 1.5; }
-    ul { padding-left: 18px; }
-    .tag { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #e3e8ff; color: #2f3f8f; font-size: 0.85rem; }
-    .tag-editable { background: #e5f6ed; color: #1f6a4e; }
-    .tag-readonly { background: #eceff6; color: #4c5563; }
-    footer.footer {
-      text-align: center;
-      color: var(--muted);
-      padding: 18px 0 28px;
-    }
-    .thresholds {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin: 18px 0 8px;
-    }
-    .threshold-card {
-      background: #f1f5ff;
-      border: 1px solid #d7deee;
-      border-radius: 14px;
-      padding: 12px 14px;
-    }
-    .threshold-card strong {
-      display: block;
-      margin-bottom: 4px;
-    }
-    .custom-commands {
-      margin-top: 22px;
-      padding: 14px;
-      border: 1px solid #d7deee;
-      border-radius: 14px;
-      background: #f7f9ff;
-    }
-    .custom-commands h2 {
-      margin: 0 0 8px;
-      font-size: 1.2rem;
-    }
-    .command-list {
-      margin: 0;
-      padding-left: 18px;
-    }
-    .command-list li {
-      margin-bottom: 8px;
-    }
-    .command-list strong {
-      color: #2f3f8f;
-    }
-  </style>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/help.css" />
 </head>
 <body>
   <main>
@@ -274,66 +201,6 @@
   <footer class="footer">
     <div>Licensed under Apache 2.0 • Attribution: <a href="https://opamp.info" target="_blank" rel="noopener noreferrer">opamp.info</a> • <a href="http://localhost:8080/doc-set">Latest docs</a></div>
   </footer>
-  <script>
-    const AUTH_TOKEN_STORAGE_KEY = "opamp_ui_bearer_token";
-
-    function loadStoredAuthToken() {
-      try {
-        return String(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) || "").trim();
-      } catch (_error) {
-        return "";
-      }
-    }
-
-    async function apiFetch(resource, options = {}) {
-      const token = loadStoredAuthToken();
-      const headers = {
-        ...(options.headers || {}),
-      };
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      return fetch(resource, {
-        ...options,
-        headers,
-      });
-    }
-
-    async function loadCustomCommands() {
-      const list = document.getElementById("customCommandList");
-      try {
-        const resp = await apiFetch("/api/commands/custom");
-        if (!resp.ok) {
-          if (resp.status === 401 || resp.status === 403) {
-            list.innerHTML = "<li>Authorization required. Set a bearer token in Global Settings → Server Settings.</li>";
-            return;
-          }
-          list.innerHTML = "<li>Failed to load custom commands.</li>";
-          return;
-        }
-        const payload = await resp.json();
-        const commands = Array.isArray(payload.commands) ? payload.commands : [];
-        if (!commands.length) {
-          list.innerHTML = "<li>No custom commands are currently registered.</li>";
-          return;
-        }
-        list.innerHTML = "";
-        commands
-          .slice()
-          .sort((a, b) => String(a.displayname || "").localeCompare(String(b.displayname || "")))
-          .forEach(cmd => {
-            const li = document.createElement("li");
-            const displayName = cmd.displayname || cmd.operation || cmd.fqdn || "Unnamed Command";
-            const description = cmd.description || "No description provided.";
-            li.innerHTML = `<strong>${displayName}</strong><br>${description}`;
-            list.appendChild(li);
-          });
-      } catch (err) {
-        list.innerHTML = "<li>Failed to load custom commands.</li>";
-      }
-    }
-
-    loadCustomCommands();
-  </script>
+  <script src="/help.js"></script>
 </body>
 </html>

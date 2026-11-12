@@ -76,6 +76,7 @@ origin, and prevent browser MIME sniffing by default on every HTTP response:
 
 ```text
 Content-Security-Policy: frame-ancestors 'none'; form-action 'self'
+Content-Security-Policy-Report-Only: default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; manifest-src 'self'; worker-src 'none'
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 ```
@@ -89,12 +90,21 @@ prevents browsers from reinterpreting a response as a different MIME type from t
 another origin. It must be stated separately because `form-action` does not fall back to
 `default-src`.
 
-Gateways must preserve all three response headers or overwrite them with the same or a stricter
+The report-only policy is a migration control. Browsers report strict-policy violations in their
+developer console without blocking the existing UI. Packaged UI templates use external
+same-origin scripts and styles, have no HTML event-handler attributes, and use local system font
+stacks instead of third-party font services. Response producers may add `report-uri` or
+`report-to`; the shared logic preserves those reporting directives. Before promoting the strict
+policy to the enforced header, exercise representative UI workflows and resolve any remaining
+violations from runtime DOM style changes or deployment-specific asset overrides.
+
+Gateways must preserve all four response headers or overwrite them with the same or a stricter
 policy. Do not strip them, use the obsolete `X-Frame-Options: ALLOW-FROM` value, or introduce a
 second independently managed Content Security Policy. The application preserves other CSP
 directives already present on a response while replacing any `frame-ancestors` directive with
 `frame-ancestors 'none'` and any `form-action` directive with `form-action 'self'`. A gateway may
-set `X-Content-Type-Options`, but its effective value must remain `nosniff`.
+set `X-Content-Type-Options`, but its effective value must remain `nosniff`. A gateway may append
+a report destination to the report-only policy but must not weaken its monitored directives.
 
 If a future host application has a reviewed requirement to frame an OpAMP page, treat that as a
 security design change. Same-origin framing can use `frame-ancestors 'self'` with

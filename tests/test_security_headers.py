@@ -16,9 +16,11 @@ import pytest
 from quart import Quart, Response
 from shared.security_headers import (
     CONTENT_SECURITY_POLICY_HEADER,
+    CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER,
     FORM_ACTION_SELF_POLICY,
     FRAME_ANCESTORS_NONE_POLICY,
     SHARED_CONTENT_SECURITY_POLICY,
+    STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY,
     X_CONTENT_TYPE_OPTIONS_HEADER,
     X_CONTENT_TYPE_OPTIONS_NOSNIFF,
     X_FRAME_OPTIONS_DENY,
@@ -36,12 +38,21 @@ EXISTING_CONTENT_SECURITY_POLICY = (
 EXPECTED_MERGED_CONTENT_SECURITY_POLICY = (
     f"default-src 'self'; {SHARED_CONTENT_SECURITY_POLICY}"
 )
+EXISTING_REPORT_ONLY_CONTENT_SECURITY_POLICY = (
+    "script-src *; style-src *; report-uri /security/csp-reports"
+)
+EXPECTED_MERGED_REPORT_ONLY_CONTENT_SECURITY_POLICY = (
+    f"report-uri /security/csp-reports; {STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY}"
+)
 
 
 def test_security_policy_preserves_csp_and_replaces_enforced_directives() -> None:
     """Verify permissive framing and form directives cannot weaken the shared policy."""
     response = Response("protected")
     response.headers[CONTENT_SECURITY_POLICY_HEADER] = EXISTING_CONTENT_SECURITY_POLICY
+    response.headers[CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER] = (
+        EXISTING_REPORT_ONLY_CONTENT_SECURITY_POLICY
+    )
     response.headers[X_CONTENT_TYPE_OPTIONS_HEADER] = "disabled"
 
     protected_response = apply_security_headers(response)
@@ -49,6 +60,10 @@ def test_security_policy_preserves_csp_and_replaces_enforced_directives() -> Non
     assert (
         protected_response.headers[CONTENT_SECURITY_POLICY_HEADER]
         == EXPECTED_MERGED_CONTENT_SECURITY_POLICY
+    )
+    assert (
+        protected_response.headers[CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER]
+        == EXPECTED_MERGED_REPORT_ONLY_CONTENT_SECURITY_POLICY
     )
     assert protected_response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
     assert (
@@ -77,6 +92,10 @@ async def test_registered_policy_covers_success_and_error_responses() -> None:
             response.headers[CONTENT_SECURITY_POLICY_HEADER]
             == SHARED_CONTENT_SECURITY_POLICY
         )
+        assert (
+            response.headers[CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER]
+            == STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY
+        )
         assert response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
         assert (
             response.headers[X_CONTENT_TYPE_OPTIONS_HEADER]
@@ -99,5 +118,9 @@ def test_clickjacking_compatibility_api_applies_complete_security_policy() -> No
     assert (
         FRAME_ANCESTORS_NONE_POLICY
         in response.headers[CONTENT_SECURITY_POLICY_HEADER]
+    )
+    assert (
+        response.headers[CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER]
+        == STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY
     )
     assert len(app.after_request_funcs) == 1

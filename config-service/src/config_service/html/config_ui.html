@@ -18,12 +18,6 @@ limitations under the License.
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Config Editor</title>
     <link rel="icon" type="image/png" href="/config-service/ui/assets/config_editor_icon.png__CONFIG_SERVICE_UI_ASSET_SUFFIX__" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <script>
-      window.__CONFIG_SERVICE_UI_CSS_OVERRIDES__ = __CONFIG_SERVICE_UI_CSS_OVERRIDES_VALUE__;
-      window.__CONFIG_SERVICE_UI_COLLAPSED_SECTIONS__ = __CONFIG_SERVICE_UI_COLLAPSED_SECTIONS_VALUE__;
-      window.__CONFIG_SERVICE_UI_SHOW_SAVE_AS__ = __CONFIG_SERVICE_UI_SHOW_SAVE_AS_VALUE__;
-    </script>
     <link rel="stylesheet" href="__CONFIG_SERVICE_UI_BASE_CSS_PATH__" />
   </head>
   <body>
@@ -54,7 +48,6 @@ limitations under the License.
             <button
               type="button"
               class="button-link"
-              onclick="window.history.back();"
               data-history-back-button="true"
               hidden
               __CONFIG_SERVICE_PROVIDER_UI_LINK_ATTRS__
@@ -421,31 +414,7 @@ limitations under the License.
       <div><a href="https://opentelemetry.io/docs/specs/opamp/" target="_blank" rel="noopener noreferrer">OpAMP Specification</a> • <a href="http://localhost:8080/doc-set">Latest docs</a></div>
     </footer>
 
-    <script>
-      (function () {
-        function syncHistoryBackButton() {
-          var button = document.querySelector('[data-history-back-button="true"]');
-          if (!button) {
-            return;
-          }
-          if (button.getAttribute("aria-hidden") === "true") {
-            return;
-          }
-          if (window.history.length > 1) {
-            button.removeAttribute("hidden");
-            return;
-          }
-          button.setAttribute("hidden", "hidden");
-        }
-
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", syncHistoryBackButton, { once: true });
-        } else {
-          syncHistoryBackButton();
-        }
-        window.addEventListener("pageshow", syncHistoryBackButton);
-      })();
-    </script>
+    <script src="/config-service/ui/runtime.js__CONFIG_SERVICE_UI_ASSET_SUFFIX__"></script>
     <script src="/config-service/ui/assets/config_ui_helpers.js__CONFIG_SERVICE_UI_ASSET_SUFFIX__"></script>
     <script src="/config-service/ui/assets/config_ui_comments.js__CONFIG_SERVICE_UI_ASSET_SUFFIX__"></script>
     <script src="/config-service/ui/assets/config_ui_plugins.js__CONFIG_SERVICE_UI_ASSET_SUFFIX__"></script>

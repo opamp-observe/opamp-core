@@ -30,7 +30,7 @@ body {
   margin: 0;
   color: var(--text);
   background: radial-gradient(circle at top left, #e7eeff 0%, #f5f7fb 55%, #fff4d8 100%);
-  font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .page-shell {
@@ -297,7 +297,7 @@ textarea {
   border-radius: 10px;
   background: #14212a;
   color: #e9f4f5;
-  font-family: "IBM Plex Mono", "Cascadia Code", "Consolas", monospace;
+  font-family: "Cascadia Code", "Consolas", "Liberation Mono", monospace;
 }
 
 @media (max-width: 860px) {

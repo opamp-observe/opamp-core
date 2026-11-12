@@ -24,6 +24,8 @@ class ProviderUiAssets:
     web_ui_framework_js: str
     web_ui_bindings_js: str
     help_html: str
+    help_css: str
+    help_js: str
     icon_path: pathlib.Path
 
 
@@ -127,6 +129,8 @@ def load_provider_ui_assets(*, logger: object) -> ProviderUiAssets:
             logger=logger,
         ),
         help_html=(html_dir / "help.html").read_text(encoding=UTF8_ENCODING),
+        help_css=(html_dir / "help.css").read_text(encoding=UTF8_ENCODING),
+        help_js=(html_dir / "help.js").read_text(encoding=UTF8_ENCODING),
         icon_path=html_dir / "create.ico",
     )
 

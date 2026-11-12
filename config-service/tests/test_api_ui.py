@@ -32,12 +32,37 @@ from config_service.runtime_config import (
 )
 from shared.security_headers import (
     CONTENT_SECURITY_POLICY_HEADER,
+    CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER,
     SHARED_CONTENT_SECURITY_POLICY,
+    STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY,
     X_CONTENT_TYPE_OPTIONS_HEADER,
     X_CONTENT_TYPE_OPTIONS_NOSNIFF,
     X_FRAME_OPTIONS_DENY,
     X_FRAME_OPTIONS_HEADER,
 )
+
+CONFIG_SERVICE_UI_PATH = "/config-service/ui"
+CONFIG_SERVICE_UI_RUNTIME_PATH = "/config-service/ui/runtime.js"
+RUNTIME_NAMESPACE = "window.ConfigServiceRuntime"
+
+
+async def _runtime_javascript(client: object) -> str:
+    """Fetch the external UI runtime asset used by the configuration editor.
+
+    Parameters
+    ----------
+    client:
+        Quart test client used to request the runtime JavaScript route.
+
+    Returns
+    -------
+    str
+        Decoded JavaScript runtime settings payload.
+    """
+    response = await client.get(CONFIG_SERVICE_UI_RUNTIME_PATH)
+    assert response.status_code == 200
+    assert response.mimetype == "application/javascript"
+    return (await response.get_data()).decode("utf-8")
 
 
 @pytest.mark.asyncio
@@ -71,11 +96,13 @@ async def test_ui_css_override_injected(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("CONFIG_SERVICE_UI_BASE_CSS_PATH", "/ui/assets/base.css")
     app = create_app(mode="standalone")
     client = app.test_client()
-    ui = await client.get("/config-service/ui")
+    ui = await client.get(CONFIG_SERVICE_UI_PATH)
     assert ui.status_code == 200
     html = (await ui.get_data()).decode("utf-8")
     assert 'href="/ui/assets/base.css"' in html
-    assert "/ui/assets/web_ui.css" in html
+    assert f'src="{CONFIG_SERVICE_UI_RUNTIME_PATH}"' in html
+    runtime_javascript = await _runtime_javascript(client)
+    assert "/ui/assets/web_ui.css" in runtime_javascript
 
 @pytest.mark.asyncio
 async def test_component_entry_points_can_disable_ui_routes(
@@ -98,7 +125,7 @@ async def test_component_entry_points_can_disable_ui_routes(
     app = create_app(mode="standalone")
     client = app.test_client()
 
-    ui = await client.get("/config-service/ui")
+    ui = await client.get(CONFIG_SERVICE_UI_PATH)
     assert ui.status_code in {301, 302, 307, 308}
     assert ui.headers["Location"].startswith(
         "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
@@ -133,10 +160,12 @@ async def test_ui_collapsed_sections_injected_from_config(monkeypatch: pytest.Mo
     ui = await client.get("/config-service/ui")
     assert ui.status_code == 200
     html = (await ui.get_data()).decode("utf-8")
-    assert "window.__CONFIG_SERVICE_UI_COLLAPSED_SECTIONS__" in html
-    assert '"environment_variables"' in html
-    assert '"upstream_servers"' in html
-    assert '"rendered_configuration"' in html
+    assert RUNTIME_NAMESPACE not in html
+    runtime_javascript = await _runtime_javascript(client)
+    assert RUNTIME_NAMESPACE in runtime_javascript
+    assert '"environment_variables"' in runtime_javascript
+    assert '"upstream_servers"' in runtime_javascript
+    assert '"rendered_configuration"' in runtime_javascript
 
 @pytest.mark.asyncio
 async def test_ui_save_as_toggle_injected_from_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -155,10 +184,10 @@ async def test_ui_save_as_toggle_injected_from_config(monkeypatch: pytest.Monkey
     monkeypatch.delenv("CONFIG_SERVICE_UI_SHOW_SAVE_AS", raising=False)
     app = create_app(mode="standalone")
     client = app.test_client()
-    ui = await client.get("/config-service/ui")
+    ui = await client.get(CONFIG_SERVICE_UI_PATH)
     assert ui.status_code == 200
-    html = (await ui.get_data()).decode("utf-8")
-    assert "window.__CONFIG_SERVICE_UI_SHOW_SAVE_AS__ = true;" in html
+    runtime_javascript = await _runtime_javascript(client)
+    assert '"showSaveAs":true' in runtime_javascript
 
 @pytest.mark.asyncio
 async def test_ui_save_as_toggle_defaults_to_hidden(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -177,10 +206,10 @@ async def test_ui_save_as_toggle_defaults_to_hidden(monkeypatch: pytest.MonkeyPa
     monkeypatch.delenv("CONFIG_SERVICE_UI_SHOW_SAVE_AS", raising=False)
     app = create_app(mode="standalone")
     client = app.test_client()
-    ui = await client.get("/config-service/ui")
+    ui = await client.get(CONFIG_SERVICE_UI_PATH)
     assert ui.status_code == 200
-    html = (await ui.get_data()).decode("utf-8")
-    assert "window.__CONFIG_SERVICE_UI_SHOW_SAVE_AS__ = false;" in html
+    runtime_javascript = await _runtime_javascript(client)
+    assert '"showSaveAs":false' in runtime_javascript
 
 @pytest.mark.asyncio
 async def test_upstream_servers_section_is_present_in_ui() -> None:
@@ -290,6 +319,10 @@ async def test_standalone_config_service_responses_apply_browser_security_policy
         assert (
             response.headers[CONTENT_SECURITY_POLICY_HEADER]
             == SHARED_CONTENT_SECURITY_POLICY
+        )
+        assert (
+            response.headers[CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER]
+            == STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY
         )
         assert response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
         assert response.headers[X_CONTENT_TYPE_OPTIONS_HEADER] == X_CONTENT_TYPE_OPTIONS_NOSNIFF

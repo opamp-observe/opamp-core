@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OpAMP Server Console</title>
   <link rel="icon" type="image/x-icon" href="/create.ico" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/web_ui.css" />
 </head>
 <body>
@@ -13,7 +12,7 @@
     <div class="title">
       <div>
         <h1>OpAMP Server Console</h1>
-        <div style="color: var(--muted); font-size: 0.95rem;">Client fleet, command queueing, and staged config control.</div>
+          <div class="ui-subtitle">Client fleet, command queueing, and staged config control.</div>
       </div>
       <div class="title-actions">
         <div id="featureMenuGroup" class="feature-menu-group hidden">
@@ -22,8 +21,8 @@
             <option value="">Open...</option>
           </select>
         </div>
-        <button id="globalSettingsBtn" class="pill" style="cursor: pointer;">Global Settings</button>
-        <button id="helpBtn" class="pill" style="cursor: pointer;">Help</button>
+        <button id="globalSettingsBtn" class="pill clickable-pill">Global Settings</button>
+        <button id="helpBtn" class="pill clickable-pill">Help</button>
       </div>
     </div>
     <div class="meta-bar">
@@ -43,7 +42,7 @@
       <label>Page size
         <input id="pageSizeInput" class="short-input" type="number" min="5" value="20" />
       </label>
-      <span style="color: var(--muted);">Click headers to sort. Drag headers to reorder.</span>
+      <span class="muted-text">Click headers to sort. Drag headers to reorder.</span>
       <div class="column-controls-shell">
         <button
           id="toggleColumnsBtn"
@@ -129,7 +128,7 @@
         <div id="tab-summary" class="tab-panel active">
           <div class="modal-grid" id="modalFields"></div>
           <div id="componentHealthPanel" class="data-panel hidden">
-            <label style="font-size: 0.85rem; color: var(--muted);">Component Health Map</label>
+            <label class="panel-label">Component Health Map</label>
             <table class="table history-table">
               <thead>
                 <tr>
@@ -146,7 +145,7 @@
             </div>
           </div>
           <div id="clientDataPanel" class="data-panel hidden">
-            <label style="font-size: 0.85rem; color: var(--muted);">Client Data (YAML)</label>
+            <label class="panel-label">Client Data (YAML)</label>
             <pre id="clientDataYaml" class="data-output"></pre>
             <div class="tab-actions">
               <button id="hideClientDataBtn" class="cancel" type="button">Hide Data</button>
@@ -160,7 +159,7 @@
           <div class="command-grid" id="commandButtons"></div>
           <div class="command-config-panel">
             <div class="command-config-header">
-              <label for="clientHeartbeatFrequencyInput" style="font-size: 0.85rem; color: var(--muted);">
+              <label for="clientHeartbeatFrequencyInput" class="panel-label">
                 Client Heartbeat Frequency (seconds)
               </label>
               <input id="clientHeartbeatFrequencyInput" type="number" min="1" step="1" />
@@ -169,7 +168,7 @@
           </div>
           <div class="command-config-panel">
             <div class="command-config-header">
-              <label for="customCommandSelect" style="font-size: 0.85rem; color: var(--muted);">
+              <label for="customCommandSelect" class="panel-label">
                 Custom Command
               </label>
               <select id="customCommandSelect">
@@ -195,19 +194,19 @@
         </div>
         <div id="tab-config" class="tab-panel">
           <div>
-            <label style="font-size: 0.85rem; color: var(--muted);">Current Configuration</label>
+            <label class="panel-label">Current Configuration</label>
             <pre id="currentConfigOutput" class="data-output"></pre>
           </div>
-          <div id="requestedConfigPanel" style="margin-top: 16px;">
-            <label style="font-size: 0.85rem; color: var(--muted);">Requested Configuration</label>
+          <div id="requestedConfigPanel" class="spaced-panel">
+            <label class="panel-label">Requested Configuration</label>
             <textarea id="configInput" placeholder="Paste new configuration here..."></textarea>
             <div class="tab-actions">
               <button id="saveConfigBtn" class="save">Save Configuration</button>
             </div>
           </div>
-          <div id="remoteConfigEnhancedPanel" class="command-config-panel hidden" style="margin-top: 16px;">
+          <div id="remoteConfigEnhancedPanel" class="command-config-panel spaced-panel hidden">
             <div class="command-config-header">
-              <label style="font-size: 0.85rem; color: var(--muted);">
+              <label class="panel-label">
                 Remote Configuration Files
               </label>
               <button
@@ -239,15 +238,15 @@
         </div>
         <div id="tab-history" class="tab-panel">
           <div class="history-panel">
-            <label style="font-size: 0.85rem; color: var(--muted);">Event History</label>
+            <label class="panel-label">Event History</label>
             <table class="table history-table">
               <thead>
                 <tr>
-                  <th style="width: 220px;">
+                  <th class="history-time-column">
                     Date/Time
                     <button id="eventsSortBtn" class="sort-toggle" type="button" title="Sort descending">↓</button>
                   </th>
-                  <th style="width: 48px;">Dir</th>
+                  <th class="history-direction-column">Dir</th>
                   <th>Event</th>
                 </tr>
               </thead>

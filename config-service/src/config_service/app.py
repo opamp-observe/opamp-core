@@ -106,6 +106,10 @@ LANDING_PAGE_REDIRECT_URL = (
     "opamp-observe/opamp-core/main/github-landingpage/index.html"
 )
 PLACEHOLDER_PROVIDER_UI_LINK_ATTRS = "__CONFIG_SERVICE_PROVIDER_UI_LINK_ATTRS__"
+CONFIG_SERVICE_UI_RUNTIME_PATH = "/config-service/ui/runtime.js"
+RUNTIME_KEY_COLLAPSED_SECTIONS = "collapsedSections"
+RUNTIME_KEY_CSS_OVERRIDES = "cssOverrides"
+RUNTIME_KEY_SHOW_SAVE_AS = "showSaveAs"
 
 
 def _config_service_root() -> Path:
@@ -260,7 +264,7 @@ def _provider_ui_link_attrs(app: Quart) -> str:
         Accessibility-safe hidden attributes in standalone mode, otherwise empty text.
     """
     if _standalone_mode(app):
-        return 'style="display:none" aria-hidden="true" tabindex="-1"'
+        return 'hidden aria-hidden="true" tabindex="-1"'
     return ""
 
 
@@ -325,23 +329,10 @@ def register_ui_component(app: Quart) -> None:
         Response
             HTML editor response, with no-cache headers when development mode is enabled.
         """
-        css_overrides = _resolve_css_overrides(app)
         base_css_path = resolve_ui_base_css_path()
         asset_suffix = _asset_suffix()
         html_template = (html_dir / "config_ui.html").read_text(encoding="utf-8")
         rendered = html_template.replace(
-            "__CONFIG_SERVICE_UI_CSS_OVERRIDES_VALUE__",
-            json.dumps(css_overrides),
-        )
-        rendered = rendered.replace(
-            "__CONFIG_SERVICE_UI_COLLAPSED_SECTIONS_VALUE__",
-            json.dumps(resolve_ui_collapsed_sections()),
-        )
-        rendered = rendered.replace(
-            "__CONFIG_SERVICE_UI_SHOW_SAVE_AS_VALUE__",
-            "true" if resolve_ui_show_save_as() else "false",
-        )
-        rendered = rendered.replace(
             "__CONFIG_SERVICE_UI_BASE_CSS_PATH__",
             _append_suffix(base_css_path, asset_suffix),
         )
@@ -354,6 +345,29 @@ def register_ui_component(app: Quart) -> None:
             _provider_ui_link_attrs(app),
         )
         response = Response(rendered, mimetype="text/html")
+        if _app_enable_dev_features_enabled():
+            return _apply_no_cache_headers(response)
+        return response
+
+    @app.get(CONFIG_SERVICE_UI_RUNTIME_PATH)
+    async def config_service_ui_runtime() -> Response:
+        """Return runtime UI settings as an external same-origin JavaScript asset.
+
+        Returns
+        -------
+        Response
+            JavaScript namespace containing current UI settings without inline script markup.
+        """
+        runtime_payload = {
+            RUNTIME_KEY_COLLAPSED_SECTIONS: resolve_ui_collapsed_sections(),
+            RUNTIME_KEY_CSS_OVERRIDES: _resolve_css_overrides(app),
+            RUNTIME_KEY_SHOW_SAVE_AS: resolve_ui_show_save_as(),
+        }
+        javascript = (
+            "window.ConfigServiceRuntime = Object.freeze("
+            f"{json.dumps(runtime_payload, separators=(',', ':'))});\n"
+        )
+        response = Response(javascript, content_type="application/javascript; charset=utf-8")
         if _app_enable_dev_features_enabled():
             return _apply_no_cache_headers(response)
         return response

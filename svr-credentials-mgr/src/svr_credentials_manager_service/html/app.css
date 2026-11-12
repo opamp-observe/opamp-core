@@ -15,7 +15,7 @@
 
 body {
   margin: 0;
-  font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
   background: radial-gradient(circle at top left, #e7eeff 0%, #f5f7fb 55%, #fff4d8 100%);
   min-height: 100vh;
@@ -264,7 +264,7 @@ button {
 
 textarea {
   min-height: 5rem;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: "Cascadia Code", "Consolas", "Liberation Mono", monospace;
 }
 
 button,

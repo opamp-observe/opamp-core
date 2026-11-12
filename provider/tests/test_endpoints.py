@@ -43,7 +43,9 @@ from opamp_provider.state import STORE
 from opamp_provider.transport import decode_message, encode_message
 from shared.security_headers import (
     CONTENT_SECURITY_POLICY_HEADER,
+    CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER,
     SHARED_CONTENT_SECURITY_POLICY,
+    STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY,
     X_CONTENT_TYPE_OPTIONS_HEADER,
     X_CONTENT_TYPE_OPTIONS_NOSNIFF,
     X_FRAME_OPTIONS_DENY,
@@ -2338,12 +2340,22 @@ async def test_get_global_settings_help() -> None:
 
 @pytest.mark.asyncio
 async def test_help_page_includes_restore_usage() -> None:
-    """Verify `/help` includes restore CLI usage and fallback behavior guidance."""
+    """Verify `/help` uses external assets and includes restore usage guidance."""
     async with app.test_client() as client:
         resp = await client.get("/help")
         assert resp.status_code == 200
         html = await resp.get_data(as_text=True)
+        css_response = await client.get("/help.css")
+        javascript_response = await client.get("/help.js")
 
+    assert css_response.status_code == 200
+    assert css_response.mimetype == "text/css"
+    assert javascript_response.status_code == 200
+    assert javascript_response.mimetype == "application/javascript"
+    assert 'href="/help.css"' in html
+    assert 'src="/help.js"' in html
+    assert "<style" not in html
+    assert "onclick=" not in html
     assert "--restore" in html
     assert "--diagnostic" in html
     assert "state_file_prefix" in html
@@ -3630,6 +3642,10 @@ async def test_unknown_provider_route_redirects_to_landing_page() -> None:
             resp.headers[CONTENT_SECURITY_POLICY_HEADER]
             == SHARED_CONTENT_SECURITY_POLICY
         )
+        assert (
+            resp.headers[CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER]
+            == STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY
+        )
         assert resp.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
         assert resp.headers[X_CONTENT_TYPE_OPTIONS_HEADER] == X_CONTENT_TYPE_OPTIONS_NOSNIFF
 
@@ -3644,6 +3660,10 @@ async def test_provider_ui_and_api_responses_apply_browser_security_policy() -> 
             assert (
                 response.headers[CONTENT_SECURITY_POLICY_HEADER]
                 == SHARED_CONTENT_SECURITY_POLICY
+            )
+            assert (
+                response.headers[CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER]
+                == STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY
             )
             assert response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
             assert (

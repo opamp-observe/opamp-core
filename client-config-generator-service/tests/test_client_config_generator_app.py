@@ -34,7 +34,9 @@ from client_config_generator_service.opamp_integration import (
 )
 from shared.security_headers import (
     CONTENT_SECURITY_POLICY_HEADER,
+    CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER,
     SHARED_CONTENT_SECURITY_POLICY,
+    STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY,
     X_CONTENT_TYPE_OPTIONS_HEADER,
     X_CONTENT_TYPE_OPTIONS_NOSNIFF,
     X_FRAME_OPTIONS_DENY,
@@ -249,6 +251,10 @@ async def test_root_unknown_route_and_duplicate_registration_are_safe(tmp_path: 
         assert (
             response.headers[CONTENT_SECURITY_POLICY_HEADER]
             == SHARED_CONTENT_SECURITY_POLICY
+        )
+        assert (
+            response.headers[CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER]
+            == STRICT_REPORT_ONLY_CONTENT_SECURITY_POLICY
         )
         assert response.headers[X_FRAME_OPTIONS_HEADER] == X_FRAME_OPTIONS_DENY
         assert response.headers[X_CONTENT_TYPE_OPTIONS_HEADER] == X_CONTENT_TYPE_OPTIONS_NOSNIFF

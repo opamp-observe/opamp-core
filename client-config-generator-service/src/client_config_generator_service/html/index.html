@@ -17,7 +17,6 @@ limitations under the License.
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Client Config Generator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/client-config-generator-service/ui/assets/config_ui.css__CLIENT_CONFIG_GENERATOR_UI_ASSET_SUFFIX__" />
     <link rel="stylesheet" href="/client-config-generator-service/ui/assets/styles.css__CLIENT_CONFIG_GENERATOR_UI_ASSET_SUFFIX__" />
   </head>
@@ -34,7 +33,7 @@ limitations under the License.
           </div>
           <div class="title-actions">
             <a href="/client-config-generator-service/ui/help" target="_blank" rel="noopener noreferrer" class="button-link">Help</a>
-            <button type="button" class="button-link" onclick="window.history.back();" data-history-back-button="true" hidden __PROVIDER_LINK_ATTRIBUTES__>Back</button>
+            <button type="button" class="button-link" data-history-back-button="true" hidden __PROVIDER_LINK_ATTRIBUTES__>Back</button>
             <a class="button-link" __PROVIDER_LINK_ATTRIBUTES__ href="/ui">Server Console</a>
           </div>
         </div>
@@ -98,28 +97,6 @@ limitations under the License.
         <pre id="jsonPreview"></pre>
       </details>
     </main>
-    <script>
-      (function () {
-        function syncHistoryBackButton() {
-          var button = document.querySelector('[data-history-back-button="true"]');
-          if (!button || button.getAttribute("aria-hidden") === "true") {
-            return;
-          }
-          if (window.history.length > 1) {
-            button.removeAttribute("hidden");
-            return;
-          }
-          button.setAttribute("hidden", "hidden");
-        }
-
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", syncHistoryBackButton, { once: true });
-        } else {
-          syncHistoryBackButton();
-        }
-        window.addEventListener("pageshow", syncHistoryBackButton);
-      })();
-    </script>
     <script src="/client-config-generator-service/ui/assets/state.js__CLIENT_CONFIG_GENERATOR_UI_ASSET_SUFFIX__"></script>
     <script src="/client-config-generator-service/ui/assets/functions.js__CLIENT_CONFIG_GENERATOR_UI_ASSET_SUFFIX__"></script>
     <script src="/client-config-generator-service/ui/assets/framework.js__CLIENT_CONFIG_GENERATOR_UI_ASSET_SUFFIX__"></script>

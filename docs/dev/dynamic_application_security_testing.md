@@ -181,6 +181,7 @@ responses:
 
 ```text
 Content-Security-Policy: frame-ancestors 'none'; form-action 'self'
+Content-Security-Policy-Report-Only: default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; manifest-src 'self'; worker-src 'none'
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 ```
@@ -189,7 +190,7 @@ From PowerShell, inspect a running provider with:
 
 ```powershell
 (Invoke-WebRequest -Uri http://localhost:8080/ui -UseBasicParsing).Headers |
-  Format-List Content-Security-Policy, X-Frame-Options, X-Content-Type-Options
+  Format-List Content-Security-Policy, Content-Security-Policy-Report-Only, X-Frame-Options, X-Content-Type-Options
 ```
 
 From Linux or another POSIX shell:
@@ -197,13 +198,18 @@ From Linux or another POSIX shell:
 ```bash
 curl --silent --show-error --head http://localhost:8080/ui \
   | grep --extended-regexp --ignore-case \
-      '^(content-security-policy|x-frame-options|x-content-type-options):'
+      '^(content-security-policy|content-security-policy-report-only|x-frame-options|x-content-type-options):'
 ```
 
 ZAP should no longer report `Missing Anti-clickjacking Header`, a missing `form-action` directive,
 or an `X-Content-Type-Options` header that is absent or not set to `nosniff` for protected
-responses. Retain the header assertions in component tests as the primary regression check; use
-DAST to verify the deployed target and any gateway in front of it.
+responses. The strict report-only header intentionally does not suppress ZAP findings against the
+less restrictive enforced policy. Packaged UI templates now load scripts and styles from
+same-origin assets, avoid HTML event-handler and style attributes, and use system font stacks
+instead of Google Fonts. Use browser console or reporting-endpoint violations to check runtime
+DOM changes and deployment-specific overrides before enforcing the strict policy. Retain the
+header and HTML compatibility assertions in component tests as the primary regression checks;
+use DAST to verify the deployed target and any gateway in front of it.
 
 ## Reports And Exit Behavior
 

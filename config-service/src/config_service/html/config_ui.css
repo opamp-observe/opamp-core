@@ -20,7 +20,7 @@
 
 body {
   margin: 0;
-  font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
   background: radial-gradient(circle at top left, #e7eeff 0%, #f5f7fb 55%, #fff4d8 100%);
   min-height: 100vh;
@@ -262,7 +262,7 @@ button:hover {
   resize: none;
   overflow: auto;
   white-space: pre;
-  font-family: "IBM Plex Mono", "Cascadia Code", "Consolas", monospace;
+  font-family: "Cascadia Code", "Consolas", "Liberation Mono", monospace;
   line-height: 1.45;
   background: #f8fafc;
 }
@@ -415,7 +415,7 @@ textarea.code-input {
   min-height: 8.5rem;
   max-width: 100%;
   overflow: auto;
-  font-family: "IBM Plex Mono", "Cascadia Code", "Consolas", monospace;
+  font-family: "Cascadia Code", "Consolas", "Liberation Mono", monospace;
   line-height: 1.4;
   white-space: pre;
 }
@@ -629,7 +629,7 @@ pre {
   padding: 0.75rem;
   overflow: auto;
   min-height: 180px;
-  font-family: "IBM Plex Mono", "Cascadia Code", "Consolas", monospace;
+  font-family: "Cascadia Code", "Consolas", "Liberation Mono", monospace;
 }
 
 .results {
