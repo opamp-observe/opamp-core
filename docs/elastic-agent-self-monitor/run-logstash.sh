@@ -2,9 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-CONFIG_FILE="$SCRIPT_DIR/logstash.conf"
+CONFIG_FILE="$SCRIPT_DIR/logstash.container.conf"
 OUT_DIR="$SCRIPT_DIR/out"
-TEMP_CONFIG="${TMPDIR:-/tmp}/opamp-logstash.conf"
 CONTAINER_NAME="opamp-logstash"
 CONTAINER_CONFIG="/usr/share/logstash/pipeline/logstash.conf"
 CONTAINER_OUT="/usr/share/logstash/out"
@@ -48,11 +47,6 @@ if [[ -z "${LOGSTASH_IMAGE:-}" ]]; then
     LOGSTASH_IMAGE="docker.elastic.co/logstash/logstash:9.5.1"
 fi
 
-sed \
-    -e "s|D:/dev/opamp/tests/logstash/out|$CONTAINER_OUT|g" \
-    -e "s|D:\\\\dev\\\\opamp\\\\tests\\\\logstash\\\\out|$CONTAINER_OUT|g" \
-    "$CONFIG_FILE" > "$TEMP_CONFIG"
-
 echo "Using image: $LOGSTASH_IMAGE"
 echo "Using runtime: $CONTAINER_RUNTIME"
 echo "Using config: $CONFIG_FILE"
@@ -63,7 +57,7 @@ echo
     "${RUNTIME_REPLACE_ARG[@]}" \
     --name "$CONTAINER_NAME" \
     -p 127.0.0.1:5044:5044 \
-    -v "$TEMP_CONFIG:$CONTAINER_CONFIG:ro" \
+    -v "$CONFIG_FILE:$CONTAINER_CONFIG:ro" \
     -v "$OUT_DIR:$CONTAINER_OUT" \
     "$LOGSTASH_IMAGE" \
     logstash -f "$CONTAINER_CONFIG" --path.logs "$CONTAINER_OUT/logs"

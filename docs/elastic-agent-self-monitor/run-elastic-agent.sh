@@ -5,7 +5,6 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 CONFIG_FILE="$SCRIPT_DIR/elastic-agent.yml"
 OUT_DIR="$SCRIPT_DIR/out"
 AGENT_LOG_DIR="$OUT_DIR/elastic-agent-logs"
-TEMP_CONFIG="${TMPDIR:-/tmp}/opamp-elastic-agent.yml"
 
 if [[ -z "${ELASTIC_AGENT_HOME:-}" ]]; then
     ELASTIC_AGENT_HOME="${HOME}/dev-tools/elastic-agent/elastic-agent-9.5.0-linux-x86_64"
@@ -25,11 +24,7 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
 fi
 
 mkdir -p "$OUT_DIR" "$AGENT_LOG_DIR"
-
-sed \
-    -e "s|D:/dev/opamp/tests/logstash/out/elastic-agent-logs|$AGENT_LOG_DIR|g" \
-    -e "s|D:\\\\dev\\\\opamp\\\\tests\\\\logstash\\\\out\\\\elastic-agent-logs|$AGENT_LOG_DIR|g" \
-    "$CONFIG_FILE" > "$TEMP_CONFIG"
+export OPAMP_ELASTIC_AGENT_LOG_DIR="$AGENT_LOG_DIR"
 
 echo "Using Elastic Agent: $AGENT_EXE"
 echo "Using config: $CONFIG_FILE"
@@ -45,4 +40,4 @@ echo "  \"$SCRIPT_DIR/run-logstash.sh\""
 echo
 
 cd "$ELASTIC_AGENT_HOME"
-exec "$AGENT_EXE" run -c "$TEMP_CONFIG"
+exec "$AGENT_EXE" run -c "$CONFIG_FILE"

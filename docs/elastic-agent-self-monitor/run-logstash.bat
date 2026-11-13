@@ -2,9 +2,8 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
-set "CONFIG_FILE=%SCRIPT_DIR%logstash.conf"
+set "CONFIG_FILE=%SCRIPT_DIR%logstash.container.conf"
 set "OUT_DIR=%SCRIPT_DIR%out"
-set "TEMP_CONFIG=%TEMP%\opamp-logstash.conf"
 set "CONTAINER_NAME=opamp-logstash"
 set "CONTAINER_CONFIG=/usr/share/logstash/pipeline/logstash.conf"
 set "CONTAINER_OUT=/usr/share/logstash/out"
@@ -42,18 +41,6 @@ if not defined LOGSTASH_IMAGE (
     set "LOGSTASH_IMAGE=docker.elastic.co/logstash/logstash:9.5.1"
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$config = Get-Content -Raw -LiteralPath $env:CONFIG_FILE; " ^
-    "$config = $config -replace [regex]::Escape('D:/dev/opamp/tests/logstash/out'), $env:CONTAINER_OUT; " ^
-    "$config = $config -replace [regex]::Escape('D:\dev\opamp\tests\logstash\out'), $env:CONTAINER_OUT; " ^
-    "$utf8 = New-Object System.Text.UTF8Encoding($false); " ^
-    "[System.IO.File]::WriteAllText($env:TEMP_CONFIG, $config, $utf8)"
-
-if errorlevel 1 (
-    echo Failed to prepare container Logstash config.
-    exit /b 1
-)
-
 echo Using image: %LOGSTASH_IMAGE%
 echo Using runtime: %CONTAINER_RUNTIME%
 echo Using config: %CONFIG_FILE%
@@ -64,7 +51,7 @@ echo.
     !RUNTIME_REPLACE_ARG! ^
     --name "%CONTAINER_NAME%" ^
     -p 127.0.0.1:5044:5044 ^
-    -v "%TEMP_CONFIG%:%CONTAINER_CONFIG%:ro" ^
+    -v "%CONFIG_FILE%:%CONTAINER_CONFIG%:ro" ^
     -v "%OUT_DIR%:%CONTAINER_OUT%" ^
     "%LOGSTASH_IMAGE%" ^
     logstash -f "%CONTAINER_CONFIG%" --path.logs "%CONTAINER_OUT%/logs"

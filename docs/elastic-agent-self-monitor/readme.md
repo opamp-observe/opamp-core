@@ -7,8 +7,8 @@ The files in this folder illustrate that idea for Elastic Agent. The sample `ela
 ## Folder Contents
 
 - `elastic-agent.yml` configures Elastic Agent in local management mode, enables self monitoring, and routes monitoring signals to Logstash.
-- `logstash.conf` is the host-side Logstash pipeline used by the run scripts.
-- `logstash.container.conf` is the same pipeline with the output path already written for the container filesystem.
+- `logstash.conf` is the host-side Logstash pipeline. Set `OPAMP_LOGSTASH_OUTPUT_PATH` to an absolute output file path before using it directly.
+- `logstash.container.conf` is the pipeline used by the run scripts, with its output path set for the container filesystem.
 - `run-logstash.bat` and `run-logstash.sh` start Logstash in Docker or Podman.
 - `run-elastic-agent.bat` and `run-elastic-agent.sh` start Elastic Agent with the sample configuration.
 - `out/` is created at runtime and receives Logstash output plus Elastic Agent file logs.

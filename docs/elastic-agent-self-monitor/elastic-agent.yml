@@ -23,7 +23,7 @@ agent.logging.level: info
 agent.logging.to_stderr: false
 agent.logging.to_files: true
 agent.logging.files:
-  path: "D:/dev/opamp/tests/logstash/out/elastic-agent-logs"
+  path: "${env.OPAMP_ELASTIC_AGENT_LOG_DIR|'./elastic-agent-logs'}"
   name: elastic-agent
   rotateeverybytes: 10485760
   keepfiles: 5
