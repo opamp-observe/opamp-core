@@ -12,7 +12,7 @@ This page explains the rendered provider/server diagrams and links each one back
 
 ## Diagram 1: Class and Module Relationships
 
-![Provider class and module relationships](provider_server_diagram_1.png)
+![Provider class and module relationships](dev/img/provider_server_diagram/provider_server_diagram_1.png)
 
 What this shows:
 
@@ -26,7 +26,7 @@ What this shows:
 
 ## Diagram 2: Runtime Entrypoints and Transport
 
-![Provider runtime entrypoints and transport](provider_server_diagram_2.png)
+![Provider runtime entrypoints and transport](dev/img/provider_server_diagram/provider_server_diagram_2.png)
 
 What this shows:
 
@@ -41,7 +41,7 @@ What this shows:
 
 ## Diagram 3: Command Queue and Dispatch Pipeline
 
-![Provider command queue and dispatch pipeline](provider_server_diagram_3.png)
+![Provider command queue and dispatch pipeline](dev/img/provider_server_diagram/provider_server_diagram_3.png)
 
 What this shows:
 
@@ -56,7 +56,7 @@ What this shows:
 
 ## Diagram 4: Auth and MCP Transport Routing
 
-![Provider auth and transport routing](provider_server_diagram_4.png)
+![Provider auth and transport routing](dev/img/provider_server_diagram/provider_server_diagram_4.png)
 
 What this shows:
 

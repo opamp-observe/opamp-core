@@ -246,11 +246,11 @@ These two images are useful quick references when reading the provider and consu
 
 ### AgentToServer
 
-![OpAMP AgentToServer reference](OpAMP-AgentToServer.png)
+![OpAMP AgentToServer reference](dev/img/opamp_protocol/OpAMP-AgentToServer.png)
 
 ### ServerToAgent
 
-![OpAMP ServerToAgent reference](OpAMP-ServerToAgent.png)
+![OpAMP ServerToAgent reference](dev/img/opamp_protocol/OpAMP-ServerToAgent.png)
 
 ## Component notes
 
