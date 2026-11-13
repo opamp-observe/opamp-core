@@ -41,7 +41,11 @@ PUBLIC_IP_LOOKUP_TIMEOUT_SECONDS="10"
 PUBLIC_IP_LOOKUP_URI="https://checkip.amazonaws.com"
 
 # Phase 1: fail before creating resources when local tools or inputs are missing.
-for required_command in aws python tar; do
+required_commands=(aws python tar)
+if [[ "$SKIP_PACKAGE" != "true" ]]; then
+  required_commands+=(uv)
+fi
+for required_command in "${required_commands[@]}"; do
   if ! command -v "$required_command" >/dev/null 2>&1; then
     echo "$required_command is required." >&2
     exit 1

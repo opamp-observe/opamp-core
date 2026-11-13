@@ -195,6 +195,7 @@ jobs:
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-2' }}
       STACK_NAME: ${{ vars.AWS_STACK_NAME || 'opamp-regression' }}
+      UV_VERSION: "0.13.7"
     steps:
       - name: Validate AWS repository configuration
         shell: bash
@@ -231,6 +232,18 @@ jobs:
             -c http.https://github.com/.extraheader="AUTHORIZATION: basic $checkout_auth_header" \
             fetch --depth=1 origin "$GITHUB_SHA"
           git -C "$GITHUB_WORKSPACE" checkout --force FETCH_HEAD
+
+      - name: Install pinned uv package builder
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv_tool_environment="$RUNNER_TEMP/opamp-uv-tool"
+          python3 -m venv "$uv_tool_environment"
+          "$uv_tool_environment/bin/python" -m pip install \
+            --disable-pip-version-check \
+            "uv==$UV_VERSION"
+          "$uv_tool_environment/bin/uv" --version
+          echo "$uv_tool_environment/bin" >> "$GITHUB_PATH"
 
       - name: Configure AWS credentials through OIDC
         shell: bash

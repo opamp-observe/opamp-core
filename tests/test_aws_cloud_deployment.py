@@ -252,6 +252,10 @@ def test_github_workflow_uses_manual_oidc_deployment() -> None:
     assert "secrets.AWS_ACCESS_KEY_ID" not in workflow
     assert '"NamePrefix=${{ inputs.name_prefix }}"' not in workflow
     assert "INPUT_NAME_PREFIX: ${{ inputs.name_prefix }}" in workflow
+    assert 'UV_VERSION: "0.13.7"' in workflow
+    assert "Install pinned uv package builder" in workflow
+    assert '"uv==$UV_VERSION"' in workflow
+    assert 'echo "$uv_tool_environment/bin" >> "$GITHUB_PATH"' in workflow
     assert "bash cloud/aws/deploy.sh" in workflow
     assert "bash cloud/aws/destroy.sh" in workflow
     assert "connection_details.md" in workflow
