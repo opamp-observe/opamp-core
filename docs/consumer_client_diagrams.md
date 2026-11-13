@@ -11,7 +11,7 @@ For the latest architecture (including process-tracking strategy split), use the
 
 ## Diagram 1: Class and Module Relationships
 
-![Consumer class and module relationships](consumer_client_diagram_1.png)
+![Consumer class and module relationships](dev/img/consumer_client/consumer_client_diagram_1.png)
 
 What this shows:
 
@@ -24,7 +24,7 @@ What this shows:
 
 ## Diagram 2: Runtime Entrypoints
 
-![Consumer runtime entrypoints](consumer_client_diagram_2.png)
+![Consumer runtime entrypoints](dev/img/consumer_client/consumer_client_diagram_2.png)
 
 What this shows:
 
@@ -36,7 +36,7 @@ What this shows:
 
 ## Diagram 3: Mixin Dispatch Model
 
-![Consumer mixin method dispatch](consumer_client_diagram_3.png)
+![Consumer mixin method dispatch](dev/img/consumer_client/consumer_client_diagram_3.png)
 
 What this shows:
 
@@ -46,7 +46,7 @@ What this shows:
 
 ## Diagram 4: Reporting Flags and Update Controllers
 
-![Consumer reporting flags and update controllers](consumer_client_diagram_4.png)
+![Consumer reporting flags and update controllers](dev/img/consumer_client/consumer_client_diagram_4.png)
 
 What this shows:
 
@@ -56,7 +56,7 @@ What this shows:
 
 ## Diagram 5: Transport URL and TLS Resolution
 
-![Consumer transport URL and TLS resolution](consumer_client_diagram_5.png)
+![Consumer transport URL and TLS resolution](dev/img/consumer_client/consumer_client_diagram_5.png)
 
 What this shows:
 
@@ -66,7 +66,7 @@ What this shows:
 
 ## Diagram 6: Runtime Process Tracking Strategy
 
-![Consumer runtime process tracking strategy](consumer_client_diagram_6.png)
+![Consumer runtime process tracking strategy](dev/img/consumer_client/consumer_client_diagram_6.png)
 
 Use the Mermaid source in [docs/dev/client(consumer)/consumer_client_diagram.md](<dev/client(consumer)/consumer_client_diagram.md>) as the canonical source for this flow.
 
