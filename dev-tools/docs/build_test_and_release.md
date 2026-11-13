@@ -140,3 +140,33 @@ publishing in CI. The command checks the standard first-party project set and
 its internal wheel dependency closure before calling `uv publish`. Use
 `--allow-partial` only for an intentional subset; dependencies referenced by a
 selected first-party wheel are still required in that publication set.
+
+The GitHub workflow at `.github/workflows/publish_pypi.yml` first requires a
+completed, successful run of `main_fluent-opamp.yml` for the exact commit on
+`main`. It then runs the full security and release build before publishing. A
+published GitHub release runs the verification, build, and publish jobs
+automatically, but stops before building when no matching successful test run
+exists. A manual dispatch has the same test gate and always builds and
+validates the wheels, but publishes only when `publish_to_pypi` is selected
+and the workflow runs from `main`. The build and publish jobs exchange an
+immutable GitHub artifact; only the publish job receives `id-token: write` and
+access to the protected `pypi` environment.
+
+Create a PyPI Trusted Publisher for each of these projects:
+
+- `opamp-shared`
+- `opamp-server`
+- `config-service`
+- `catalog-service`
+- `client-config-generator-service`
+- `svr-credentials-manager-service`
+- `opamp-consumer`
+- `opamp-suite`
+- `opamp-cli`
+- `opamp-consumer-sim`
+
+Use GitHub owner `opamp-observe`, repository `opamp-core`, workflow filename
+`publish_pypi.yml`, and environment `pypi` for every publisher. Create and
+protect the matching `pypi` environment in GitHub before the first release.
+No PyPI API token is required for this workflow. Keep any locally used
+`UV_PUBLISH_TOKEN` out of source control, shell history, and logs.

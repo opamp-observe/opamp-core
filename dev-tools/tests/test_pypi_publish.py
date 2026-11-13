@@ -23,6 +23,18 @@ import pytest
 from opamp_dev_tools import pypi_publish
 
 WHEEL_VERSION = "0.6.0"
+EXPECTED_DEFAULT_PYPI_PROJECTS = {
+    "catalog-service",
+    "client-config-generator-service",
+    "config-service",
+    "opamp-cli",
+    "opamp-consumer",
+    "opamp-consumer-sim",
+    "opamp-server",
+    "opamp-shared",
+    "opamp-suite",
+    "svr-credentials-manager-service",
+}
 
 
 class _FakeRuntime:
@@ -85,6 +97,11 @@ class _FakeRuntime:
         assert cwd == self.repo_root
         assert isinstance(env, dict)
         self.commands.append(command)
+
+
+def test_default_project_set_matches_release_distributions() -> None:
+    """Keep publication validation aligned with the complete release build."""
+    assert set(pypi_publish.DEFAULT_PYPI_PROJECTS) == EXPECTED_DEFAULT_PYPI_PROJECTS
 
 
 def _write_wheel(

@@ -50,6 +50,8 @@ DEFAULT_PYPI_PROJECTS = (
     "svr-credentials-manager-service",
     "opamp-consumer",
     "opamp-suite",
+    "opamp-cli",
+    "opamp-consumer-sim",
 )
 
 
