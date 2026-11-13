@@ -300,6 +300,21 @@ def test_cloud_packagers_build_shared_suite_and_components_with_uv() -> None:
         assert "python -m build" not in source_text
 
 
+def test_aws_deployers_check_uv_before_creating_resources() -> None:
+    """Fail missing-uv deployments during preflight rather than after S3 creation."""
+    bash_script = _read(AWS_DIRECTORY / "deploy.sh")
+    powershell_script = _read(AWS_DIRECTORY / "deploy.ps1")
+
+    assert "required_commands+=(uv)" in bash_script
+    assert bash_script.index("required_commands+=(uv)") < bash_script.index(
+        'aws s3api create-bucket'
+    )
+    assert "Get-Command uv" in powershell_script
+    assert powershell_script.index("Get-Command uv") < powershell_script.index(
+        "aws s3api create-bucket"
+    )
+
+
 def test_cloud_bash_packagers_limit_recursive_cleanup_to_dist() -> None:
     """Prevent a custom artifact path from expanding recursive cleanup scope."""
     bash_paths = [

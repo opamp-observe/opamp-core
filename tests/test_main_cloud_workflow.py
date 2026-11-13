@@ -104,6 +104,10 @@ def test_aws_mode_uses_the_existing_cloudformation_deployment() -> None:
     assert "ServerPrivateIp=" not in workflow
     assert "ConsumerPrivateIp=" not in workflow
     assert "Set CLOUD_PROVIDER to none" in workflow
+    assert 'UV_VERSION: "0.13.7"' in workflow
+    assert "Install pinned uv package builder" in workflow
+    assert '"uv==$UV_VERSION"' in workflow
+    assert 'echo "$uv_tool_environment/bin" >> "$GITHUB_PATH"' in workflow
     assert "PARAMETERS_FILE: cloud/aws/parameters.workflow.env" in workflow
     assert "run: bash cloud/aws/deploy.sh" in workflow
 

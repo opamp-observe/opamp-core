@@ -108,6 +108,12 @@ AWS references:
 - an existing EC2 key pair in the target region, or permission to create one
 - permissions to create a private S3 bucket, upload artifacts, and deploy the template resources
 
+Command-line deployments require `uv` to be installed on the invoking machine.
+The main and manual GitHub Actions AWS jobs create an isolated tool environment
+and install the workflow's pinned `uv` version before invoking `deploy.sh`; a
+successful build in an earlier job does not share installed executables with
+the fresh deployment runner.
+
 Confirm the active identity and region:
 
 ```bash

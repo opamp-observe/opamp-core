@@ -65,6 +65,9 @@ if ($PrivateKeyFile -and -not [IO.Path]::IsPathRooted($PrivateKeyFile)) {
 if (-not (Get-Command aws -ErrorAction SilentlyContinue)) {
     throw "AWS CLI is required."
 }
+if (-not $SkipPackage -and -not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    throw "uv is required to build cloud package artifacts."
+}
 $pythonCommand = if (Get-Command py -ErrorAction SilentlyContinue) { "py" } else { "python" }
 $pythonArguments = if ($pythonCommand -eq "py") { @("-3") } else { @() }
 if (-not (Test-Path -LiteralPath $ParametersFile)) {
