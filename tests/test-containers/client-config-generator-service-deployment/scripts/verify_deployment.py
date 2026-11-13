@@ -50,7 +50,7 @@ def _configure_import_paths(repo_root: Path) -> None:
         repo_root: Mounted repository root inside the container.
     """
     source_paths = (
-        repo_root,
+        repo_root / "shared" / "src",
         repo_root / "provider" / "src",
         repo_root / "client-config-generator-service" / "src",
     )
@@ -95,11 +95,11 @@ async def _verify_enabled_deployment(config_path: Path) -> None:
     Args:
         config_path: Enabled scenario runtime configuration.
     """
-    from opamp_provider.component_features import (
+    from opamp_provider.component_features import (  # pylint: disable=import-error,import-outside-toplevel
         register_provider_component_entries,
         ui_menu_items_from_component_entries,
     )
-    from quart import Quart
+    from quart import Quart  # pylint: disable=import-error,import-outside-toplevel
 
     os.environ[ENV_OPAMP_CONFIG_PATH] = str(config_path)
     application = Quart("enabled-deployment")
@@ -122,11 +122,11 @@ async def _verify_disabled_deployment(config_path: Path) -> None:
     Args:
         config_path: Disabled scenario runtime configuration.
     """
-    from opamp_provider.component_features import (
+    from opamp_provider.component_features import (  # pylint: disable=import-error,import-outside-toplevel
         register_provider_component_entries,
         ui_menu_items_from_component_entries,
     )
-    from quart import Quart
+    from quart import Quart  # pylint: disable=import-error,import-outside-toplevel
 
     os.environ[ENV_OPAMP_CONFIG_PATH] = str(config_path)
     application = Quart("disabled-deployment")
