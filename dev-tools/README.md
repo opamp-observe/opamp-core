@@ -223,9 +223,10 @@ opamp-dev-cli build dast baseline
 opamp-dev-cli build dast full --allow-active-scan
 ```
 
-The CLI builds the runtime-only application image, joins it and ZAP to a private network, and
-removes the target after the scan. A separately managed deployment requires the explicit
-`--external-target --target <url>` options.
+The CLI scans a runtime-only HTTP image first, then a self-signed-certificate HTTPS image. Each
+target joins ZAP on its own private network and is removed after its scan. HTTP reports retain the
+existing location; HTTPS reports are stored in its `https/` child directory. A separately managed
+deployment requires the explicit `--external-target --target <url>` options and runs one scan.
 
 See [build, test, and release commands](docs/build_test_and_release.md) for the
 workflows and examples.

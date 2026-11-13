@@ -70,4 +70,3 @@ const AUTH_TOKEN_STORAGE_KEY = "opamp_ui_bearer_token";
     }
 
     loadCustomCommands();
-

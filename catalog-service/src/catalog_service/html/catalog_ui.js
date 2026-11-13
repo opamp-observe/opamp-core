@@ -784,4 +784,3 @@
         syncSelectionActions();
         loadUiFeatures().then(() => loadRows()).then(startCatalogRefreshTimer);
       })();
-

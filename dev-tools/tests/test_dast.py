@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -24,6 +25,11 @@ from opamp_dev_tools import dast, dast_scan_hooks
 
 UNRELATED_ZAP_RULE_ID = "10020"
 EXTERNAL_TARGET_URL = "http://host.docker.internal:8080"
+CONFIG_KEY_PROVIDER = "provider"
+CONFIG_KEY_TLS = "tls"
+CONFIG_KEY_TLS_CERT_FILE = "cert_file"
+CONFIG_KEY_TLS_ENABLED = "enabled"
+CONFIG_KEY_TLS_KEY_FILE = "key_file"
 
 
 class _RecordingRuntime:
@@ -94,6 +100,46 @@ class _RecordingRuntime:
         self.commands.append(command)
         stdout = dast.MANAGED_TARGET_STATUS_HEALTHY if "inspect" in command else ""
         return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+
+class _FailingHttpZapRuntime(_RecordingRuntime):
+    """Fail the HTTP ZAP command while retaining every attempted command."""
+
+    def run(
+        self,
+        command: list[str],
+        *,
+        cwd: Path | None = None,
+        check: bool = True,
+        capture_output: bool = False,
+        text: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        """Record commands and raise when ZAP reaches the managed HTTP target.
+
+        Parameters
+        ----------
+        command:
+            Shell-independent process argument vector.
+        cwd:
+            Optional process working directory.
+        check:
+            Whether the production runtime would raise on failure.
+        capture_output:
+            Whether the production runtime would capture process output.
+        text:
+            Whether process output would be decoded as text.
+
+        """
+        completed = super().run(
+            command,
+            cwd=cwd,
+            check=check,
+            capture_output=capture_output,
+            text=text,
+        )
+        if dast.DEFAULT_ZAP_IMAGE in command and dast.DEFAULT_DAST_TARGET in command:
+            raise subprocess.CalledProcessError(returncode=1, cmd=command)
+        return completed
 
 
 class _RecordingAlertApi:
@@ -315,22 +361,105 @@ def test_managed_scan_builds_private_full_app_and_cleans_resources(
         options=dast.DastScanOptions(mode=dast.BASELINE_MODE),
     )
 
-    build_command = next(command for command in runtime.commands if "build" in command)
-    target_command = next(
+    build_commands = [command for command in runtime.commands if "build" in command]
+    http_target_command = next(
         command
         for command in runtime.commands
         if command[:2] == ["docker", "run"] and dast.MANAGED_TARGET_IMAGE in command
     )
-    zap_command = next(
-        command for command in runtime.commands if dast.DEFAULT_ZAP_IMAGE in command
+    https_target_command = next(
+        command
+        for command in runtime.commands
+        if command[:2] == ["docker", "run"] and dast.MANAGED_HTTPS_TARGET_IMAGE in command
     )
-    assert str(dockerfile_path.resolve()) in build_command
-    assert "--publish" not in target_command
-    assert "-p" not in target_command
-    assert dast.MANAGED_TARGET_NETWORK_ALIAS in target_command
-    assert "--network" in zap_command
-    assert any(command[1:4] == ["container", "rm", "--force"] for command in runtime.commands)
-    assert any(command[1:3] == ["network", "rm"] for command in runtime.commands)
+    zap_commands = [
+        command for command in runtime.commands if dast.DEFAULT_ZAP_IMAGE in command
+    ]
+    assert len(build_commands) == 2
+    assert len(zap_commands) == 2
+    assert str(dockerfile_path.resolve()) in build_commands[0]
+    assert dast.MANAGED_HTTP_BUILD_TARGET in build_commands[0]
+    assert dast.MANAGED_HTTPS_BUILD_TARGET in build_commands[1]
+    assert "--publish" not in http_target_command
+    assert "-p" not in http_target_command
+    assert dast.MANAGED_TARGET_NETWORK_ALIAS in http_target_command
+    assert "--publish" not in https_target_command
+    assert "-p" not in https_target_command
+    assert dast.MANAGED_TARGET_NETWORK_ALIAS in https_target_command
+    assert "--network" in zap_commands[0]
+    assert "--network" in zap_commands[1]
+    assert dast.DEFAULT_DAST_TARGET in zap_commands[0]
+    assert dast.MANAGED_HTTPS_DAST_TARGET in zap_commands[1]
+    https_volume = zap_commands[1][zap_commands[1].index("--volume") + 1]
+    assert f"/{dast.HTTPS_REPORT_SUBDIRECTORY}:/zap/wrk:rw" in https_volume
+    assert runtime.commands.index(zap_commands[0]) < runtime.commands.index(https_target_command)
+    cleanup_commands = [
+        command
+        for command in runtime.commands
+        if command[1:4] == ["container", "rm", "--force"]
+    ]
+    network_cleanup_commands = [
+        command for command in runtime.commands if command[1:3] == ["network", "rm"]
+    ]
+    assert len(cleanup_commands) == 2
+    assert len(network_cleanup_commands) == 2
+
+
+def test_https_target_definition_uses_generated_certificate_configuration() -> None:
+    """The HTTPS image should generate TLS material and reference it from provider config."""
+    repository_root = Path(__file__).resolve().parents[2]
+    dockerfile_text = (repository_root / dast.MANAGED_TARGET_DOCKERFILE).read_text(
+        encoding="utf-8"
+    )
+    https_config_path = repository_root / "dev-tools" / "docker" / "dast" / "opamp-https.json"
+    https_config = json.loads(https_config_path.read_text(encoding="utf-8"))
+    provider_config = https_config[CONFIG_KEY_PROVIDER]
+    tls_config = provider_config[CONFIG_KEY_TLS]
+
+    assert f"AS {dast.MANAGED_HTTPS_BUILD_TARGET}" in dockerfile_text
+    assert "openssl req" in dockerfile_text
+    assert "DNS:opamp-dast-target" in dockerfile_text
+    assert tls_config[CONFIG_KEY_TLS_ENABLED] is True
+    assert tls_config[CONFIG_KEY_TLS_CERT_FILE] == "/app/tls/server.crt"
+    assert tls_config[CONFIG_KEY_TLS_KEY_FILE] == "/app/tls/server.key"
+
+
+def test_managed_https_scan_does_not_start_when_http_scan_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The HTTPS target must start only after the HTTP ZAP process completes successfully.
+
+    Parameters
+    ----------
+    monkeypatch:
+        Pytest fixture used to select the recording container runtime.
+    tmp_path:
+        Temporary repository root containing a placeholder Dockerfile.
+
+    """
+    dockerfile_path = tmp_path / dast.MANAGED_TARGET_DOCKERFILE
+    dockerfile_path.parent.mkdir(parents=True)
+    dockerfile_path.write_text("FROM scratch\n", encoding="utf-8")
+    runtime = _FailingHttpZapRuntime(tmp_path)
+    monkeypatch.setattr(dast, "resolve_container_runtime", lambda configured_runtime: "docker")
+
+    with pytest.raises(subprocess.CalledProcessError):
+        dast.run_dast_scan(
+            runtime,  # type: ignore[arg-type]
+            options=dast.DastScanOptions(mode=dast.BASELINE_MODE),
+        )
+
+    assert any(
+        dast.MANAGED_TARGET_IMAGE in command for command in runtime.commands
+    )
+    assert not any(
+        dast.MANAGED_HTTPS_TARGET_IMAGE in command for command in runtime.commands
+    )
+    assert any(
+        command[1:4] == ["container", "rm", "--force"]
+        for command in runtime.commands
+    )
 
 
 def test_managed_target_requires_packaged_dockerfile(tmp_path: Path) -> None:

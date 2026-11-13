@@ -167,11 +167,11 @@ opamp-dev-cli build dast baseline
 opamp-dev-cli build dast full --allow-active-scan
 ```
 
-The baseline mode builds and passively inspects an isolated full-app target on a private container
-network. Full mode sends active attack
-payloads and must target a disposable deployment; the explicit acknowledgement prevents an
-accidental full scan. Warning-only results are initially non-blocking, while scanner failures and
-rules classified as failures remain blocking. See
+The baseline mode builds and passively inspects isolated full-app HTTP and HTTPS targets on private
+container networks. HTTP runs first, followed by the test-certificate HTTPS target only after a
+successful HTTP scan. Full mode sends active attack payloads to both disposable targets; the
+explicit acknowledgement prevents an accidental full scan. Warning-only results are initially
+non-blocking, while scanner failures and rules classified as failures remain blocking. See
 [Dynamic Application Security Testing](dynamic_application_security_testing.md) for Windows and
 Linux setup, target networking, rule triage, active-scan safety, and report commands.
 
@@ -196,7 +196,7 @@ ingestion.
 | Bandit findings | `dev-tools/runtime/security-reports/<scope>/bandit.json` | JSON viewer; compare with Ruff findings |
 | Secret scan | `dev-tools/runtime/security-reports/<scope>/detect-secrets.json` | JSON viewer; validate every candidate without copying secrets into issues |
 | Dependency audit | `dev-tools/runtime/security-reports/<scope>/pip-audit.json` | For a named component, review native pip-audit JSON; for `repository`, use this manifest to find each project's native report under `pip-audit/` |
-| ZAP DAST reports | `dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.{html,json,xml,md}` | Start with HTML for review and use JSON or XML for automation |
+| ZAP DAST reports | HTTP: `dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.{html,json,xml,md}`; HTTPS: the equivalent files under `<mode>/https/` | Start with both HTML reports and use JSON or XML for automation |
 | Developer CLI issues/errors | `dev-tools/runtime/logs/*-issues.json` and `*-errors.json` | Use the paths printed at command completion |
 
 `<scope>` is `repository` for `secure all` and the component directory name for `secure named`.

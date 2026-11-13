@@ -20,7 +20,7 @@ import re
 import shutil
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -34,6 +34,10 @@ DEFAULT_DAST_SCOPE = "provider"
 MANAGED_TARGET_NETWORK_ALIAS = "opamp-dast-target"
 MANAGED_TARGET_PORT = 8080
 DEFAULT_DAST_TARGET = f"http://{MANAGED_TARGET_NETWORK_ALIAS}:{MANAGED_TARGET_PORT}"
+MANAGED_HTTPS_TARGET_PORT = 8443
+MANAGED_HTTPS_DAST_TARGET = (
+    f"https://{MANAGED_TARGET_NETWORK_ALIAS}:{MANAGED_HTTPS_TARGET_PORT}"
+)
 DEFAULT_SPIDER_MINUTES = 2
 DEFAULT_STARTUP_TIMEOUT_MINUTES = 5
 DEFAULT_TARGET_READY_TIMEOUT_SECONDS = 180
@@ -46,6 +50,9 @@ DOCKER_HOST_GATEWAY_MAPPING = f"{DOCKER_HOST_ALIAS}:host-gateway"
 DOCKER_RUNTIME_NAMES = frozenset({"docker", "docker.exe"})
 MANAGED_TARGET_DOCKERFILE = Path("dev-tools/docker/dast/Dockerfile")
 MANAGED_TARGET_IMAGE = "opamp-dast-full-app:local"
+MANAGED_HTTPS_TARGET_IMAGE = "opamp-dast-full-app-https:local"
+MANAGED_HTTP_BUILD_TARGET = "runtime-http"
+MANAGED_HTTPS_BUILD_TARGET = "runtime-https"
 MANAGED_TARGET_RESOURCE_PREFIX = "opamp-dast"
 MANAGED_TARGET_RUN_ID_LENGTH = 12
 MANAGED_TARGET_STATUS_HEALTHY = "healthy"
@@ -68,6 +75,7 @@ SCAN_HOOK_COPY_FILE_NAME = "zap_scan_hooks.py"
 XML_REPORT_FILE_NAME = "zap_report.xml"
 ZAP_CONTAINER_WORK_DIRECTORY = "/zap/wrk"
 ZAP_REPORT_DIRECTORY = Path("dev-tools/runtime/security-reports/zap")
+HTTPS_REPORT_SUBDIRECTORY = "https"
 ZAP_WORK_VOLUME_MODE = "rw"
 BASELINE_SCAN_SCRIPT = "zap-baseline.py"
 FULL_SCAN_SCRIPT = "zap-full-scan.py"
@@ -130,6 +138,52 @@ class DastScanOptions:  # pylint: disable=too-many-instance-attributes
 
 
 @dataclass(frozen=True)
+class ManagedDastTargetProfile:
+    """Describe one managed full-application transport target.
+
+    Attributes
+    ----------
+    name:
+        Stable transport name used in logs and private resource names.
+    target_url:
+        URL that ZAP uses from the shared private container network.
+    image:
+        Local image tag assigned to the selected Dockerfile target.
+    build_target:
+        Named multi-stage Dockerfile target that configures the transport.
+    report_subdirectory:
+        Optional child workspace. ``None`` retains the legacy HTTP report location.
+
+    """
+
+    name: str
+    target_url: str
+    image: str
+    build_target: str
+    report_subdirectory: str | None
+
+
+MANAGED_HTTP_TARGET_PROFILE = ManagedDastTargetProfile(
+    name="http",
+    target_url=DEFAULT_DAST_TARGET,
+    image=MANAGED_TARGET_IMAGE,
+    build_target=MANAGED_HTTP_BUILD_TARGET,
+    report_subdirectory=None,
+)
+MANAGED_HTTPS_TARGET_PROFILE = ManagedDastTargetProfile(
+    name="https",
+    target_url=MANAGED_HTTPS_DAST_TARGET,
+    image=MANAGED_HTTPS_TARGET_IMAGE,
+    build_target=MANAGED_HTTPS_BUILD_TARGET,
+    report_subdirectory=HTTPS_REPORT_SUBDIRECTORY,
+)
+MANAGED_TARGET_PROFILES = (
+    MANAGED_HTTP_TARGET_PROFILE,
+    MANAGED_HTTPS_TARGET_PROFILE,
+)
+
+
+@dataclass(frozen=True)
 class ManagedDastDeployment:
     """Identify the private container resources owned by one DAST run.
 
@@ -147,7 +201,7 @@ class ManagedDastDeployment:
 
 
 def run_dast_scan(runtime: CommandRuntime, *, options: DastScanOptions) -> bool:
-    """Run one Docker-backed ZAP scan and retain portable report artifacts.
+    """Run Docker-backed ZAP scans and retain portable report artifacts.
 
     Parameters
     ----------
@@ -159,9 +213,58 @@ def run_dast_scan(runtime: CommandRuntime, *, options: DastScanOptions) -> bool:
     """
     _validate_scan_options(options)
     runtime_executable = resolve_container_runtime(options.configured_runtime)
-    report_directory = (
+    base_report_directory = (
         runtime.repo_root / ZAP_REPORT_DIRECTORY / options.scope / options.mode
     ).resolve()
+    if options.external_target:
+        _run_zap_target_scan(
+            runtime,
+            runtime_executable=runtime_executable,
+            options=options,
+            report_directory=base_report_directory,
+            target_profile=None,
+        )
+        return False
+
+    for target_profile in MANAGED_TARGET_PROFILES:
+        report_directory = base_report_directory
+        if target_profile.report_subdirectory is not None:
+            report_directory /= target_profile.report_subdirectory
+        target_options = replace(options, target=target_profile.target_url)
+        _run_zap_target_scan(
+            runtime,
+            runtime_executable=runtime_executable,
+            options=target_options,
+            report_directory=report_directory,
+            target_profile=target_profile,
+        )
+    return False
+
+
+def _run_zap_target_scan(
+    runtime: CommandRuntime,
+    *,
+    runtime_executable: str,
+    options: DastScanOptions,
+    report_directory: Path,
+    target_profile: ManagedDastTargetProfile | None,
+) -> None:
+    """Run ZAP against one external or managed transport target.
+
+    Parameters
+    ----------
+    runtime:
+        Shared developer CLI runtime used for paths, logging, and process execution.
+    runtime_executable:
+        Resolved Docker or Podman executable.
+    options:
+        Scan settings with the concrete target URL for this pass.
+    report_directory:
+        Dedicated host workspace for this pass's rules, hook, and reports.
+    target_profile:
+        Managed target definition, or ``None`` for a separately managed external URL.
+
+    """
     report_directory.mkdir(parents=True, exist_ok=True)
     copied_rules_file = _copy_rules_file(
         runtime,
@@ -171,11 +274,12 @@ def run_dast_scan(runtime: CommandRuntime, *, options: DastScanOptions) -> bool:
     copied_scan_hook = _copy_scan_hook(report_directory=report_directory)
     deployment: ManagedDastDeployment | None = None
     try:
-        if not options.external_target:
+        if target_profile is not None:
             deployment = _start_managed_target(
                 runtime,
                 runtime_executable=runtime_executable,
                 options=options,
+                target_profile=target_profile,
             )
         command = _build_zap_command(
             runtime_executable=runtime_executable,
@@ -185,7 +289,11 @@ def run_dast_scan(runtime: CommandRuntime, *, options: DastScanOptions) -> bool:
             copied_scan_hook=copied_scan_hook,
             network_name=deployment.network_name if deployment is not None else None,
         )
-        target_kind = "external" if options.external_target else "isolated full-app container"
+        target_kind = (
+            "external"
+            if target_profile is None
+            else f"isolated {target_profile.name} full-app container"
+        )
         runtime.info(
             f"DEBUG: OWASP ZAP mode={options.mode} target={options.target} kind={target_kind}"
         )
@@ -199,7 +307,6 @@ def run_dast_scan(runtime: CommandRuntime, *, options: DastScanOptions) -> bool:
                 deployment=deployment,
             )
     runtime.info(f"OWASP ZAP {options.mode} scan complete: {report_directory}")
-    return False
 
 
 def _validate_scan_options(options: DastScanOptions) -> None:
@@ -220,6 +327,11 @@ def _validate_scan_options(options: DastScanOptions) -> None:
         raise ValueError(
             f"Managed DAST scans must target {MANAGED_TARGET_NETWORK_ALIAS}; use "
             "--external-target only for a separately managed deployment"
+        )
+    if not options.external_target and options.target != DEFAULT_DAST_TARGET:
+        raise ValueError(
+            "Managed DAST scans select their HTTP and HTTPS targets automatically; use "
+            "--external-target to scan a custom URL"
         )
     if not SCOPE_PATTERN.fullmatch(options.scope):
         raise ValueError(
@@ -268,6 +380,7 @@ def _start_managed_target(
     *,
     runtime_executable: str,
     options: DastScanOptions,
+    target_profile: ManagedDastTargetProfile = MANAGED_HTTP_TARGET_PROFILE,
 ) -> ManagedDastDeployment:
     """Build and start the isolated full-app container used as the ZAP target.
 
@@ -283,29 +396,42 @@ def _start_managed_target(
         Resolved Docker or Podman executable.
     options:
         Scan settings used to create traceable resource names.
+    target_profile:
+        Transport-specific image, Dockerfile target, URL, and report settings.
 
     """
     dockerfile_path = (runtime.repo_root / MANAGED_TARGET_DOCKERFILE).resolve()
     if not dockerfile_path.is_file():
         raise FileNotFoundError(f"DAST target Dockerfile was not found: {dockerfile_path}")
 
-    runtime.info(f"DEBUG: building isolated DAST target image={MANAGED_TARGET_IMAGE}")
+    runtime.info(
+        "DEBUG: building isolated DAST target "
+        f"transport={target_profile.name} image={target_profile.image}"
+    )
     runtime.run(
         [
             runtime_executable,
             "build",
             "--file",
             str(dockerfile_path),
+            "--target",
+            target_profile.build_target,
             "--tag",
-            MANAGED_TARGET_IMAGE,
+            target_profile.image,
             str(runtime.repo_root),
         ],
         cwd=runtime.repo_root,
     )
 
     deployment = ManagedDastDeployment(
-        network_name=_managed_resource_name(resource_kind="network", options=options),
-        container_name=_managed_resource_name(resource_kind="target", options=options),
+        network_name=_managed_resource_name(
+            resource_kind=f"{target_profile.name}-network",
+            options=options,
+        ),
+        container_name=_managed_resource_name(
+            resource_kind=f"{target_profile.name}-target",
+            options=options,
+        ),
     )
     network_created = False
     container_started = False
@@ -325,7 +451,7 @@ def _start_managed_target(
                 MANAGED_TARGET_NETWORK_ALIAS,
                 "--label",
                 MANAGED_IMAGE_LABEL,
-                MANAGED_TARGET_IMAGE,
+                target_profile.image,
             ]
         )
         container_started = True

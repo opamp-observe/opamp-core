@@ -132,10 +132,12 @@ comparison with Ruff. See [Testing and Result Review](testing.md) for test scope
 browser commands, and the exact JUnit, coverage, HTML, SARIF, and JSON result locations.
 
 Dynamic testing uses the multi-architecture `ghcr.io/zaproxy/zaproxy:2.17.0` image pinned by OCI
-digest in the developer CLI. The CLI mounts only its generated report directory, adds Docker's
-cross-platform host gateway when required, and keeps active scanning behind
-`--allow-active-scan`. A packaged scan hook suppresses only reviewed rule `10044` findings whose
-redirect details name `https://htmlpreview.github.io`; other redirect findings remain enabled. See
+digest in the developer CLI. Managed scans test HTTP first and then an HTTPS image whose
+self-signed certificate is generated during the Docker build. The CLI mounts only each generated
+report directory, adds Docker's cross-platform host gateway when required, and keeps active
+scanning behind `--allow-active-scan`. A packaged scan hook suppresses only reviewed rule `10044`
+findings whose redirect details name `https://htmlpreview.github.io`; other redirect findings
+remain enabled. See
 [Dynamic Application Security Testing](dynamic_application_security_testing.md).
 
 ## Node And Browser Tooling

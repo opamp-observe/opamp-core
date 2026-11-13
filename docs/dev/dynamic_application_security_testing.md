@@ -15,8 +15,9 @@ limitations under the License.
 # Dynamic Application Security Testing
 
 The developer CLI runs OWASP ZAP 2.17.0, pinned by its multi-architecture OCI digest, in Docker or
-Podman. By default, it builds and starts a separate full OpAMP server deployment containing the
-provider, Config Editor, Config Catalog, Client Config Generator, and Server Credentials plugins.
+Podman. By default, it sequentially builds and scans HTTP and HTTPS variants of a separate full
+OpAMP server deployment containing the provider, Config Editor, Config Catalog, Client Config
+Generator, and Server Credentials plugins.
 The ZAP image contains the scanner; no host-side Java or ZAP installation is required.
 The command is intentionally separate from `build secure`: static checks can start from source,
 whereas DAST needs a reachable runtime and a full scan sends attack payloads.
@@ -38,16 +39,24 @@ Run a passive baseline from either PowerShell or a POSIX shell:
 opamp-dev-cli build dast baseline
 ```
 
-The command builds `opamp-dast-full-app:local` using the locked server dependency set and installs
-only runtime dependencies. It creates a unique private container network, starts the application
-without publishing a host port, waits for its health check, runs ZAP on the same network, and then
-removes the application container and network even when the scan fails.
+The command first builds and scans `opamp-dast-full-app:local` over HTTP. After that scan completes
+successfully, it builds and scans `opamp-dast-full-app-https:local` over HTTPS. Each target uses the
+locked server dependency set and installs only runtime dependencies. For each pass, the CLI creates
+a unique private container network, starts the application without publishing a host port, waits
+for its health check, runs ZAP on the same network, and then removes the application container and
+network even when the scan fails. An HTTP failure stops the sequence before HTTPS starts.
 
-ZAP uses `http://opamp-dast-target:8080` inside that private network. Host processes and host ports
-are not reachable through this name, so an unrelated development server cannot become the scan
-target. The runtime image does not contain source-checkout test tools, `node_modules`, coverage
-output, `/docs`, or `/dev-notes`. The root `.dockerignore` also prevents those directories from
-entering the build context.
+ZAP uses `http://opamp-dast-target:8080` for the first pass and
+`https://opamp-dast-target:8443` for the second. Host processes and host ports are not reachable
+through this private alias, so an unrelated development server cannot become the scan target. The
+runtime images do not contain source-checkout test tools, `node_modules`, coverage output,
+`/docs`, or `/dev-notes`. The root `.dockerignore` also prevents those directories from entering
+the build context.
+
+The HTTPS image generates a short-lived, self-signed RSA test certificate during its Docker build.
+Its subject alternative names cover `opamp-dast-target`, `localhost`, and `127.0.0.1`. The private
+key exists only inside the disposable image and is not stored in the repository or build context.
+The HTTPS provider configuration references `/app/tls/server.crt` and `/app/tls/server.key`.
 
 The scan hook seeds the provider UI and the Config Editor, Config Catalog, Client Config
 Generator, and Server Credentials pages before spidering. This ensures JavaScript-populated menu
@@ -222,6 +231,16 @@ dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.xml
 dev-tools/runtime/security-reports/zap/<scope>/<mode>/zap_report.md
 ```
 
+Those paths contain the HTTP result. The sequential HTTPS pass writes the equivalent files without
+overwriting HTTP evidence:
+
+```text
+dev-tools/runtime/security-reports/zap/<scope>/<mode>/https/zap_report.html
+dev-tools/runtime/security-reports/zap/<scope>/<mode>/https/zap_report.json
+dev-tools/runtime/security-reports/zap/<scope>/<mode>/https/zap_report.xml
+dev-tools/runtime/security-reports/zap/<scope>/<mode>/https/zap_report.md
+```
+
 Image build failures, application health-check failures, unreachable targets, invalid
 configuration, and findings classified as `FAIL` fail the command. Warning-only results are
 non-blocking unless `--fail-on-warning` is set. Use `--spider-minutes` and
@@ -230,8 +249,8 @@ startup/passive-scan wait.
 
 The source for this workflow is `dev-tools/src/opamp_dev_tools/dast.py`, and its unit tests are in
 `dev-tools/tests/test_dast.py`. The reviewed redirect filter is implemented in
-`dev-tools/src/opamp_dev_tools/dast_scan_hooks.py`. The clean target image is defined by
-`dev-tools/docker/dast/Dockerfile` and `dev-tools/docker/dast/opamp.json`. ZAP's upstream
-references are the
+`dev-tools/src/opamp_dev_tools/dast_scan_hooks.py`. The HTTP and HTTPS image targets are defined by
+`dev-tools/docker/dast/Dockerfile`, using `dev-tools/docker/dast/opamp.json` and
+`dev-tools/docker/dast/opamp-https.json` respectively. ZAP's upstream references are the
 [Docker scan documentation](https://www.zaproxy.org/docs/docker/) and
 [Automation Framework documentation](https://www.zaproxy.org/docs/automate/automation-framework/).
