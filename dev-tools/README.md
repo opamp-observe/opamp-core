@@ -204,8 +204,18 @@ opamp-dev-cli dev publish-pypi --index pypi
 
 Authentication comes from PyPI trusted publishing or `UV_PUBLISH_TOKEN`; tokens
 are never placed in the logged command line. The default publication requires
-the shared library, server and plugin wheels, consumer, and suite meta-package.
-Use `--allow-partial` for deliberate partial releases.
+the shared library, server and plugin wheels, consumer, suite meta-package,
+CLI, and consumer simulator. Use `--allow-partial` for deliberate partial
+releases.
+
+Published GitHub releases invoke `.github/workflows/publish_pypi.yml`. The
+workflow first verifies that `main_fluent-opamp.yml` completed successfully for
+the exact commit on `main`. It then builds and validates without publication
+credentials, transfers only the wheel artifact, and uses GitHub OIDC and the
+protected `pypi` environment to publish with PyPI Trusted Publishing. Register
+every first-party PyPI project against owner `opamp-observe`, repository
+`opamp-core`, workflow `publish_pypi.yml`, and environment `pypi`; do not
+create a GitHub API-token secret for this workflow.
 
 See [developer maintenance commands](docs/developer_maintenance.md) for all
 wheel transfer controls.

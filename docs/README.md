@@ -374,6 +374,7 @@ See:
 - `proto/` - protobuf definitions
 - `provider/` - required server package
 - `scripts/` - compatibility wrappers and low-level operational helper scripts
+0 `security/` - resources to support ZAP and semgrep testing
 - `shared/` - independently packaged `opamp-shared` runtime utilities
 - `opamp-suite/` - PyPI installation profiles for server, editors, consumer, and all components
 - `tests/` - repository-level tests and container scenarios
@@ -383,6 +384,9 @@ See:
 - [Components and repository layout](components_and_repository_layout.md)
 - [Features and spec alignment](features.md)
 - [Consumer implementations](consumer_implementations.md)
+- [Elastic Agent self-monitoring configuration](elastic-agent-self-monitor/readme.md)
+- [Fluent Bit self-monitoring configuration](fluent-bit-self-monitor/readme.md)
+- [Vector self-monitoring configuration](vector-self-monitor/readme.md)
 - [Client config generator service](client_config_generator_service.md)
 - [Roadmap](roadmap/index.md)
 - [OpAMP JSON reference map](opamp_json_reference.md)

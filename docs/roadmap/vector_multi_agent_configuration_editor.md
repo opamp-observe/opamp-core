@@ -14,8 +14,11 @@ limitations under the License.
 
 # Multi-Agent Configuration Editor and Vector Support
 
-Status: proposed roadmap specification  
+Status: proposed roadmap specification
+
 Research baseline: 4 October 2026
+
+Last reviewed: 13 November 2026
 
 ## Purpose
 

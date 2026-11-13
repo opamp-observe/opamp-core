@@ -46,33 +46,53 @@ Primary repository-wide build outputs now include independent artefacts for:
 
 ## Core guides
 
+### Server related
+
 - [Product installation](installation.md) — choose and install the core provider, standalone or embedded editors, catalog, agent configuration generator, wheel files, automation, and CLI tools.
 - [Setup README](README.md) — full setup and run instructions.
 - [Features - spec alignment](features.md) — feature notes and design direction.
-- [Roadmap](roadmap/index.md) — future ideas under consideration, without timeline commitments.
 - [UI examples](screenshots.md) - Some of the elements of the UI to illustrate the user experience.
-- [Client (consumer)_diagrams (as images)](consumer_client_diagrams.md) — rendered consumer diagrams with explanation per diagram panel.
-- [Consumer implementations](consumer_implementations.md) — built-in consumer/client matrix with OpAMP capability support and upstream agent reference links.
+- [Provider config reference](provider_config_reference.md) — dedicated reference for `provider.*` values, defaults, and UI editability.
+- [OpAMP Config Catalog UI](opamp_config_catalog_ui.md) — configuration-driven catalog index page and help route details.
+- [Server README](../provider/README.md) — server (aka provider) configuration and web UI notes.
 - [Server_(provider) diagrams (as images)](provider_server_diagrams.md) — rendered provider/server diagrams plus links to auth, endpoints, and command docs.
+
+- [OpAMP JSON reference map](opamp_json_reference.md) — guide to which docs explain each top-level section of `config/opamp.json`.
+- [Roadmap](roadmap/index.md) — future ideas under consideration, without timeline commitments.
+
 - [Authentication](authentication.md) — bearer token auth modes, static-token setup, Keycloak/JWT setup, and MCP token usage.
 - [Web Endpoints](endpoints.md) — provider endpoint inventory, including UI/API/tool/MCP routes and `/doc-set`.
 - [Provider metrics reference](provider_metrics_reference.md) — metric-by-metric explanation of the provider scrape endpoint and internal graph data.
-- [Prometheus and collector setup](provider_metrics_prometheus_setup.md) — how to scrape `/metrics` securely from Prometheus or the OpenTelemetry Collector.
+
 - The provider-hosted `Latest docs` entry point is `http://localhost:8080/doc-set`, which redirects to the URL configured in `provider.latest_docs_url`.
-- [OpAMP JSON reference map](opamp_json_reference.md) — guide to which docs explain each top-level section of `config/opamp.json`.
-- [Provider config reference](provider_config_reference.md) — dedicated reference for `provider.*` values, defaults, and UI editability.
 - [OTLP observability config](otlp_observability.md) — shared `otlp-endpoints` settings for logs, metrics, and traces export.
-- [OpAMP Config Catalog UI](opamp_config_catalog_ui.md) — configuration-driven catalog index page and help route details.
 - [Self_signed_TLS_setup](self_signed_tls_setup.md) — generate local self-signed cert/key and apply config values for HTTPS testing.
 - [API_gateway_suggested use and requirements](api_gateway_requirements.md) — recommended API gateway controls, internal vs external client profiles, and required auth/route hardening updates.
 - [Service_daemon_setup](service_daemon_setup.md) — running provider/consumer as `systemd` or Windows services, including Fluent Bit/Fluentd launch permissions.
-- [Client README](../consumer/README.md) — client/agent (aka consumer) configuration and CLI usage.
-- [Server README](../provider/README.md) — server (aka provider) configuration and web UI notes.
 - [Server state persistence](../provider/README.md#state-persistence-and-restore) — snapshot naming, `--restore` usage, fallback behavior, and retention.
+- [Scripts](scripts.md) — script reference table by platform.
+- [Prometheus and collector setup](provider_metrics_prometheus_setup.md) — how to scrape `/metrics` securely from Prometheus or the OpenTelemetry Collector.
+
+
+### AI related features
+
 - [MCP scripts and usage](../mcp/README.md) — MCP wrapper/canonical script behavior, FastMCP client role, command-line parameters, and verification.
 - [Agent broker README](../agent_broker/README.md) — optional standalone conversation broker overview and run steps.
 - [Agent broker docs index](../agent_broker/docs/README.md) — broker runbooks (startup/shutdown/logging, Slack setup, architecture notes).
-- [Scripts](scripts.md) — script reference table by platform.
+
+
+### Client related
+
+- [Client README](../consumer/README.md) — client/agent (aka consumer) configuration and CLI usage.
+- [Client (consumer)_diagrams (as images)](consumer_client_diagrams.md) — rendered consumer diagrams with explanation per diagram panel.
+- [Consumer implementations](consumer_implementations.md) — built-in consumer/client matrix with OpAMP capability support and upstream agent reference links.
+
+
+### Agent Configuration examples
+
+- [Elastic Agent self-monitoring](elastic-agent-self-monitor/readme.md) — Elastic Agent logs and metrics routed to a local Logstash pipeline.
+- [Fluent Bit self-monitoring](fluent-bit-self-monitor/readme.md) — Fluent Bit observability configuration shared through OpAMP.
+- [Vector self-monitoring](vector-self-monitor/readme.md) — Vector internal metrics converted to local log events.
 
 ## Development guides
 
@@ -112,6 +132,7 @@ Primary repository-wide build outputs now include independent artefacts for:
 - `proto` — protobuf definitions and generated artifacts.
 - `provider` — the OpAMP provider (server) package, UI, and tests.
 - `scripts` — helper run and shutdown scripts.
+- `security` - setup and testing resources for Zap and semgrep
 - `shared` — shared utilities used by provider/consumer.
 - `src` — top-level Python package glue (if needed for tooling).
 - `tests` — repository-level tests.
@@ -124,6 +145,9 @@ Primary repository-wide build outputs now include independent artefacts for:
 - [Model Context Protocol (MCP)](https://modelcontextprotocol.io/specification/2025-11-25) specification - optional feature
 - [Fluentd](https://www.fluentd.org/)
 - [Fluent Bit](https://fluentbit.io/)
+- [Vector](https://vector.dev/)
+- [Elastic Agent](https://www.elastic.co/elastic-agent)
+- [Elastic Beats](https://www.elastic.co/docs/reference/beats)
 - [Manning - Logging in Action](https://www.manning.com/books/logging-in-action?query=fluent) — Fluentd-focused coverage with Kubernetes and related observability workflows.
 - [Manning - Logs and Telemetry](https://www.manning.com/books/logs-and-telemetry) — Fluent Bit, Kubernetes, streaming, and OpenTelemetry-oriented coverage.
 - [Quart](https://quart.palletsprojects.com/en/latest/) (foundation of the implementation)
@@ -139,3 +163,4 @@ Primary repository-wide build outputs now include independent artefacts for:
 - [pip-audit](https://pypi.org/project/pip-audit/) — Python dependency vulnerability scanning.
 - [esbuild](https://esbuild.github.io/) — JavaScript minification for provider UI compact assets.
 - [CycloneDX](https://cyclonedx.org/) — SBOM format used for generated deployable artifact manifests.
+- [Zap](https://www.zaproxy.org/)  —  Open Source Dynamic Secutiry Automated Testing tool
