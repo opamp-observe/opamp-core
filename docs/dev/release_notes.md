@@ -109,6 +109,14 @@ The release date is to be confirmed.
 
 ### Authentication, TLS, and security
 
+* Added cross-platform Docker-backed OWASP ZAP baseline and full-scan commands to the developer
+  CLI, including a pinned scanner image, Windows/Linux host-gateway support, debug output,
+  reviewed-rule inputs, stable HTML/JSON/XML/Markdown reports, warning policy controls, and an
+  explicit acknowledgement before active attack payloads can be sent.
+* Documented local provider and published-Compose-port scanning, PowerShell and POSIX rule-file
+  workflows, report review, blocking behavior, and the disposable-deployment boundary. Retained
+  authenticated Automation Framework plans and API-specific scanning as roadmap follow-up work.
+
 * Added the ST-004B seven-profile container matrix covering no-auth behavior, independent static
   OpAMP and UI token scopes, cross-scope rejection, MCP disablement, malformed and expired JWTs,
   wrong issuer and audience claims, unsigned JWT rejection, and trusted versus untrusted TLS

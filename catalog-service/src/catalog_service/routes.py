@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import html
+import json
 import logging
 from functools import lru_cache
 from http import HTTPStatus
@@ -32,13 +33,16 @@ CATALOG_HTML_PATH = HTML_DIR / "catalog.html"
 CATALOG_HELP_HTML_PATH = HTML_DIR / "catalog_help.html"
 CATALOG_UI_CSS_PATH = HTML_DIR / "catalog_ui.css"
 CATALOG_UI_API_JS_PATH = HTML_DIR / "catalog_ui_api.js"
+CATALOG_UI_JS_PATH = HTML_DIR / "catalog_ui.js"
 CATALOG_UI_LOGO_PATH = HTML_DIR / "opamp_logo.png"
 CATALOG_UI_ICON_PATH = HTML_DIR / "config_editor_icon.png"
 PLACEHOLDER_TITLE = "__CATALOG_TITLE__"
 PLACEHOLDER_ROUTE_PATH = "__CATALOG_ROUTE_PATH__"
 PLACEHOLDER_HELP_PATH = "__CATALOG_HELP_PATH__"
 PLACEHOLDER_CSS_PATH = "__CATALOG_CSS_PATH__"
+PLACEHOLDER_COMPONENT_CSS_LINK = "__CATALOG_COMPONENT_CSS_LINK__"
 PLACEHOLDER_API_JS_PATH = "__CATALOG_API_JS_PATH__"
+PLACEHOLDER_JS_PATH = "__CATALOG_JS_PATH__"
 PLACEHOLDER_LOGO_PATH = "__CATALOG_LOGO_PATH__"
 PLACEHOLDER_ICON_PATH = "__CATALOG_ICON_PATH__"
 PLACEHOLDER_UI_REFRESH_SECONDS = "__CATALOG_UI_REFRESH_SECONDS__"
@@ -60,6 +64,7 @@ KEY_COLUMN = "column"
 VALUE_UNKNOWN_UI_ERROR = "Unknown UI error"
 VALUE_RUNTIME_ERROR = "runtime_error"
 VALUE_BROWSER = "browser"
+STYLESHEET_LINK_TEMPLATE = '<link rel="stylesheet" href="{stylesheet_path}" />'
 ERR_PATH_REQUIRED = "path is required"
 ERR_FILE_NOT_FOUND = "catalog file not found: {file_path}"
 ERR_FILE_NOT_ALLOWED = "catalog file is not part of configured sources: {file_path}"
@@ -106,14 +111,50 @@ def _catalog_html(
     config: CatalogServiceConfig,
     *,
     css_path: str,
+    component_css_path: str | None,
     api_js_path: str,
+    ui_js_path: str,
     logo_path: str,
     icon_path: str,
     show_provider_ui_link: bool,
     client_errors_endpoint: str,
 ) -> str:
-    """Render catalog UI HTML from external asset markup."""
-    provider_link_attrs = "" if show_provider_ui_link else 'style="display:none" aria-hidden="true" tabindex="-1"'
+    """Render catalog UI HTML with same-origin asset references.
+
+    Parameters
+    ----------
+    config:
+        Effective catalog settings used for labels and routes.
+    css_path:
+        Base stylesheet path for the current standalone or embedded host.
+    component_css_path:
+        Optional catalog-specific stylesheet added when the host supplies the base stylesheet.
+    api_js_path:
+        Same-origin catalog API helper JavaScript path.
+    ui_js_path:
+        Same-origin catalog behavior JavaScript path.
+    logo_path:
+        Logo asset path for the current host mode.
+    icon_path:
+        Browser and page icon asset path for the current host mode.
+    show_provider_ui_link:
+        Whether navigation back to the provider UI is available.
+    client_errors_endpoint:
+        Endpoint receiving browser runtime error reports.
+
+    Returns
+    -------
+    str
+        Rendered catalog HTML without inline executable code or styles.
+    """
+    provider_link_attrs = (
+        "" if show_provider_ui_link else 'hidden aria-hidden="true" tabindex="-1"'
+    )
+    component_css_link = ""
+    if component_css_path:
+        component_css_link = STYLESHEET_LINK_TEMPLATE.format(
+            stylesheet_path=html.escape(component_css_path, quote=True),
+        )
     return _render_html_asset(
         template_path=CATALOG_HTML_PATH,
         replacements={
@@ -121,13 +162,45 @@ def _catalog_html(
             PLACEHOLDER_ROUTE_PATH: html.escape(config.route_path),
             PLACEHOLDER_HELP_PATH: html.escape(config.help_path),
             PLACEHOLDER_CSS_PATH: html.escape(css_path),
+            PLACEHOLDER_COMPONENT_CSS_LINK: component_css_link,
             PLACEHOLDER_API_JS_PATH: html.escape(api_js_path),
+            PLACEHOLDER_JS_PATH: html.escape(ui_js_path),
             PLACEHOLDER_LOGO_PATH: html.escape(logo_path),
             PLACEHOLDER_ICON_PATH: html.escape(icon_path),
             PLACEHOLDER_UI_REFRESH_SECONDS: html.escape(str(config.ui_refresh_seconds)),
             PLACEHOLDER_CONFIG_EDITOR_ENTRY_POINT: CONFIG_EDITOR_ENTRY_POINT,
             PLACEHOLDER_PROVIDER_UI_LINK_ATTRS: provider_link_attrs,
             PLACEHOLDER_CLIENT_ERRORS_ENDPOINT: html.escape(client_errors_endpoint),
+        },
+    )
+
+
+def _catalog_javascript(
+    config: CatalogServiceConfig,
+    *,
+    client_errors_endpoint: str,
+) -> str:
+    """Render the external catalog behavior asset with runtime route settings.
+
+    Parameters
+    ----------
+    config:
+        Effective catalog configuration supplying route and refresh values.
+    client_errors_endpoint:
+        Deployment-specific endpoint used for browser error reporting.
+
+    Returns
+    -------
+    str
+        JavaScript with JSON-encoded runtime values and no inline HTML script.
+    """
+    return _render_html_asset(
+        template_path=CATALOG_UI_JS_PATH,
+        replacements={
+            PLACEHOLDER_ROUTE_PATH: json.dumps(config.route_path),
+            PLACEHOLDER_UI_REFRESH_SECONDS: json.dumps(config.ui_refresh_seconds),
+            PLACEHOLDER_CONFIG_EDITOR_ENTRY_POINT: json.dumps(CONFIG_EDITOR_ENTRY_POINT),
+            PLACEHOLDER_CLIENT_ERRORS_ENDPOINT: json.dumps(client_errors_endpoint),
         },
     )
 
@@ -163,6 +236,25 @@ def _local_catalog_api_js_route_path(route_path: str) -> str:
     if not normalized:
         normalized = "/catalog"
     return f"{normalized}/assets/catalog_ui_api.js"
+
+
+def _local_catalog_js_route_path(route_path: str) -> str:
+    """Return the same-origin route for the external catalog behavior asset.
+
+    Parameters
+    ----------
+    route_path:
+        Configured root route for the catalog UI.
+
+    Returns
+    -------
+    str
+        Route beneath the catalog asset namespace.
+    """
+    normalized = str(route_path or "").rstrip("/")
+    if not normalized:
+        normalized = "/catalog"
+    return f"{normalized}/assets/catalog_ui.js"
 
 
 def _local_catalog_icon_route_path(route_path: str) -> str:
@@ -227,9 +319,20 @@ def register_catalog_routes(
     )
     standalone_mode = str(app.config.get(APP_CONFIG_KEY_MODE) or "").strip().lower() == APP_MODE_STANDALONE
     css_path = _css_path_for_mode(config=config, standalone_mode=standalone_mode)
+    local_css_route_path = _local_catalog_css_route_path(config.route_path)
+    component_css_path = None
+    if not standalone_mode:
+        component_css_path = _append_cache_bust_query(
+            local_css_route_path,
+            source_path=CATALOG_UI_CSS_PATH,
+        )
     api_js_path = _append_cache_bust_query(
         _local_catalog_api_js_route_path(config.route_path),
         source_path=CATALOG_UI_API_JS_PATH,
+    )
+    ui_js_path = _append_cache_bust_query(
+        _local_catalog_js_route_path(config.route_path),
+        source_path=CATALOG_UI_JS_PATH,
     )
     logo_path = _logo_path_for_mode(config=config, standalone_mode=standalone_mode)
     icon_path = _icon_path_for_mode(config=config, standalone_mode=standalone_mode)
@@ -244,7 +347,9 @@ def register_catalog_routes(
             _catalog_html(
                 config,
                 css_path=css_path,
+                component_css_path=component_css_path,
                 api_js_path=api_js_path,
+                ui_js_path=ui_js_path,
                 logo_path=logo_path,
                 icon_path=icon_path,
                 show_provider_ui_link=not standalone_mode,
@@ -263,14 +368,27 @@ def register_catalog_routes(
     async def catalog_ui_api_js() -> Response:
         return Response(_read_text_asset(CATALOG_UI_API_JS_PATH), content_type="text/javascript; charset=utf-8")
 
+    local_js_route_path = _local_catalog_js_route_path(config.route_path)
+
+    @app.get(local_js_route_path)
+    async def catalog_ui_js() -> Response:
+        """Serve external catalog behavior with effective runtime values."""
+        return Response(
+            _catalog_javascript(config, client_errors_endpoint=client_errors_endpoint),
+            content_type="text/javascript; charset=utf-8",
+        )
+
+    @app.get(local_css_route_path)
+    async def catalog_ui_css() -> Response:
+        """Serve catalog-specific styles in standalone and embedded modes."""
+        return Response(
+            _read_text_asset(CATALOG_UI_CSS_PATH),
+            content_type="text/css; charset=utf-8",
+        )
+
     if standalone_mode:
-        local_css_route_path = _local_catalog_css_route_path(config.route_path)
         local_logo_route_path = _local_catalog_logo_route_path(config.route_path)
         local_icon_route_path = _local_catalog_icon_route_path(config.route_path)
-
-        @app.get(local_css_route_path)
-        async def catalog_ui_css() -> Response:
-            return Response(_read_text_asset(CATALOG_UI_CSS_PATH), content_type="text/css; charset=utf-8")
 
         @app.get(local_logo_route_path)
         async def catalog_ui_logo() -> Response:

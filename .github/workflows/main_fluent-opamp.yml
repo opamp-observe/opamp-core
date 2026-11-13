@@ -16,6 +16,14 @@ on:
   push:
     branches:
       - main
+    # Documentation-only pushes are handled by the Pages workflow and do not
+    # need application builds, cloud deployments, or regression tests.
+    paths-ignore:
+      - "**/*.md"
+      - "**/docs/**"
+      - "docs/**"
+      - "github-landingpage/**"
+      - "quick-references/**"
   workflow_dispatch:
     inputs:
       cloud_provider:

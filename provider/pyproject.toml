@@ -17,13 +17,14 @@ build-backend = "hatchling.build"
 [project]
 name = "opamp-server"
 version = "0.6.0"
-description = "OpAMP Server - upstream source https://github.com/mp3monster/fluent-opamp "
+description = "OpAMP Server - upstream source https://github.com/opamp-observe/opamp-core "
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 authors = [{ name = "Phil Wilkins" }]
 keywords = ["opamp", "observability", "otel", "server", "control-plane"]
 dependencies = [
+  "opamp-shared==0.6.0",
   "quart>=0.19",
   "pydantic>=2.6",
   "protobuf>=5.27",
@@ -53,9 +54,12 @@ dev = [
 opamp-provider = "opamp_provider.server:main"
 
 [project.urls]
-Repository = "https://github.com/mp3monster/fluent-opamp"
+Repository = "https://github.com/opamp-observe/opamp-core"
 Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html"
 Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
+
+[tool.uv.sources]
+opamp-shared = { path = "../shared", editable = true }
 
 [tool.pytest.ini_options]
 addopts = [
@@ -109,7 +113,7 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/opamp_provider", "src/shared"]
+packages = ["src/opamp_provider"]
 include = [
   "src/opamp_provider/provider_logging.json",
   "src/opamp_provider/version.json",

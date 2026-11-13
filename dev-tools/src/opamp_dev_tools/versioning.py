@@ -33,18 +33,119 @@ class VersionTarget:
 
 
 VERSION_TARGETS: tuple[VersionTarget, ...] = (
-    VersionTarget(path="agent_broker/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
-    VersionTarget(path="catalog-service/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
-    VersionTarget(path="client-config-generator-service/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
-    VersionTarget(path="client-config-generator-service/src/client_config_generator_service/__init__.py", pattern=r'^__version__ = "[^"]+"$', replacement='__version__ = "{version}"'),
-    VersionTarget(path="cli/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
-    VersionTarget(path="config-service/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
-    VersionTarget(path="config-service/build_config.py", pattern=r'^PACKAGE_VERSION = "[^"]+"$', replacement='PACKAGE_VERSION = "{version}"'),
-    VersionTarget(path="consumer/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
-    VersionTarget(path="consumer-sim/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
-    VersionTarget(path="mcp/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
-    VersionTarget(path="provider/pyproject.toml", pattern=r'^version = "[^"]+"$', replacement='version = "{version}"'),
-    VersionTarget(path="tests/test_mcp_build_config_tool.py", pattern=r'\d+\.\d+\.\d+', replacement="{version}"),
+    VersionTarget(
+        path="agent_broker/pyproject.toml",
+        pattern=r"opamp-shared==\d+\.\d+\.\d+",
+        replacement="opamp-shared=={version}",
+    ),
+    VersionTarget(
+        path="agent_broker/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="catalog-service/pyproject.toml",
+        pattern=r"opamp-shared==\d+\.\d+\.\d+",
+        replacement="opamp-shared=={version}",
+    ),
+    VersionTarget(
+        path="catalog-service/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="client-config-generator-service/pyproject.toml",
+        pattern=r"opamp-shared==\d+\.\d+\.\d+",
+        replacement="opamp-shared=={version}",
+    ),
+    VersionTarget(
+        path="client-config-generator-service/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="client-config-generator-service/src/client_config_generator_service/__init__.py",
+        pattern=r'^__version__ = "[^"]+"$',
+        replacement='__version__ = "{version}"',
+    ),
+    VersionTarget(
+        path="cli/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="config-service/pyproject.toml",
+        pattern=r"opamp-shared==\d+\.\d+\.\d+",
+        replacement="opamp-shared=={version}",
+    ),
+    VersionTarget(
+        path="config-service/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="config-service/build_config.py",
+        pattern=r'^PACKAGE_VERSION = "[^"]+"$',
+        replacement='PACKAGE_VERSION = "{version}"',
+    ),
+    VersionTarget(
+        path="consumer/pyproject.toml",
+        pattern=r"opamp-shared==\d+\.\d+\.\d+",
+        replacement="opamp-shared=={version}",
+    ),
+    VersionTarget(
+        path="consumer/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="consumer-sim/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="mcp/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="provider/pyproject.toml",
+        pattern=r"opamp-shared==\d+\.\d+\.\d+",
+        replacement="opamp-shared=={version}",
+    ),
+    VersionTarget(
+        path="provider/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="shared/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="opamp-suite/pyproject.toml",
+        pattern=(
+            r"((?:catalog-service|client-config-generator-service|config-service|"
+            r"opamp-consumer|opamp-server)==)\d+\.\d+\.\d+"
+        ),
+        replacement=r"\g<1>{version}",
+    ),
+    VersionTarget(
+        path="opamp-suite/pyproject.toml",
+        pattern=r'^version = "[^"]+"$',
+        replacement='version = "{version}"',
+    ),
+    VersionTarget(
+        path="opamp-suite/src/opamp_suite/__init__.py",
+        pattern=r'^__version__ = "[^"]+"$',
+        replacement='__version__ = "{version}"',
+    ),
+    VersionTarget(
+        path="tests/test_mcp_build_config_tool.py",
+        pattern=r"\d+\.\d+\.\d+",
+        replacement="{version}",
+    ),
 )
 
 

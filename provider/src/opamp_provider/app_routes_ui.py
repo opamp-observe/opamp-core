@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
-from http import HTTPStatus
+from collections.abc import Callable
 from typing import Any
 
-from quart import Quart, Response, jsonify, redirect, request
+from quart import Quart, Response, jsonify, redirect
 
 
 def register_ui_routes(  # noqa: PLR0913
@@ -82,6 +81,19 @@ def register_ui_routes(  # noqa: PLR0913
             component_version=component_version_text(),
         )
         return Response(html, content_type="text/html; charset=utf-8")
+
+    @app.get("/help.css")
+    async def help_css() -> Response:
+        """Serve the provider help-page stylesheet."""
+        return Response(ui_assets.help_css, content_type="text/css; charset=utf-8")
+
+    @app.get("/help.js")
+    async def help_js() -> Response:
+        """Serve the provider help-page behavior JavaScript."""
+        return Response(
+            ui_assets.help_js,
+            content_type="application/javascript; charset=utf-8",
+        )
 
     @app.get("/doc-set")
     async def latest_docs_redirect() -> Response:

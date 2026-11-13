@@ -14,12 +14,24 @@ limitations under the License.
 
 # Client Config Generator Service
 
+The service depends on the independently published `opamp-shared` runtime
+library. Local `uv` development resolves it from `../shared`; shared modules
+are not bundled into the generator wheel.
+
 `client-config-generator-service` is a schema-driven server plugin and standalone UI for creating OpAMP consumer JSON files. The packaged schema supports both process lifecycle strategies:
 
 - `Supervisor`: the consumer launches and owns the agent process.
 - `Observer`: the consumer discovers an externally managed process using `processDetectionRegex`.
 
 The browser UI can select and load an existing configuration, validate edits, preview JSON, and save a configuration beneath an operator-controlled directory. The versioned API provides the same controls.
+
+Standalone responses deny browser framing and MIME sniffing with
+`Content-Security-Policy: frame-ancestors 'none'; form-action 'self'`, `X-Frame-Options: DENY`, and
+`X-Content-Type-Options: nosniff`. They also send the shared strict
+`Content-Security-Policy-Report-Only` migration policy without blocking incompatible resources.
+When embedded into the provider, the provider applies the same policy to the component routes.
+Deployment gateways must preserve these headers; see the
+[API gateway recommendations](../docs/api_gateway_requirements.md#browser-framing-and-clickjacking-protection).
 
 ## Embedded deployment
 
@@ -86,11 +98,11 @@ The file service accepts only `.json` targets contained by the configured storag
 ## Quality and packaging
 
 ```bash
-python -m pip install -e ".[dev]"
-python -m ruff check src tests
-python -m pylint src/client_config_generator_service
-python -m pytest -q -s
-python -m build --wheel
+uv sync --extra dev
+uv run python -m ruff check src tests
+uv run python -m pylint src/client_config_generator_service
+uv run python -m pytest -q -s
+uv build --wheel
 ```
 
 The package version is maintained in `pyproject.toml` and `client_config_generator_service.__version__`, and is registered in the repository version-target manifest.

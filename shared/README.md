@@ -1,56 +1,40 @@
-# Shared Utilities
+<!--
+Copyright 2026 opamp.info
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
 
-This folder is the canonical source for cross-project OpAMP utility modules.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
 
-## What changed
+# Shared Utilities Package
 
-To make the provider wheel self-contained, the provider now vendors copies of
-runtime-required modules under:
+`opamp-shared` is the independently built distribution that owns the Python
+`shared` import package used by OpAMP runtime components.
 
-- `provider/src/shared/`
+Components declare `opamp-shared` as a normal runtime dependency. During local
+development, each component uses a `tool.uv.sources` path mapping to this
+directory, so edits are immediately available without publishing a development
+wheel.
 
-The provider package no longer relies on an external `opamp-shared` dependency
-at runtime.
+```bash
+uv sync --project provider --extra dev
+uv run --project provider pytest
+```
 
-## Why this was done
+Release builds must use normal dependency metadata rather than the local source
+override:
 
-Provider code imports:
+```bash
+uv build --no-sources shared
+```
 
-- `from shared.opamp_config import ...`
-- `from shared.uuid_utils import ...`
-
-When provider was launched in some MCP/client contexts, `shared` could be
-missing from import resolution, leading to:
-
-- `ModuleNotFoundError: No module named 'shared'`
-
-Vendoring `shared` inside `provider/src` ensures those imports are present in
-the built provider wheel artifact and in source-based launches that set
-`PYTHONPATH` to `provider/src`.
-
-## Sync note
-
-`shared/` remains the source of truth.
-
-Provider runtime vendoring currently applies to:
-
-- `shared/opamp_config.py`
-- `shared/uuid_utils.py`
-
-Mirror runtime-required changes into:
-
-- `provider/src/shared/`
-
-SBOM helpers are now kept out of `shared/` so production deployments do not
-carry build-only SBOM logic.
-
-The canonical repo-side implementation lives under:
-
-- `dev-tools/src/opamp_dev_tools/sbom.py`
-
-For standalone MCP package builds, a vendored copy of that helper is also kept under:
-
-- `mcp/src/opamp_build_tools/sbom.py`
-
-That vendored copy exists only so the packaged `opamp-mcp-config` wheel remains
-self-contained after installation.
+The distribution contains configuration, observability, security-header,
+remote-configuration, packaging-warning, and UUID helpers. Component wheels
+must not copy or vendor files from this directory; the `opamp-shared`
+dependency is the single runtime owner of the `shared` package.

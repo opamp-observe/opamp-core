@@ -35,7 +35,7 @@ services:
         condition: service_healthy
     environment:
       OPAMP_USE_LOCAL_SOURCE: "${ST004_USE_LOCAL_SOURCE:-true}"
-      OPAMP_SOURCE_REPO: "${ST004_SOURCE_REPO:-https://github.com/mp3monster/fluent-opamp.git}"
+      OPAMP_SOURCE_REPO: "${ST004_SOURCE_REPO:-https://github.com/opamp-observe/opamp-core.git}"
       OPAMP_SOURCE_REF: "${ST004_SOURCE_REF:-main}"
       OPAMP_AUTH_JWT_ISSUER: "http://keycloak:8080/realms/opamp"
       OPAMP_AUTH_JWT_JWKS_URL: "http://keycloak:8080/realms/opamp/protocol/openid-connect/certs"
@@ -67,7 +67,7 @@ services:
         condition: service_healthy
     environment:
       OPAMP_USE_LOCAL_SOURCE: "${ST004_USE_LOCAL_SOURCE:-true}"
-      OPAMP_SOURCE_REPO: "${ST004_SOURCE_REPO:-https://github.com/mp3monster/fluent-opamp.git}"
+      OPAMP_SOURCE_REPO: "${ST004_SOURCE_REPO:-https://github.com/opamp-observe/opamp-core.git}"
       OPAMP_SOURCE_REF: "${ST004_SOURCE_REF:-main}"
       APP_ENABLE_DEV_FEATURES: "true"
     volumes:
@@ -86,7 +86,7 @@ services:
         condition: service_healthy
     environment:
       OPAMP_USE_LOCAL_SOURCE: "${ST004_USE_LOCAL_SOURCE:-true}"
-      OPAMP_SOURCE_REPO: "${ST004_SOURCE_REPO:-https://github.com/mp3monster/fluent-opamp.git}"
+      OPAMP_SOURCE_REPO: "${ST004_SOURCE_REPO:-https://github.com/opamp-observe/opamp-core.git}"
       OPAMP_SOURCE_REF: "${ST004_SOURCE_REF:-main}"
       APP_ENABLE_DEV_FEATURES: "true"
     volumes:

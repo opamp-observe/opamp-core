@@ -12,6 +12,9 @@
 
 """Configuration loader for the OpAMP consumer."""
 
+# Source-checkout imports intentionally follow the local shared-package path bootstrap.
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import json
@@ -20,15 +23,19 @@ import os
 import pathlib
 import re
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Any
 
 ROOT_PATH = pathlib.Path(__file__).resolve().parents[3]
 # Repository root for resolving shared imports and defaults.
-if str(ROOT_PATH) not in sys.path:
-    sys.path.insert(0, str(ROOT_PATH))
+SHARED_SOURCE_PATH = ROOT_PATH / "shared" / "src"
+for import_path in (ROOT_PATH, SHARED_SOURCE_PATH):
+    if str(import_path) not in sys.path:
+        sys.path.insert(0, str(import_path))
 
 from opamp_consumer.agent_config_exception import AgentConfigException
+from shared.observability import ObservabilityConfig, load_observability_config_from_payload
 from shared.opamp_config import (  # noqa: E402 - requires repo-root path adjustment above
     AGENT_CAPABILITIES_MAP,
     NAME_UNSPECIFIED_AGENT_CAPABILITY,
@@ -36,7 +43,6 @@ from shared.opamp_config import (  # noqa: E402 - requires repo-root path adjust
     AgentCapabilities,
     parse_capabilities,
 )
-from shared.observability import ObservabilityConfig, load_observability_config_from_payload
 
 ENV_OPAMP_CONFIG_PATH = "OPAMP_CONFIG_PATH"  # Environment variable overriding config file location.
 DEFAULT_CONFIG_FILENAME = "opamp.json"  # Default configuration filename.
@@ -62,10 +68,10 @@ CFG_TLS_VERIFY_SERVER = "verify_server"
 CFG_TLS_CA_FILE = "ca_file"  # Consumer TLS key for custom CA bundle path.
 CFG_SERVER_AUTHORIZATION = "server-authorization"
 # Consumer JSON key controlling outbound provider authorization mode.
-CFG_OPAMP_TOKEN = "OpAMP-token"  # Consumer JSON key for static OpAMP token value.
-CFG_IDP_TOKEN_URL = "idp-token-url"  # Consumer JSON key for IdP token endpoint URL.
+CFG_OPAMP_TOKEN = "OpAMP-token"  # noqa: S105 - configuration key, not a credential value.
+CFG_IDP_TOKEN_URL = "idp-token-url"  # noqa: S105 - configuration key, not a URL value.
 CFG_IDP_CLIENT_ID = "idp-client-id"  # Consumer JSON key for IdP client ID.
-CFG_IDP_CLIENT_SECRET = "idp-client-secret"  # Consumer JSON key for IdP client secret.
+CFG_IDP_CLIENT_SECRET = "idp-client-secret"  # noqa: S105 - configuration key only.
 CFG_IDP_SCOPE = "idp-scope"  # Consumer JSON key for IdP OAuth scope.
 CFG_IDP_GRANT_TYPE = "idp-grant-type"  # Consumer JSON key for IdP OAuth grant type.
 CFG_LOG_AGENT_API_RESPONSES = "log_agent_api_responses"

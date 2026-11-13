@@ -60,6 +60,37 @@ Install optional embedded components in the **same virtual environment** as
 Quart process. A standalone component can instead use its own environment and
 port.
 
+## Install with the suite meta-package
+
+The `opamp-suite` package provides installation profiles while keeping every
+runtime component in its own wheel:
+
+```bash
+python -m pip install "opamp-suite[server]"
+python -m pip install "opamp-suite[editors]"
+python -m pip install "opamp-suite[config-editor]"
+python -m pip install "opamp-suite[catalog]"
+python -m pip install "opamp-suite[client-config-editor]"
+python -m pip install "opamp-suite[credentials-editor]"
+python -m pip install "opamp-suite[consumer]"
+python -m pip install "opamp-suite[all]"
+```
+
+- `server` installs the provider, Config Editor, Config Catalog, Client Config
+  Generator, and Server Credentials Manager. Runtime configuration still
+  controls which installed provider plugins are enabled.
+- `editors` installs those freestanding authoring and catalog services without
+  installing the provider.
+- `config-editor`, `catalog`, `client-config-editor`, and `credentials-editor`
+  install an individual freestanding service without the provider.
+- `consumer` installs only the consumer framework and built-in agent plugins.
+- `all` installs the complete server and consumer profiles.
+
+Every component that imports cross-project runtime helpers depends on the
+separately published `opamp-shared` distribution. Pip installs that dependency
+automatically; operators should not install files directly from the repository
+`shared/` directory.
+
 ```mermaid
 flowchart LR
     Operator[Operator browser] --> Provider[OpAMP provider process]
@@ -137,19 +168,20 @@ the production host. From a source checkout, the general artefact automation
 can build any packaged component:
 
 ```bash
-python -m pip install -e ./dev-tools
-opamp-dev-cli build artefact named provider
-opamp-dev-cli build artefact named config-service
-opamp-dev-cli build artefact named catalog-service
-opamp-dev-cli build artefact named client-config-generator-service
-opamp-dev-cli build artefact named cli
+uv run --project dev-tools --locked opamp-dev-cli build artefact named provider
+uv run --project dev-tools --locked opamp-dev-cli build artefact named shared
+uv run --project dev-tools --locked opamp-dev-cli build artefact named opamp-suite
+uv run --project dev-tools --locked opamp-dev-cli build artefact named config-service
+uv run --project dev-tools --locked opamp-dev-cli build artefact named catalog-service
+uv run --project dev-tools --locked opamp-dev-cli build artefact named client-config-generator-service
+uv run --project dev-tools --locked opamp-dev-cli build artefact named cli
 ```
 
 The outputs are written below `dist/<component>/`. To build every packaged
 component as a wheel and source distribution, use:
 
 ```bash
-opamp-dev-cli build artefact all
+uv run --project dev-tools --locked opamp-dev-cli build artefact all
 ```
 
 The release-assets automation runs the repository security gate, builds its
@@ -160,8 +192,8 @@ opamp-dev-cli build release-assets \
   --components provider,catalog-service,client-config-generator-service,cli
 ```
 
-`config-service` is not a `release-assets --components` target; build it with
-`build artefact named config-service` as shown above. See the
+The release-assets default includes the shared library, complete server plugin
+set, consumer, suite meta-package, CLI, and simulator. See the
 [build, test, and release command reference](../dev-tools/docs/build_test_and_release.md)
 for publishing and other release-engineering options.
 

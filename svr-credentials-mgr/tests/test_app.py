@@ -86,7 +86,15 @@ async def test_connection_and_mapping_workflow(tmp_path: Path) -> None:
     help_data = await help_response.get_data()
     assert b"Server Credentials Manager UI" in help_data
     assert b"Defined Connections Filters" in help_data
+    assert b'href="/svr-credentials-manager-service/ui/assets/help.css' in help_data
+    assert b"<style" not in help_data
     assert help_response.headers["Cache-Control"].startswith("no-store")
+    help_css_response = await client.get(
+        "/svr-credentials-manager-service/ui/assets/help.css"
+    )
+    assert help_css_response.status_code == 200
+    assert help_css_response.mimetype == "text/css"
+    assert help_css_response.headers["Cache-Control"].startswith("no-store")
 
 
 @pytest.mark.asyncio

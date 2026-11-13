@@ -16,8 +16,47 @@ limitations under the License.
 
 This page is the repository-level tooling inventory for local development. Use
 it with the component-specific READMEs when setting up or auditing a machine.
+The checked-in `pyproject.toml`, `package.json`, workflow, and container files
+remain the version source of truth; this page explains where each tool is used.
 
-## One Command Setup
+## Workstation Tools
+
+| Tool | Requirement | Repository use |
+|---|---|---|
+| [Git](https://git-scm.com/) | Required | Source control, version metadata, hooks, release tags, and GitHub checkouts. |
+| [Python](https://www.python.org/) 3.10 or later | Required | Services, consumers, CLIs, tests, build utilities, and cloud orchestration. |
+| [uv](https://docs.astral.sh/uv/) | Required for the preferred workflow | Project synchronization, locked execution, wheel and source builds, and PyPI publication. |
+| [Node.js](https://nodejs.org/) with [npm](https://docs.npmjs.com/) and [npx](https://docs.npmjs.com/cli/commands/npx) | Required for browser/UI work | Playwright and Vitest tests, Vite builds, Mermaid rendering, ESLint complexity checks, and esbuild minification. |
+| [Docker](https://docs.docker.com/) or [Podman](https://podman.io/) | Required for container tests | Integration environments, isolated DAST targets, ZAP, Keycloak, and deployment tests. Docker Desktop is the normal Windows implementation. |
+| [Bash](https://www.gnu.org/software/bash/) and [PowerShell](https://learn.microsoft.com/powershell/) | Platform/workflow dependent | Cross-platform setup, cloud deployment, certificate, Keycloak, and regression scripts. |
+| [curl](https://curl.se/) | Workflow dependent | Health checks, GitHub API calls, downloads, and Keycloak/OIDC setup. |
+| [jq](https://jqlang.org/) | Workflow dependent | JSON processing in release, Linux cloud, and bootstrap scripts. |
+| [OpenSSL](https://www.openssl.org/) | Workflow dependent | Test TLS certificates, signing requests, and deployment secrets. |
+| [GitHub CLI](https://cli.github.com/) | Optional | Authenticated repository configuration and token discovery for cloud/OIDC setup. |
+| [AWS CLI](https://aws.amazon.com/cli/) | AWS workflows only | CloudFormation, EC2, S3, IAM/OIDC, retained evidence, and regression deployment. |
+| [Azure CLI](https://learn.microsoft.com/cli/azure/) | Azure workflows only | ARM deployments, storage, OIDC login, retained evidence, and resource cleanup. |
+
+## Preferred uv Workflow
+
+Each deployable Python component is an independent project. [uv](https://docs.astral.sh/uv/)
+resolves and executes these projects. Runtime packages
+declare `opamp-shared` normally for published installations and use
+`[tool.uv.sources]` to resolve the repository's `shared/` project during local
+development. This keeps component wheels independent without copying the
+`shared` import package into them.
+
+Run component commands from the repository root on Windows or Linux:
+
+```bash
+uv sync --project provider --extra dev
+uv run --project provider --locked python -m pytest -q -s
+uv build --wheel provider
+```
+
+Use the same pattern with another component directory. The developer CLI also
+uses `uv build` for repository artifact and release-wheel builds.
+
+## Aggregate Environment Setup
 
 The OpAMP CLI can create or update a repository-level virtual environment:
 
@@ -42,7 +81,9 @@ Useful options:
 The command runs these setup phases:
 
 1. Create/update the Python environment with `python -m venv .venv`.
-2. Upgrade installer/build tooling: `pip`, `setuptools>=82`, `wheel`, `build`, and `hatchling>=1.25`.
+2. Upgrade installer/build tooling: [pip](https://pip.pypa.io/),
+   [setuptools](https://setuptools.pypa.io/), [wheel](https://wheel.readthedocs.io/),
+   [build](https://build.pypa.io/), and [Hatchling](https://hatch.pypa.io/latest/config/build/).
 3. Install root `requirements.txt`.
 4. Install each local Python component editable with its `dev` extra.
 5. Run `npm install` for checked-in Node tooling packages, unless `--skip-node` is supplied.
@@ -54,42 +95,70 @@ The setup command installs these Python component directories when their
 
 | Path | Package | Build backend | Console scripts |
 |---|---|---|---|
-| `cli` | `opamp-cli` | `setuptools.build_meta` | `opamp-cli` |
-| `provider` | `opamp-server` | `hatchling.build` | `opamp-provider` |
-| `consumer` | `opamp-consumer` | `hatchling.build` | `opamp-consumer`, `opamp-consumer-fluentd`, `opamp-consumer-simulator` |
-| `consumer-sim` | `opamp-consumer-sim` | `setuptools.build_meta` | `opamp-consumer-sim` |
-| `config-service` | `config-service` | `setuptools.build_meta` | `config-service` |
-| `catalog-service` | `catalog-service` | `setuptools.build_meta` | `catalog-service` |
-| `agent_broker` | `opamp-broker` | `hatchling.build` | `opamp-broker` |
-| `mcp` | `opamp-mcp-config` | `setuptools.build_meta` | `opamp-mcp-config` |
-| `dev-tools` | `opamp-dev-tools` | `setuptools.build_meta` | `opamp-dev-tools` |
-| `svr-credentials-mgr/plaintext-keyring` | `opamp-plaintext-keyring` | `setuptools.build_meta` | keyring backend entry point |
-| `svr-credentials-mgr` | `svr-credentials-manager-service` | `setuptools.build_meta` | `svr-credentials-manager-service` |
+| `shared` | `opamp-shared` | [setuptools](https://setuptools.pypa.io/) | library only |
+| `opamp-suite` | `opamp-suite` | [setuptools](https://setuptools.pypa.io/) | metadata package only |
+| `cli` | `opamp-cli` | [setuptools](https://setuptools.pypa.io/) | `opamp-cli` |
+| `provider` | `opamp-server` | [Hatchling](https://hatch.pypa.io/latest/config/build/) | `opamp-provider` |
+| `consumer` | `opamp-consumer` | [Hatchling](https://hatch.pypa.io/latest/config/build/) | `opamp-consumer`, `opamp-consumer-fluentd`, `opamp-consumer-simulator` |
+| `consumer-sim` | `opamp-consumer-sim` | [setuptools](https://setuptools.pypa.io/) | `opamp-consumer-sim` |
+| `config-service` | `config-service` | [setuptools](https://setuptools.pypa.io/) | `config-service` |
+| `catalog-service` | `catalog-service` | [setuptools](https://setuptools.pypa.io/) | `catalog-service` |
+| `client-config-generator-service` | `client-config-generator-service` | [setuptools](https://setuptools.pypa.io/) | `client-config-generator-service` |
+| `agent_broker` | `opamp-broker` | [Hatchling](https://hatch.pypa.io/latest/config/build/) | `opamp-broker` |
+| `mcp` | `opamp-mcp-config` | [setuptools](https://setuptools.pypa.io/) | `opamp-mcp-config` |
+| `dev-tools` | `opamp-dev-tools` | [setuptools](https://setuptools.pypa.io/) | `opamp-dev-tools` |
+| `svr-credentials-mgr/plaintext-keyring` | `opamp-plaintext-keyring` | [setuptools](https://setuptools.pypa.io/) | keyring backend entry point |
+| `svr-credentials-mgr` | `svr-credentials-manager-service` | [setuptools](https://setuptools.pypa.io/) | `svr-credentials-manager-service` |
 
 ## Python Runtime Libraries
 
 Core runtime libraries declared across components include:
 
-- CLI and terminal UX: `prompt_toolkit`.
-- HTTP/server frameworks: `quart`, `httpx`, `aiohttp`.
-- Protocol/config parsing: `protobuf`, `grpcio-tools`, `PyYAML`, `lark`, `luaparser`, `jsonschema`, `defusedxml`.
-- OpAMP/provider behavior: `pydantic`, `fastmcp`, `PyJWT`, `websockets`, `psutil`, `uuid_v7`.
-- Observability: `opentelemetry-api`, `opentelemetry-sdk`, `opentelemetry-exporter-otlp`,
-  `opentelemetry-instrumentation-asgi`, and `opentelemetry-instrumentation-logging`.
-- Broker and ChatOps: `slack-bolt`, `langgraph`, `langchain-core`, `python-dotenv`, `pandas`.
-- Credentials: `keyring`, `keyrings.cryptfile`.
+- CLI and terminal UX: [prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/).
+- HTTP/server frameworks: [Quart](https://quart.palletsprojects.com/),
+  [HTTPX](https://www.python-httpx.org/), and [aiohttp](https://docs.aiohttp.org/).
+- Protocol/config parsing: [Protocol Buffers](https://protobuf.dev/),
+  [gRPC Python tools](https://grpc.io/docs/languages/python/quickstart/),
+  [PyYAML](https://pyyaml.org/), [Lark](https://lark-parser.readthedocs.io/),
+  [luaparser](https://github.com/boolangery/py-lua-parser),
+  [jsonschema](https://python-jsonschema.readthedocs.io/), and
+  [defusedxml](https://github.com/tiran/defusedxml).
+- OpAMP/provider behavior: [Pydantic](https://docs.pydantic.dev/),
+  [FastMCP](https://gofastmcp.com/), [PyJWT](https://pyjwt.readthedocs.io/),
+  [PyNaCl](https://pynacl.readthedocs.io/),
+  [websockets](https://websockets.readthedocs.io/), [psutil](https://psutil.readthedocs.io/),
+  and [uuid-v7](https://pypi.org/project/uuid-v7/).
+- Observability: [OpenTelemetry Python](https://opentelemetry.io/docs/languages/python/), including
+  its API, SDK, OTLP exporter, ASGI instrumentation, and logging instrumentation packages.
+- Broker and ChatOps: [Slack Bolt for Python](https://tools.slack.dev/bolt-python/),
+  [LangGraph](https://langchain-ai.github.io/langgraph/),
+  [LangChain Core](https://python.langchain.com/),
+  [python-dotenv](https://github.com/theskumar/python-dotenv), and
+  [pandas](https://pandas.pydata.org/).
+- Credentials: [keyring](https://keyring.readthedocs.io/) and
+  [keyrings.cryptfile](https://pypi.org/project/keyrings.cryptfile/).
+- Python 3.10 compatibility: [tomli](https://github.com/hukkin/tomli) supplies
+  TOML parsing where the standard-library `tomllib` module is unavailable.
 
-Development extras are mostly shared across components:
+## Python Quality, Test, and Security Tools
 
-- Tests: `pytest`, `pytest-asyncio`, `pytest-cov`.
-- Static checks: `ruff`, `pylint`.
-- Security: `bandit`, `detect-secrets`, `pip-audit`, and `semgrep` from the versioned
-  `dev-tools[security]` extra.
-- Packaging/SBOM support: `build`, `hatchling`, component build backends, and dev-tools helpers.
+| Tool | How it is used |
+|---|---|
+| [pytest](https://docs.pytest.org/) | Python unit, integration, endpoint, and repository tests. |
+| [pytest-asyncio](https://pytest-asyncio.readthedocs.io/) | Async Quart, protocol, and service tests. |
+| [pytest-cov](https://pytest-cov.readthedocs.io/) and [Coverage.py](https://coverage.readthedocs.io/) | Branch coverage, terminal missing-line reports, and `coverage.xml`. |
+| [Ruff](https://docs.astral.sh/ruff/) | Formatting-independent lint, import ordering, modernization, and blocking security rules. |
+| [Pylint](https://pylint.readthedocs.io/) | Module-level static quality checks. |
+| [Bandit](https://bandit.readthedocs.io/) | Comparative Python security report retained by the full security gate. |
+| [detect-secrets](https://github.com/Yelp/detect-secrets) | Blocking scan for potential credentials in tracked source. |
+| [pip-audit](https://github.com/pypa/pip-audit) | Blocking Python dependency vulnerability audit for every packaged project. |
+| [Semgrep](https://semgrep.dev/) | Repository-owned Python and JavaScript security rules with SARIF output. |
+| [CycloneDX Python](https://cyclonedx-bom-tool.readthedocs.io/) | Per-wheel CycloneDX SBOM generation and validation during release builds. |
 
-The repository also contains `pyrightconfig.json` and `.flake8`; those files
-document supported checker configuration even though the current setup command
-does not install Pyright or Flake8.
+The versioned `dev-tools[security]` extra supplies the repository-wide security
+toolchain. The repository also contains [Pyright](https://microsoft.github.io/pyright/)
+and [Flake8](https://flake8.pycqa.org/) configuration. Those two tools are supported
+configuration surfaces but are not installed or run by the current aggregate setup command.
 
 ## Test and Security Workflow
 
@@ -101,12 +170,27 @@ opamp-dev-cli build test all
 opamp-dev-cli build test e2e
 opamp-dev-cli build secure named provider
 opamp-dev-cli build secure all
+opamp-dev-cli build dast baseline
 ```
 
-The security command combines the configured tests with Ruff security rules,
-`detect-secrets`, `pip-audit`, and reviewed Semgrep rules. It also produces a Bandit report for
-comparison with Ruff. See [Testing and Result Review](testing.md) for test scope, blocking policy,
-browser commands, and the exact JUnit, coverage, HTML, SARIF, and JSON result locations.
+The security command combines the configured tests with [Ruff](https://docs.astral.sh/ruff/)
+security rules, [detect-secrets](https://github.com/Yelp/detect-secrets),
+[pip-audit](https://github.com/pypa/pip-audit), and reviewed
+[Semgrep](https://semgrep.dev/) rules. It also produces a
+[Bandit](https://bandit.readthedocs.io/) report for comparison with Ruff. See
+[Testing and Result Review](testing.md) for test scope, blocking policy, browser
+commands, and the exact JUnit, coverage, HTML, SARIF, and JSON result locations.
+
+Dynamic testing uses [OWASP ZAP](https://www.zaproxy.org/) through the
+multi-architecture `ghcr.io/zaproxy/zaproxy:2.17.0` image pinned by OCI digest
+in the developer CLI. Managed scans test HTTP first and then an HTTPS image
+whose self-signed certificate is generated with [OpenSSL](https://www.openssl.org/)
+during the Docker build. The CLI mounts only each generated report directory,
+adds Docker's cross-platform host gateway when required, and keeps active
+scanning behind `--allow-active-scan`. A packaged scan hook suppresses only
+reviewed rule `10044` findings whose redirect details name
+`https://htmlpreview.github.io`; other redirect findings remain enabled. See
+[Dynamic Application Security Testing](dynamic_application_security_testing.md).
 
 ## Node And Browser Tooling
 
@@ -115,34 +199,78 @@ are available:
 
 | Path | Primary use | Main dependencies |
 |---|---|---|
-| `catalog-service` | Catalog UI Playwright tests | `@playwright/test` |
-| `config-service` | Config-service UI tests and unit tests | `@playwright/test`, `vitest`, `jsdom`, `js-yaml` |
-| `config-service/frontend` | React/Vite config editor frontend | `react`, `react-dom`, `@rjsf/core`, `@rjsf/utils`, `@rjsf/validator-ajv8`, `typescript`, `vite`, `@vitejs/plugin-react` |
-| `svr-credentials-mgr` | Credentials manager UI Playwright tests | `@playwright/test` |
-| `tools/mermaid` | Mermaid diagram rendering | `@mermaid-js/mermaid-cli` |
+| `catalog-service` | Catalog UI browser tests | [Playwright](https://playwright.dev/) |
+| `config-service` | Config-service browser and unit tests | [Playwright](https://playwright.dev/), [Vitest](https://vitest.dev/), [jsdom](https://github.com/jsdom/jsdom), and [js-yaml](https://github.com/nodeca/js-yaml) |
+| `config-service/frontend` | Schema-driven editor prototype | [React](https://react.dev/), [React DOM](https://react.dev/reference/react-dom), [RJSF](https://rjsf-team.github.io/react-jsonschema-form/), [AJV](https://ajv.js.org/), [TypeScript](https://www.typescriptlang.org/), and [Vite](https://vite.dev/) |
+| `svr-credentials-mgr` | Credentials-manager UI browser tests | [Playwright](https://playwright.dev/) |
+| `tools/mermaid` | Diagram rendering | [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli) |
 
 Playwright browser installation is still handled by the developer when needed,
 for example with `npx playwright install`.
 
+Additional Node tools are invoked on demand rather than installed in every
+package:
+
+- [ESLint](https://eslint.org/) 9 and the
+  [TypeScript ESLint parser](https://typescript-eslint.io/) enforce configured
+  JavaScript and TypeScript cyclomatic-complexity limits.
+- [esbuild](https://esbuild.github.io/) generates the provider's checked-in
+  `.mini.js` assets.
+
+## Documentation and Asset Generation
+
+| Tool | Repository use |
+|---|---|
+| [GitHub Pages](https://pages.github.com/) and [Jekyll](https://jekyllrb.com/) | Build and publish the formal `docs/` website. |
+| [Jekyll Theme Yat](https://github.com/jeffreytse/jekyll-theme-yat) | Documentation site theme selected by `docs/_config.yml`. |
+| [Jekyll Feed](https://github.com/jekyll/jekyll-feed), [Remote Theme](https://github.com/benbalter/jekyll-remote-theme), [SEO Tag](https://github.com/jekyll/jekyll-seo-tag), and [Sitemap](https://github.com/jekyll/jekyll-sitemap) | Plugins used by the GitHub Pages build. |
+| [Kramdown](https://kramdown.gettalong.org/) | GitHub-Flavored Markdown processing for the Jekyll site. |
+| [Mermaid](https://mermaid.js.org/) and [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli) | Source-controlled diagrams and rendered image assets. |
+| [ReportLab](https://www.reportlab.com/dev/docs/) | PDF manual generation by `opamp-dev-tools`. |
+| [esbuild](https://esbuild.github.io/) | Provider JavaScript minification before packaging and security checks. |
+
+## CI, Release, and Deployment Tools
+
+| Tool | Repository use |
+|---|---|
+| [GitHub Actions](https://docs.github.com/actions) | Main-branch validation, GitHub Pages, cloud deployment, release verification, and PyPI publication. |
+| [checkout](https://github.com/actions/checkout), [setup-python](https://github.com/actions/setup-python), and [setup-uv](https://github.com/astral-sh/setup-uv) actions | Reproducible source checkout and Python/uv setup in release jobs. |
+| [GitHub Actions artifacts](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts) | Transfer validated wheels between the unprivileged build job and the publication job. |
+| [Astral attest action](https://github.com/astral-sh/attest-action) | Produce the PEP 740 attestation files uploaded with wheels. |
+| [PyPI](https://pypi.org/) and [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) | Publish the ten first-party distributions through short-lived GitHub OIDC credentials. |
+| [uv publish](https://docs.astral.sh/uv/guides/publish/) | Validate and upload the complete wheel set to TestPyPI or PyPI. |
+| [PEP 740 attestations](https://peps.python.org/pep-0740/) | Generate digital attestations for GitHub-built Python distributions. |
+| [AWS CLI](https://aws.amazon.com/cli/) and [AWS CloudFormation](https://aws.amazon.com/cloudformation/) | Provision AWS regression infrastructure, retained S3 evidence, and OIDC roles. |
+| [Azure CLI](https://learn.microsoft.com/cli/azure/) and [ARM templates](https://learn.microsoft.com/azure/azure-resource-manager/templates/) | Provision Azure regression infrastructure and retained Blob Storage evidence. |
+| [Keycloak](https://www.keycloak.org/) | Local and cloud identity-provider test boundary configured through container scripts and `kcadm.sh`. |
+| [OpenID Connect](https://openid.net/developers/how-connect-works/) | Short-lived GitHub-to-cloud and GitHub-to-PyPI authentication. |
+
 ## Local Workflow Tools
 
-The main local workflow surfaces are:
+The main repository-provided workflow surfaces are:
 
 - `opamp-cli`: guided start/stop/restart, status, log cleanup, config validation,
   MCP/dev helpers, container starts, and repository virtual environment setup.
 - `opamp-dev-tools`: build, validation, release asset, SBOM, certificate, and
-  maintenance workflows.
+  maintenance workflows, including Docker-backed
+  [OWASP ZAP](https://www.zaproxy.org/) runtime scans.
 - `mcp/configure_mcp_clients.py` and `opamp-mcp-config`: MCP client setup for
-  Claude, Codex, VS Code, LibreChat, and Gemini.
+  [Claude](https://claude.ai/), [Codex](https://openai.com/codex/),
+  [Visual Studio Code](https://code.visualstudio.com/),
+  [LibreChat](https://www.librechat.ai/), and [Gemini](https://gemini.google.com/).
 - `scripts/*`: low-level operational helpers that have not been folded into
-  `opamp-dev-tools`, such as Keycloak setup, Mermaid rendering, direct Fluentd
-  start, and direct Fluent Bit termination.
+  `opamp-dev-tools`, such as [Keycloak](https://www.keycloak.org/) setup,
+  [Mermaid](https://mermaid.js.org/) rendering, direct
+  [Fluentd](https://www.fluentd.org/) start, and direct
+  [Fluent Bit](https://fluentbit.io/) termination.
 
-Container workflows use `docker` or `podman`. The CLI chooses
+Container workflows use [Docker](https://docs.docker.com/) or
+[Podman](https://podman.io/). The CLI chooses
 `OPAMP_CONTAINER_RUNTIME` first, then `docker`, then `podman`.
 
-MCP source-mode configuration also relies on `uv` and `fastmcp` for local
-stdio-style server entries.
+[Model Context Protocol](https://modelcontextprotocol.io/) source-mode
+configuration also relies on [uv](https://docs.astral.sh/uv/) and
+[FastMCP](https://gofastmcp.com/) for local stdio-style server entries.
 
 ## Behavior Flags
 

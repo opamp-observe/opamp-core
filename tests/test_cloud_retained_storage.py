@@ -40,7 +40,9 @@ def test_aws_deploy_creates_timestamped_retained_storage() -> None:
     assert "date -u +%Y%m%d%H%M%S" in bash_script
     assert "date -u +%Y-%m-%d-%H-%M-%S" in bash_script
     assert "RESULT_SET_TIMESTAMP" in bash_script
-    assert "opamp-regression-${aws_account_id}-${RETAINED_BUCKET_TIMESTAMP}" in bash_script
+    assert (
+        "opamp-regression-${aws_account_id}-${RETAINED_BUCKET_TIMESTAMP}" in bash_script
+    )
     assert "put-public-access-block" in bash_script
     assert "regression-results" in bash_script
     assert "stack-outputs.json" in bash_script
@@ -49,7 +51,9 @@ def test_aws_deploy_creates_timestamped_retained_storage() -> None:
     assert 'ToString("yyyyMMddHHmmss")' in powershell_script
     assert 'ToString("yyyy-MM-dd-HH-mm-ss")' in powershell_script
     assert "$resultSetTimestamp" in powershell_script
-    assert "opamp-regression-$awsAccountId-$retainedBucketTimestamp" in powershell_script
+    assert (
+        "opamp-regression-$awsAccountId-$retainedBucketTimestamp" in powershell_script
+    )
     assert "dist/aws-artifact-bucket.txt" in powershell_script
 
 
@@ -71,13 +75,21 @@ def test_azure_deploy_retains_results_outside_vm_resource_group() -> None:
     assert "date -u +%Y%m%d%H%M%S" in bash_script
     assert "date -u +%Y-%m-%d-%H-%M-%S" in bash_script
     assert "RESULT_SET_TIMESTAMP" in bash_script
-    assert 'RETENTION_RESOURCE_GROUP="${RETENTION_RESOURCE_GROUP:-${RESOURCE_GROUP}-retained}"' in bash_script
-    assert 'STORAGE_ACCOUNT="opamp${DEPLOYMENT_TIMESTAMP}${subscription_suffix,,}"' in bash_script
+    assert (
+        'RETENTION_RESOURCE_GROUP="${RETENTION_RESOURCE_GROUP:-${RESOURCE_GROUP}-retained}"'
+        in bash_script
+    )
+    assert (
+        'STORAGE_ACCOUNT="opamp${DEPLOYMENT_TIMESTAMP}${subscription_suffix,,}"'
+        in bash_script
+    )
     assert "opamp-regression-results" in bash_script
     assert "deployment-outputs.json" in bash_script
     assert 'artifactBaseUrl="$artifact_base_url"' in bash_script
     assert '"${RETENTION_RESOURCE_GROUP,,}" == "${RESOURCE_GROUP,,}"' in bash_script
-    assert "Microsoft.Storage/storageAccounts" not in _read(AZURE_DIRECTORY / "mainTemplate.json")
+    assert "Microsoft.Storage/storageAccounts" not in _read(
+        AZURE_DIRECTORY / "mainTemplate.json"
+    )
     assert 'ToString("yyyyMMddHHmmss")' in powershell_script
     assert 'ToString("yyyy-MM-dd-HH-mm-ss")' in powershell_script
     assert "$resultSetTimestamp" in powershell_script
@@ -109,7 +121,10 @@ def test_bucket_cleanup_scripts_delete_only_selected_retained_storage() -> None:
     assert '[string]$StorageAccount = ""' in azure_powershell
     assert "[switch]$All" in azure_powershell
     assert "tags.Project=='opamp' && tags.Purpose=='regression-retention'" in azure_bash
-    assert "tags.Project=='opamp' && tags.Purpose=='regression-retention'" in azure_powershell
+    assert (
+        "tags.Project=='opamp' && tags.Purpose=='regression-retention'"
+        in azure_powershell
+    )
     assert "az group delete" not in azure_bash
     assert "az group delete" not in azure_powershell
 
@@ -130,7 +145,10 @@ def test_aws_destroy_polls_until_cloudformation_deletion_completes() -> None:
     bash_script = _read(AWS_DIRECTORY / "destroy.sh")
     powershell_script = _read(AWS_DIRECTORY / "destroy.ps1")
 
-    assert 'DELETE_POLL_INTERVAL_SECONDS="${DELETE_POLL_INTERVAL_SECONDS:-30}"' in bash_script
+    assert (
+        'DELETE_POLL_INTERVAL_SECONDS="${DELETE_POLL_INTERVAL_SECONDS:-30}"'
+        in bash_script
+    )
     assert "aws cloudformation describe-stacks" in bash_script
     assert 'sleep "$DELETE_POLL_INTERVAL_SECONDS"' in bash_script
     assert 'DELETE_FAILED_STATUS="DELETE_FAILED"' in bash_script
@@ -139,7 +157,9 @@ def test_aws_destroy_polls_until_cloudformation_deletion_completes() -> None:
     assert "$stackAlreadyDeleted = $true" in powershell_script
     assert "CloudFormation stack $StackName no longer exists" in powershell_script
     assert '$ErrorActionPreference = "Continue"' in powershell_script
-    assert "$ErrorActionPreference = $previousErrorActionPreference" in powershell_script
+    assert (
+        "$ErrorActionPreference = $previousErrorActionPreference" in powershell_script
+    )
     assert "2>&1" in powershell_script
     assert "Start-Sleep -Seconds $PollIntervalSeconds" in powershell_script
     assert '$deleteFailedStatus = "DELETE_FAILED"' in powershell_script
@@ -256,8 +276,28 @@ def test_cloud_powershell_packagers_write_linux_wheel_manifests() -> None:
 
     for powershell_path in powershell_paths:
         source_text = _read(powershell_path)
-        assert '$wheelManifestContent = [string]::Join("`n", [string[]]$wheelNames) + "`n"' in source_text
+        assert (
+            '$wheelManifestContent = [string]::Join("`n", [string[]]$wheelNames) + "`n"'
+            in source_text
+        )
         assert "[IO.File]::WriteAllLines(" not in source_text
+
+
+def test_cloud_packagers_build_shared_suite_and_components_with_uv() -> None:
+    """Keep Windows and Linux artifact bundles dependency-complete and uv-based."""
+    packager_paths = [
+        AWS_DIRECTORY / "scripts" / "package-cloud-artifacts.sh",
+        AWS_DIRECTORY / "scripts" / "package-cloud-artifacts.ps1",
+        AZURE_DIRECTORY / "scripts" / "package-cloud-artifacts.sh",
+        AZURE_DIRECTORY / "scripts" / "package-cloud-artifacts.ps1",
+    ]
+
+    for packager_path in packager_paths:
+        source_text = _read(packager_path)
+        assert '"shared"' in source_text
+        assert '"opamp-suite"' in source_text
+        assert "uv" in source_text
+        assert "python -m build" not in source_text
 
 
 def test_cloud_bash_packagers_limit_recursive_cleanup_to_dist() -> None:
@@ -297,9 +337,9 @@ def test_aws_parameters_are_validated_before_creating_resources() -> None:
     assert bash_script.index("parameter_overrides=()") < bash_script.index(
         'if [[ -z "$ARTIFACT_BUCKET" ]]'
     )
-    assert powershell_script.index("$parameterOverrides = @()") < powershell_script.index(
-        "if (-not $ArtifactBucket)"
-    )
+    assert powershell_script.index(
+        "$parameterOverrides = @()"
+    ) < powershell_script.index("if (-not $ArtifactBucket)")
     for deployment_script in (bash_script, powershell_script):
         assert "aws ec2 describe-key-pairs" in deployment_script
 
@@ -358,10 +398,14 @@ def test_aws_deploy_infers_existing_key_pair_from_private_key_file() -> None:
     bash_script = _read(AWS_DIRECTORY / "deploy.sh")
     powershell_script = _read(AWS_DIRECTORY / "deploy.ps1")
 
-    assert 'private_key_file_key_pair_name="${private_key_file_name%.pem}"' in bash_script
+    assert (
+        'private_key_file_key_pair_name="${private_key_file_name%.pem}"' in bash_script
+    )
     assert "Using EC2 key pair inferred from private key file" in bash_script
-    assert "--filters \"Name=key-name,Values=$selected_key_pair_name\"" in bash_script
-    assert "[IO.Path]::GetFileNameWithoutExtension($PrivateKeyFile)" in powershell_script
+    assert '--filters "Name=key-name,Values=$selected_key_pair_name"' in bash_script
+    assert (
+        "[IO.Path]::GetFileNameWithoutExtension($PrivateKeyFile)" in powershell_script
+    )
     assert "Using EC2 key pair inferred from private key file" in powershell_script
     assert '--filters "Name=key-name,Values=$selectedKeyPairName"' in powershell_script
 
@@ -411,11 +455,18 @@ def test_cloud_powershell_deploys_use_one_native_python_argument_array() -> None
 
     for powershell_path in powershell_paths:
         source_text = _read(powershell_path)
-        assert "$pythonInvocationArguments = @($pythonArguments) + $connectionGuideArguments" in source_text
+        assert (
+            "$pythonInvocationArguments = @($pythonArguments) + $connectionGuideArguments"
+            in source_text
+        )
         assert "& $pythonCommand @pythonInvocationArguments" in source_text
         assert "@pythonArguments @connectionGuideArguments" not in source_text
-        assert "Test-Path -LiteralPath $connectionGuideFile -PathType Leaf" in source_text
-        assert "(Get-Item -LiteralPath $connectionGuideFile).Length -eq 0" in source_text
+        assert (
+            "Test-Path -LiteralPath $connectionGuideFile -PathType Leaf" in source_text
+        )
+        assert (
+            "(Get-Item -LiteralPath $connectionGuideFile).Length -eq 0" in source_text
+        )
 
 
 def test_cloud_guides_document_retention_and_explicit_cleanup() -> None:

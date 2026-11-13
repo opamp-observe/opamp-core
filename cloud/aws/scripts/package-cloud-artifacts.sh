@@ -21,6 +21,7 @@ ARCHIVE_PATH="${ARCHIVE_PATH:-$REPO_ROOT/dist/opamp-cloud-artifacts.tar.gz}"
 WHEEL_DIR="$OUTPUT_DIR/wheels"
 
 COMPONENT_PATHS=(
+  "shared"
   "provider"
   "consumer"
   "consumer-sim"
@@ -33,6 +34,7 @@ COMPONENT_PATHS=(
   "svr-credentials-mgr/plaintext-keyring"
   "svr-credentials-mgr"
   "dev-tools"
+  "opamp-suite"
 )
 
 # Recursive cleanup is allowed only under the repository's generated dist tree.
@@ -50,9 +52,12 @@ mkdir -p "$WHEEL_DIR" "$OUTPUT_DIR/scripts"
 
 # Build all packages once so server and consumer instances can install from the
 # same immutable archive.
-python -m pip install --upgrade build
+if ! command -v uv >/dev/null 2>&1; then
+  echo "uv is required to build cloud package artifacts" >&2
+  exit 1
+fi
 for component_path in "${COMPONENT_PATHS[@]}"; do
-  python -m build --wheel --outdir "$WHEEL_DIR" "$REPO_ROOT/$component_path"
+  uv build --wheel --out-dir "$WHEEL_DIR" "$REPO_ROOT/$component_path"
 done
 
 # These scripts are provider-neutral despite their historical Azure location.

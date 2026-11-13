@@ -27,7 +27,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 import httpx  # noqa: F401 - legacy monkeypatch seam for auth token tests
-from shared.uuid_utils import generate_uuid7_bytes
 
 from opamp_consumer import config as consumer_config
 from opamp_consumer.client_bootstrap import (
@@ -87,6 +86,7 @@ from opamp_consumer.remote_config_status import (
     set_remote_config_status,
 )
 from opamp_consumer.reporting_flag import ReportingFlag
+from shared.uuid_utils import generate_uuid7_bytes
 
 if TYPE_CHECKING:
     from opamp_consumer.custom_handlers.handler_interface import (
@@ -115,7 +115,7 @@ HOST_META_KEY_OS_VERSION = "os_version"  # Host metadata key for OS version.
 HOST_META_KEY_HOSTNAME = "hostname"  # Host metadata key for hostname.
 HOST_META_KEY_MAC_ADDRESS = "mac_address"  # Host metadata key for client MAC address.
 CONFIG_DOCS_URL = (
-    "https://github.com/mp3monster/fluent-opamp"  # Reference docs for consumer config.
+    "https://github.com/opamp-observe/opamp-core"  # Reference docs for consumer config.
 )
 REPLACED_CONFIG_TIMESTAMP_FORMAT = "%Y-%m-%d--%H-%M-%S"
 REPLACED_CONFIG_POSTFIX_PREFIX = "replaced_"

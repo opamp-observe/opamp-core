@@ -18,9 +18,10 @@ import importlib
 import json
 import logging
 import pathlib
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Callable, Iterable
+from typing import Any
 
 LOGGER = logging.getLogger(__name__)
 
@@ -124,7 +125,19 @@ class ServerCapabilities(IntEnum):
 
 @dataclass(frozen=True)
 class ComponentEntryPoint:
-    """Normalized component entrypoint record from configuration."""
+    """Normalized component entrypoint record from configuration.
+
+    Attributes
+    ----------
+    entry_point:
+        Import target in ``module:symbol`` or supported dotted form.
+    label:
+        Optional human-readable component label shown by host interfaces.
+    url:
+        Optional route or external URL associated with the component.
+    enabled:
+        Whether the component should participate in registration.
+    """
 
     entry_point: str
     label: str = ""
@@ -133,7 +146,20 @@ class ComponentEntryPoint:
 
 
 def parse_capabilities(names: Iterable[str], enum_cls: type[IntEnum]) -> int:
-    """Convert capability names into a bitmask for the given enum class."""
+    """Convert capability names into a bitmask for the given enum class.
+
+    Parameters
+    ----------
+    names:
+        Capability member names to combine.
+    enum_cls:
+        Integer enum defining the supported capability bits.
+
+    Returns
+    -------
+    int
+        Bitwise combination of recognized capability values.
+    """
     LOGGER.info("parsing capability names enum=%s", enum_cls.__name__)
     mask = 0
     if not isinstance(names, Iterable):
@@ -145,13 +171,26 @@ def parse_capabilities(names: Iterable[str], enum_cls: type[IntEnum]) -> int:
             mask |= int(enum_cls[name])
             LOGGER.debug("parse_capabilities add to mask (%s) for %s", enum_cls[name], name)
         except KeyError:
-            LOGGER.warning("unknown capability ignored capability=%s enum=%s", name, enum_cls.__name__)
+            LOGGER.warning(
+                "unknown capability ignored capability=%s enum=%s", name, enum_cls.__name__
+            )
     LOGGER.info("completed capability parsing enum=%s mask=%s", enum_cls.__name__, mask)
     return mask
 
 
 def anyvalue_to_string(value: Any) -> str | None:
-    """Convert a protobuf AnyValue-like object into a string representation."""
+    """Convert a protobuf AnyValue-like object into a string representation.
+
+    Parameters
+    ----------
+    value:
+        Object exposing the protobuf ``WhichOneof`` API and supported value fields.
+
+    Returns
+    -------
+    str | None
+        Normalized scalar text, or ``None`` when the payload is absent or unsupported.
+    """
     if value is None:
         LOGGER.warning("cannot convert AnyValue-like payload because value is None")
         return None
@@ -178,7 +217,20 @@ def anyvalue_to_string(value: Any) -> str | None:
 
 
 def _coerce_bool(value: Any, default: bool = False) -> bool:
-    """Return boolean coercion for common config and environment value forms."""
+    """Return boolean coercion for common configuration value forms.
+
+    Parameters
+    ----------
+    value:
+        Boolean, text, numeric, or absent value to normalize.
+    default:
+        Value returned when the input is missing or unrecognized.
+
+    Returns
+    -------
+    bool
+        Normalized boolean value.
+    """
     if isinstance(value, bool):
         return value
     if value is None:
@@ -193,7 +245,18 @@ def _coerce_bool(value: Any, default: bool = False) -> bool:
 
 
 def normalize_component_entry_points(configured: Any) -> list[ComponentEntryPoint]:
-    """Normalize raw component entrypoint payload into structured records."""
+    """Normalize raw component entrypoint payload into structured records.
+
+    Parameters
+    ----------
+    configured:
+        Comma-delimited text or a list of strings and mapping objects from configuration.
+
+    Returns
+    -------
+    list[ComponentEntryPoint]
+        Enabled, valid component records in their configured order.
+    """
     LOGGER.info("normalizing component entry points payload_type=%s", type(configured).__name__)
     if isinstance(configured, str):
         configured = [item.strip() for item in configured.split(",") if item.strip()]
@@ -231,7 +294,9 @@ def normalize_component_entry_points(configured: Any) -> list[ComponentEntryPoin
             or ""
         ).strip()
         if not candidate:
-            LOGGER.warning("skipping component entry point item without entry point keys item=%s", item)
+            LOGGER.warning(
+                "skipping component entry point item without entry point keys item=%s", item
+            )
             continue
         label = str(item.get(CFG_KEY_LABEL) or "").strip()
         url = str(item.get(CFG_KEY_URL) or item.get(CFG_KEY_PATH) or "").strip()
@@ -253,7 +318,22 @@ def resolve_component_entry_points_from_payload(
     runtime_key: str = CFG_COMPONENT_ENTRY_POINTS_QUART,
     default_entry_points: Iterable[str] = (),
 ) -> list[ComponentEntryPoint]:
-    """Resolve component entrypoints for one runtime from loaded config payload."""
+    """Resolve component entrypoints for one runtime from loaded configuration.
+
+    Parameters
+    ----------
+    payload:
+        Optional root configuration object containing component entrypoint settings.
+    runtime_key:
+        Nested runtime name, such as ``quart``, selected from the shared settings.
+    default_entry_points:
+        Import targets used when no enabled runtime entries are configured.
+
+    Returns
+    -------
+    list[ComponentEntryPoint]
+        Configured entries when present; otherwise normalized defaults.
+    """
     LOGGER.info("resolving component entry points runtime_key=%s", runtime_key)
     raw = payload if isinstance(payload, dict) else {}
     if payload is not None and not isinstance(payload, dict):
@@ -287,7 +367,18 @@ def resolve_component_entry_points_from_payload(
 
 
 def load_json_config(path: pathlib.Path) -> dict[str, Any]:
-    """Load JSON configuration from disk, returning empty payload on read errors."""
+    """Load JSON configuration from disk, returning an empty object on errors.
+
+    Parameters
+    ----------
+    path:
+        JSON file to read using UTF-8 encoding.
+
+    Returns
+    -------
+    dict[str, Any]
+        Parsed root object, or a new empty object when reading or validation fails.
+    """
     LOGGER.info("loading JSON config path=%s", path)
     if not path.exists():
         LOGGER.warning("JSON config path does not exist path=%s", path)
@@ -318,7 +409,29 @@ def load_json_config(path: pathlib.Path) -> dict[str, Any]:
 
 
 def resolve_component_callable(component_entry_point: str) -> Callable[[Any], None]:
-    """Resolve one `module:symbol` entrypoint string to a callable."""
+    """Resolve one component entrypoint string to a callable.
+
+    Parameters
+    ----------
+    component_entry_point:
+        Import target in ``module:symbol`` or supported dotted form.
+
+    Returns
+    -------
+    Callable[[Any], None]
+        Imported component registration callback.
+
+    Raises
+    ------
+    ValueError
+        If the target is blank or does not contain a supported separator.
+    ImportError
+        If the target module cannot be imported.
+    AttributeError
+        If the configured symbol cannot be resolved from its module.
+    TypeError
+        If the resolved symbol is not callable.
+    """
     entry_point = str(component_entry_point or "").strip()
     LOGGER.info("resolving component callable entry_point=%s", entry_point)
     if not entry_point:
@@ -332,24 +445,37 @@ def resolve_component_callable(component_entry_point: str) -> Callable[[Any], No
     elif COMPONENT_ENTRYPOINT_SEPARATOR_DOT in entry_point:
         module_name, symbol_path = entry_point.rsplit(COMPONENT_ENTRYPOINT_SEPARATOR_DOT, 1)
     else:
-        LOGGER.error("component callable resolution failed because format was invalid entry_point=%s", entry_point)
+        LOGGER.error(
+            "component callable resolution failed because format was invalid entry_point=%s",
+            entry_point,
+        )
         raise ValueError(ERR_COMPONENT_ENTRY_POINT_INVALID_TEMPLATE.format(entry_point=entry_point))
 
     try:
         module = importlib.import_module(module_name.strip())
     except ImportError:
-        LOGGER.exception("failed to import component entry point module entry_point=%s", entry_point)
+        LOGGER.exception(
+            "failed to import component entry point module entry_point=%s", entry_point
+        )
         raise
     target: object = module
     try:
         for part in symbol_path.split(COMPONENT_ENTRYPOINT_SEPARATOR_DOT):
             target = getattr(target, part)
     except AttributeError:
-        LOGGER.exception("failed to resolve component entry point symbol entry_point=%s", entry_point)
+        LOGGER.exception(
+            "failed to resolve component entry point symbol entry_point=%s", entry_point
+        )
         raise
     if not callable(target):
-        LOGGER.error("component entry point resolved to non-callable entry_point=%s target_type=%s", entry_point, type(target).__name__)
-        raise TypeError(ERR_COMPONENT_ENTRY_POINT_NOT_CALLABLE_TEMPLATE.format(entry_point=entry_point))
+        LOGGER.error(
+            "component entry point resolved to non-callable entry_point=%s target_type=%s",
+            entry_point,
+            type(target).__name__,
+        )
+        raise TypeError(
+            ERR_COMPONENT_ENTRY_POINT_NOT_CALLABLE_TEMPLATE.format(entry_point=entry_point)
+        )
     LOGGER.info("resolved component callable entry_point=%s", entry_point)
     return target
 
@@ -359,7 +485,25 @@ def register_component_entry_points(
     *,
     entries: Iterable[ComponentEntryPoint],
 ) -> list[str]:
-    """Register deduplicated component entrypoints against the provided app."""
+    """Register deduplicated component entrypoints against the provided app.
+
+    Parameters
+    ----------
+    app:
+        Host application passed to every resolved registration callback.
+    entries:
+        Normalized component records to resolve and register in order.
+
+    Returns
+    -------
+    list[str]
+        Import targets successfully registered, excluding blanks and duplicates.
+
+    Raises
+    ------
+    ValueError, ImportError, AttributeError, TypeError
+        If an enabled entry cannot be resolved to a callable registration target.
+    """
     LOGGER.info("registering component entry points")
     registered: list[str] = []
     seen: set[str] = set()

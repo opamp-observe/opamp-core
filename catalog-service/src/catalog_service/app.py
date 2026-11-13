@@ -11,6 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Run the standalone catalog service and register its Quart component routes."""
+
+# Repository checkout imports intentionally follow the shared-package path bootstrap below.
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import argparse
@@ -23,11 +28,10 @@ from pathlib import Path
 from quart import Quart, Response, jsonify, redirect, request
 
 ROOT_PATH = Path(__file__).resolve().parents[3]
-if str(ROOT_PATH) not in sys.path:
-    sys.path.insert(0, str(ROOT_PATH))
-
-from shared.observability import attach_observability
-from shared.opamp_config import ComponentEntryPoint, register_component_entry_points
+SHARED_SOURCE_PATH = ROOT_PATH / "shared" / "src"
+for import_path in (ROOT_PATH, SHARED_SOURCE_PATH):
+    if str(import_path) not in sys.path:
+        sys.path.insert(0, str(import_path))
 
 from catalog_service.auth_integration import evaluate_ui_http_auth
 from catalog_service.config import load_catalog_service_config
@@ -40,6 +44,9 @@ from catalog_service.runtime_config import (
     resolve_web_port,
 )
 from catalog_service.service import CatalogFileIndexService
+from shared.observability import attach_observability
+from shared.opamp_config import ComponentEntryPoint, register_component_entry_points
+from shared.security_headers import register_security_headers
 
 APP_CONFIG_KEY_MODE = "CATALOG_SERVICE_MODE"
 APP_EXTENSION_MENU_ITEMS = "catalog_service:ui_menu_items"
@@ -58,7 +65,7 @@ RESPONSE_KEY_COMPONENT_ENTRY_POINTS_REGISTERED = "component_entry_points_registe
 RESPONSE_KEY_ERROR = "error"
 LANDING_PAGE_REDIRECT_URL = (
     "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
-    "mp3monster/fluent-opamp/main/github-landingpage/index.html"
+    "opamp-observe/opamp-core/main/github-landingpage/index.html"
 )
 
 
@@ -201,6 +208,7 @@ def create_app(*, mode: str = "standalone", config_path: str | None = None) -> Q
     """Create a standalone catalog Quart app."""
     _configure_logging()
     app = Quart(__name__)
+    register_security_headers(app)
     effective_config_path = get_effective_config_path(config_path).resolve()
     app.config[APP_CONFIG_KEY_MODE] = mode
     app.extensions[APP_EXTENSION_CONFIG_PATH] = str(effective_config_path)
@@ -297,7 +305,12 @@ def main() -> None:
     """Run the standalone catalog UI server."""
     parser = argparse.ArgumentParser(description="OpAMP catalog standalone server")
     parser.add_argument("--config-path", type=str, help="Path to catalog JSON configuration file")
-    parser.add_argument("--host", type=str, default="0.0.0.0", help="Bind address")
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="0.0.0.0",  # noqa: S104 - standalone service must be container reachable.
+        help="Bind address",
+    )
     parser.add_argument("--port", type=int, help="Override listen port")
     args = parser.parse_args()
 

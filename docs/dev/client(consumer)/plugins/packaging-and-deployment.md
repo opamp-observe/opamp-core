@@ -77,7 +77,7 @@ packages = ["src/my_consumer_plugin"]
 Build the wheel with:
 
 ```bash
-python -m build --wheel
+uv build --wheel
 ```
 
 Install the base consumer first, then the plugin:

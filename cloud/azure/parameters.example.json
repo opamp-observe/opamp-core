@@ -24,7 +24,7 @@
       "value": "https://REPLACE_STORAGE_ACCOUNT.blob.core.windows.net/opamp-cloud"
     },
     "sourceRepoUrl": {
-      "value": "https://github.com/mp3monster/fluent-opamp.git"
+      "value": "https://github.com/opamp-observe/opamp-core.git"
     },
     "sourceRef": {
       "value": "main"

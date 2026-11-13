@@ -27,7 +27,7 @@ except ImportError:  # pragma: no cover - Python 3.10 fallback
 
 from .runtime import CommandRuntime, read_project_metadata
 
-DEFAULT_REPO = "mp3monster/fluent-opamp"
+DEFAULT_REPO = "opamp-observe/opamp-core"
 PYTEST_JUNIT_ARGUMENT = "--junitxml"
 TEST_RESULTS_DIRECTORY = Path("dev-tools/runtime/test-results")
 COMPONENT_EXCLUDES = {
@@ -48,7 +48,6 @@ COMPONENT_EXCLUDES = {
     "runtime",
     "scripts",
     "server-state",
-    "shared",
     "tests",
     "tools",
 }
@@ -155,8 +154,24 @@ def build_artifacts(
     python_exe: str,
     no_isolation: bool,
 ) -> bool:
-    """Build sdist and wheel artefacts for one or more components."""
-    runtime.ensure_python_module(python_exe=python_exe, module_name="build", pip_package="build")
+    """Build component source and wheel artefacts with uv.
+
+    Parameters
+    ----------
+    runtime:
+        Command runtime providing repository paths, logging, and process execution.
+    components:
+        Packaged component projects to clean and build.
+    python_exe:
+        Python interpreter used to install build backends when isolation is disabled.
+    no_isolation:
+        Whether uv should reuse the active environment instead of an isolated build one.
+
+    Returns
+    -------
+    bool
+        Always ``False`` because build failures raise through the command runtime.
+    """
     dist_root = runtime.repo_root / "dist"
     for component in components:
         _clean_component_build_tree(component)
@@ -168,9 +183,9 @@ def build_artifacts(
             )
         out_dir = dist_root / component.key
         out_dir.mkdir(parents=True, exist_ok=True)
-        command = [python_exe, "-m", "build", "--sdist", "--wheel", "--outdir", str(out_dir)]
+        command = ["uv", "build", "--sdist", "--wheel", "--out-dir", str(out_dir)]
         if no_isolation:
-            command.append("--no-isolation")
+            command.append("--no-build-isolation")
         command.append(str(component.path))
         runtime.run(command, cwd=runtime.repo_root)
     return False
@@ -184,8 +199,31 @@ def build_component_wheel(
     out_dir: Path,
     no_isolation: bool,
 ) -> Path:
-    """Build one component wheel and return the resulting wheel path."""
-    runtime.ensure_python_module(python_exe=python_exe, module_name="build", pip_package="build")
+    """Build one component wheel with uv and return the resulting wheel path.
+
+    Parameters
+    ----------
+    runtime:
+        Command runtime providing repository paths, logging, and process execution.
+    component:
+        Packaged component project to clean and build.
+    python_exe:
+        Python interpreter used to install build backends when isolation is disabled.
+    out_dir:
+        Directory cleared and populated with the resulting wheel.
+    no_isolation:
+        Whether uv should reuse the active environment instead of an isolated build one.
+
+    Returns
+    -------
+    Path
+        Selected wheel path after a successful build.
+
+    Raises
+    ------
+    RuntimeError
+        If the build does not produce a wheel.
+    """
     _clean_component_build_tree(component)
     if no_isolation:
         _ensure_build_backend_requirements(
@@ -195,15 +233,14 @@ def build_component_wheel(
         )
     _clean_dir(out_dir)
     command = [
-        python_exe,
-        "-m",
+        "uv",
         "build",
         "--wheel",
-        "--outdir",
+        "--out-dir",
         str(out_dir),
     ]
     if no_isolation:
-        command.append("--no-isolation")
+        command.append("--no-build-isolation")
     command.append(str(component.path))
     runtime.run(command, cwd=runtime.repo_root)
     wheels = sorted(out_dir.glob("*.whl"))
@@ -542,7 +579,7 @@ def _ensure_build_backend_requirements(
     component: BuildComponent,
     python_exe: str,
 ) -> None:
-    """Install build backend requirements when using `python -m build --no-isolation`."""
+    """Install build backend requirements when using ``uv build --no-build-isolation``."""
     pyproject_path = component.path / "pyproject.toml"
     if not pyproject_path.exists():
         return

@@ -20,6 +20,7 @@ OUTPUT_DIR="${OUTPUT_DIR:-$REPO_ROOT/dist/cloud-azure-artifacts}"
 WHEEL_DIR="$OUTPUT_DIR/wheels"
 
 COMPONENT_PATHS=(
+  "shared"
   "provider"
   "consumer"
   "consumer-sim"
@@ -32,6 +33,7 @@ COMPONENT_PATHS=(
   "svr-credentials-mgr/plaintext-keyring"
   "svr-credentials-mgr"
   "dev-tools"
+  "opamp-suite"
 )
 
 # Constrain recursive cleanup to generated content under the repository's dist tree.
@@ -47,9 +49,12 @@ rm -rf "$OUTPUT_DIR"
 mkdir -p "$WHEEL_DIR" "$OUTPUT_DIR/scripts"
 
 # Build all packages once so both VM roles use the same component versions.
-python -m pip install --upgrade build
+if ! command -v uv >/dev/null 2>&1; then
+  echo "uv is required to build cloud package artifacts" >&2
+  exit 1
+fi
 for component_path in "${COMPONENT_PATHS[@]}"; do
-  python -m build --wheel --outdir "$WHEEL_DIR" "$REPO_ROOT/$component_path"
+  uv build --wheel --out-dir "$WHEEL_DIR" "$REPO_ROOT/$component_path"
 done
 
 # Runtime scripts are shared by AWS and Azure and execute only after VM creation.

@@ -24,6 +24,7 @@ dependencies = [
   "opentelemetry-instrumentation-logging",
   "pydantic>=2.9.2",
   "httpx>=0.27.2",
+  "opamp-shared==0.6.0",
   "python-dotenv>=1.0.1",
   "pandas>=2.2.0",
 ]
@@ -40,9 +41,12 @@ dev = [
 opamp-broker = "opamp_broker.broker_app:run"
 
 [project.urls]
-Repository = "https://github.com/mp3monster/fluent-opamp"
+Repository = "https://github.com/opamp-observe/opamp-core"
 Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html"
 Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
+
+[tool.uv.sources]
+opamp-shared = { path = "../shared", editable = true }
 
 [tool.pytest.ini_options]
 addopts = [
@@ -80,18 +84,11 @@ ignore = ["E501"]
 "tests/**/*.py" = ["S101"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["opamp_broker"]
+known-first-party = ["opamp_broker", "shared"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["opamp_broker"]
 include = ["opamp_broker/config/*.json", "opamp_broker/*.json"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"../shared/__init__.py" = "shared/__init__.py"
-"../shared/agent_remote_config.py" = "shared/agent_remote_config.py"
-"../shared/observability.py" = "shared/observability.py"
-"../shared/opamp_config.py" = "shared/opamp_config.py"
-"../shared/uuid_utils.py" = "shared/uuid_utils.py"
 
 [tool.hatch.build.targets.sdist]
 include = [

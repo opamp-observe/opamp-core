@@ -24,6 +24,21 @@ def _workflow_text() -> str:
     return WORKFLOW_PATH.read_text(encoding="utf-8")
 
 
+def test_documentation_only_pushes_omit_build_and_regression_jobs() -> None:
+    """Leave documentation-only main-branch pushes to the Pages workflow."""
+    workflow = _workflow_text()
+    push_section = workflow.split("  push:", maxsplit=1)[1].split(
+        "  workflow_dispatch:", maxsplit=1
+    )[0]
+
+    assert "paths-ignore:" in push_section
+    assert '"**/*.md"' in push_section
+    assert '"**/docs/**"' in push_section
+    assert '"docs/**"' in push_section
+    assert '"github-landingpage/**"' in push_section
+    assert '"quick-references/**"' in push_section
+
+
 def test_workflow_accepts_azure_aws_or_no_cloud_provider() -> None:
     """Expose the supported deployment modes through one validated control."""
     workflow = _workflow_text()

@@ -1,4 +1,22 @@
+<!--
+Copyright 2026 opamp.info
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Alternate Persistence Implementation Prompt
+
+Status: planned roadmap specification
+
+Last reviewed: 13 November 2026
 
 Use this prompt when implementing an alternate persistence mechanism for the server credentials manager client-node mapping data.
 
@@ -22,7 +40,7 @@ Key files to inspect before making changes:
 - `svr-credentials-mgr/tests/test_storage.py`
 - `svr-credentials-mgr/tests/test_app.py`
 - `svr-credentials-mgr/readme.md`
-- `agent.md`
+- `agents.md`
 
 ## Current Design
 
@@ -49,10 +67,10 @@ If no backend is explicitly configured, the service must continue to behave exac
 
 ## Preferred Direction
 
-Implement a second concrete backend, that support:
-- SQLite
-- Postgres
-unless repo conventions or platform constraints make a different durable local store clearly better.
+Implement SQLite as the second concrete backend unless repository conventions or platform constraints
+make a different durable local store clearly better. Keep the abstraction suitable for a later
+PostgreSQL backend, but do not add PostgreSQL infrastructure to the first implementation without a
+demonstrated shared-deployment requirement.
 
 Why SQLite is attractive:
 
@@ -62,16 +80,16 @@ Why SQLite is attractive:
 - easy local inspection
 - good fit for a single-service embedded persistence layer
 
-Postgres is attractive because:
-- Full RDBMS features
-- very well adopted and considered enterprise capable
-- Easiy to scale
+PostgreSQL remains a possible follow-up because it provides a well-supported shared relational store
+for horizontally scaled deployments. It also introduces service lifecycle, credentials, migration,
+availability, and operational ownership requirements that SQLite avoids.
 
 ## Functional Requirements
 
 1. Add a configurable persistence backend selection mechanism.
 2. Keep the existing JSON file backend as the default.
-3. Allow backend-specific configuration values to be supplied through the existing service configuration flow.
+3. Allow backend-specific configuration values to be supplied through the existing shared service
+   configuration flow under `opamp.svr_credentials_manager.storage`.
 4. Ensure `ClientMappingStore` continues to reconcile loaded mappings against the currently available connections.
 5. Ensure invalid or stale node-to-connection assignments are removed after reconciliation.
 6. Preserve the current behavior where missing connections are surfaced to the UI as status errors and are not left assigned.
@@ -98,25 +116,31 @@ Postgres is attractive because:
 
 ## Suggested Configuration Shape
 
-Follow existing config patterns in `service_config.py` and keep names explicit. A structure along these lines is acceptable:
+Follow the shared configuration pattern already implemented in `service_config.py`. Environment
+variables remain higher precedence than the shared JSON file, and relative paths resolve from the
+configuration file location. A structure along these lines is acceptable:
 
 ```json
 {
-  "clientNodeConnectionMapping": {
-    "backend": "json",
-    "filePath": "data/client-node-mapping.json",
-    "sqlitePath": "data/client-node-mapping.db"
+  "opamp": {
+    "svr_credentials_manager": {
+      "storage": {
+        "mapping_backend": "json",
+        "mapping_path": "./data/client-node-mapping.json",
+        "mapping_sqlite_path": "./data/client-node-mapping.db"
+      }
+    }
   }
 }
 ```
 
-Or, if the existing config style is flatter, adapt to that style consistently.
-
 Recommended rules:
 
-- `backend` allowed values: `json`, `sqlite`
-- `filePath` required when `backend == "json"`
-- `sqlitePath` required when `backend == "sqlite"`
+- `mapping_backend` allowed values: `json`, `sqlite`
+- `mapping_path` is used when `mapping_backend == "json"`
+- `mapping_sqlite_path` is required when `mapping_backend == "sqlite"`
+- `SVR_CREDENTIALS_MAPPING_BACKEND` and backend-specific environment variables override JSON values
+- existing deployments that only set `storage.mapping_path` continue to select the JSON backend
 
 If config validation already exists elsewhere, integrate with it instead of inventing a parallel validator.
 
@@ -141,7 +165,8 @@ Avoid over-design. The domain model is currently simple.
 2. Add a new backend class implementing `MappingPersistenceBackend`.
 3. Add backend-specific initialization and serialization logic inside that class only.
 4. Update application wiring in `app.py` so configuration chooses the backend at startup.
-5. Update `service_config.py` to parse and validate the new persistence options.
+5. Update `service_config.py` to parse and validate the new persistence options with the established
+   precedence: explicit argument, environment variable, shared JSON, legacy compatibility, then default.
 6. Preserve backward compatibility for existing deployments that only provide a JSON path.
 7. Add or update tests for:
    - backend selection
@@ -168,7 +193,7 @@ Tests should cover:
 - behavior when the backend store starts empty
 - behavior when backend data is malformed or unavailable
 
-If SQLite is chosen, include tests that verify schema creation happens automatically when appropriate.
+Include SQLite tests that verify schema creation happens automatically and safely when appropriate.
 
 ## Acceptance Criteria
 
@@ -183,11 +208,19 @@ The work is complete when:
 
 ## Verification Commands
 
-Run the relevant checks from `svr-credentials-mgr`:
+Synchronize the development environment from the repository root:
 
 ```bash
-PYTHONPATH=src:plaintext-keyring/src python -m ruff check src tests
-PYTHONPATH=src:plaintext-keyring/src python -m pytest -q tests/test_storage.py tests/test_app.py
+uv sync --project svr-credentials-mgr --extra dev
+```
+
+Run the relevant checks from the repository root; `--directory` keeps the commands portable across
+Windows and Linux shells:
+
+```bash
+uv run --directory svr-credentials-mgr --locked python -m ruff check src tests
+uv run --directory svr-credentials-mgr --locked python -m pylint src/svr_credentials_manager_service
+uv run --directory svr-credentials-mgr --locked python -m pytest -q -s tests/test_storage.py tests/test_app.py
 ```
 
 If new dependencies are added, update the relevant packaging files and note any install implications in `readme.md`.

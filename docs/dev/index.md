@@ -26,6 +26,7 @@ Developer-focused documentation for code structure, implementation details, exte
 - [UI Consistency Checklist](ui_consistency_checklist.md)
 - [Development Tooling](tooling.md)
 - [Testing and Result Review](testing.md)
+- [Dynamic Application Security Testing](dynamic_application_security_testing.md)
 - [Provider UI Minification Process](dev-processes/minification_process.md)
 - [OpAMP Config Catalog Service Prompt](opamp_config_catalog_service_prompt.md)
 

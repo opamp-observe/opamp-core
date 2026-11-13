@@ -194,7 +194,8 @@ set to **GitHub Actions**; the workflow preserves the `docs/CNAME` custom domain
 configuration for `opamp.info`. The organization Actions policy must allow the
 GitHub-owned `actions/upload-pages-artifact` and `actions/deploy-pages` actions.
 
-- [Product installation](docs/installation.md) — deployment scenarios, released wheels,
+- [Product installation](docs/installation.md) — deployment scenarios, `opamp-suite`
+  installation profiles, independently released wheels,
   automation, and command-line tooling.
 - [Documentation hub](docs/README.md) — full setup, architecture, and run instructions.
 - [Components and repository layout](docs/components_and_repository_layout.md) — component

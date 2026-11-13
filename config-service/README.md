@@ -14,7 +14,19 @@ limitations under the License.
 
 # config-service
 
+The service depends on the independently published `opamp-shared` runtime
+library. Local `uv` development resolves it from `../shared`; the service wheel
+contains only Config Service-owned packages.
+
 The config service can be run as part of the larger OpAMP server, or as a standalone package. When run in a standalone configuration, this effectively becomes a UI driven configuration editor and validation tool. The config-service is composed of a lightweight JavaScript and HTML presentation tier and a Python backend that serves the UI and provides validation logic, I/O, etc. 
+
+Standalone responses deny browser framing and MIME sniffing with
+`Content-Security-Policy: frame-ancestors 'none'; form-action 'self'`, `X-Frame-Options: DENY`, and
+`X-Content-Type-Options: nosniff`. They also send the shared strict
+`Content-Security-Policy-Report-Only` migration policy without blocking incompatible resources.
+When embedded into the provider, the provider applies the same policy to the component routes.
+Deployment gateways must preserve these headers; see the
+[API gateway recommendations](../docs/api_gateway_requirements.md#browser-framing-and-clickjacking-protection).
 
 The editor currently primarily supports Fluent-Bit YAML, but it also includes some functionality for Fluentd (and will be enhanced over time).  Fluent Bit's Classic format isn't supported because it isn't the strategic format for the future. There is a config converter available [here](https://github.com/mp3monster/fluent-bit-classic-to-yaml-converter).
 

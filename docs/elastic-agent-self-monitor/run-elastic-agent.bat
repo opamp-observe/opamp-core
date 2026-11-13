@@ -31,6 +31,8 @@ if not exist "%AGENT_LOG_DIR%" (
     mkdir "%AGENT_LOG_DIR%" || exit /b 1
 )
 
+set "OPAMP_ELASTIC_AGENT_LOG_DIR=%AGENT_LOG_DIR%"
+
 echo Using Elastic Agent: %AGENT_EXE%
 echo Using config: %CONFIG_FILE%
 if defined OPAMP_LOGSTASH_HOST (
@@ -42,8 +44,7 @@ echo Agent file logs: %AGENT_LOG_DIR%
 echo.
 echo Start Logstash first with:
 echo   "%SCRIPT_DIR%run-logstash.bat"
-echo If localhost forwarding fails, run:
-echo   call "%SCRIPT_DIR%set-podman-logstash-host.bat"
+echo If localhost forwarding fails, set OPAMP_LOGSTASH_HOST to the Podman machine address.
 echo.
 
 pushd "%ELASTIC_AGENT_HOME%" || exit /b 1

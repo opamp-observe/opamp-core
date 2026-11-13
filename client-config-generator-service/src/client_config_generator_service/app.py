@@ -43,6 +43,7 @@ from client_config_generator_service.service import (
     KEY_VALID,
     ConfigurationFileService,
 )
+from shared.security_headers import register_security_headers
 
 APP_MODE_EMBEDDED = "embedded"
 DEFAULT_BIND_HOST = "0.0.0.0"  # noqa: S104 - standalone service must be container reachable.
@@ -377,6 +378,7 @@ def create_app(
     settings = load_settings(config_path)
     _configure_logging(settings)
     app = Quart(__name__)
+    register_security_headers(app)
     app.logger.setLevel(getattr(logging, settings.log_level, logging.DEBUG))
     register_client_config_generator_component(app, config_path=config_path, mode=mode)
 

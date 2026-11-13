@@ -57,7 +57,7 @@
     },
     "sourceRepoUrl": {
       "type": "string",
-      "defaultValue": "https://github.com/mp3monster/fluent-opamp.git",
+      "defaultValue": "https://github.com/opamp-observe/opamp-core.git",
       "metadata": {
         "description": "Fallback Git repository used to build wheels on the VMs when wheelArtifactBaseUrl is empty."
       }

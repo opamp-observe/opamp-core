@@ -31,13 +31,17 @@ from .provider_ui import compact_provider_ui_assets
 from .security import run_repo_security_checks
 from .version_metadata import main as refresh_version_metadata
 
-DEFAULT_REPO = "mp3monster/fluent-opamp"
+DEFAULT_REPO = "opamp-observe/opamp-core"
 DEFAULT_MANUAL_PATH = "dist/manual/opamp_manual.pdf"
 DEFAULT_RELEASE_COMPONENT_KEYS = (
+    "shared",
     "provider",
-    "consumer",
+    "config-service",
     "catalog-service",
     "client-config-generator-service",
+    "svr-credentials-mgr",
+    "consumer",
+    "opamp-suite",
     "cli",
     "consumer-sim",
 )
@@ -66,6 +70,14 @@ class ReleaseComponentTarget:
 
 
 RELEASE_COMPONENT_TARGETS: dict[str, ReleaseComponentTarget] = {
+    "shared": ReleaseComponentTarget(
+        key="shared",
+        source_dir="shared",
+        dist_dirname="shared",
+        root_component_name="opamp-shared",
+        default_sbom_relpath="dist/sbom/opamp_shared.cyclonedx.json",
+        display_name="Shared runtime library",
+    ),
     "provider": ReleaseComponentTarget(
         key="provider",
         source_dir="provider",
@@ -81,6 +93,14 @@ RELEASE_COMPONENT_TARGETS: dict[str, ReleaseComponentTarget] = {
         root_component_name="fluent-opamp-consumer-deployable-artifact",
         default_sbom_relpath="dist/sbom/opamp_consumer_deployable_artifacts.cyclonedx.json",
         display_name="Consumer",
+    ),
+    "config-service": ReleaseComponentTarget(
+        key="config-service",
+        source_dir="config-service",
+        dist_dirname="config-service",
+        root_component_name="config-service",
+        default_sbom_relpath="dist/sbom/config_service.cyclonedx.json",
+        display_name="Config service",
     ),
     "catalog-service": ReleaseComponentTarget(
         key="catalog-service",
@@ -99,6 +119,22 @@ RELEASE_COMPONENT_TARGETS: dict[str, ReleaseComponentTarget] = {
             "dist/sbom/opamp_client_config_generator_service_deployable_artifacts.cyclonedx.json"
         ),
         display_name="Client config generator service",
+    ),
+    "svr-credentials-mgr": ReleaseComponentTarget(
+        key="svr-credentials-mgr",
+        source_dir="svr-credentials-mgr",
+        dist_dirname="svr-credentials-mgr",
+        root_component_name="svr-credentials-manager-service",
+        default_sbom_relpath="dist/sbom/svr_credentials_manager_service.cyclonedx.json",
+        display_name="Server credentials manager service",
+    ),
+    "opamp-suite": ReleaseComponentTarget(
+        key="opamp-suite",
+        source_dir="opamp-suite",
+        dist_dirname="opamp-suite",
+        root_component_name="opamp-suite",
+        default_sbom_relpath="dist/sbom/opamp_suite.cyclonedx.json",
+        display_name="OpAMP suite meta-package",
     ),
     "cli": ReleaseComponentTarget(
         key="cli",
@@ -185,7 +221,7 @@ def add_release_assets_arguments(parser: Any) -> None:
     parser.add_argument(
         "--no-isolation",
         action="store_true",
-        help="Pass --no-isolation to python -m build for local/offline builds",
+        help="Pass --no-build-isolation to uv build for local/offline builds",
     )
     parser.add_argument(
         "--publish",

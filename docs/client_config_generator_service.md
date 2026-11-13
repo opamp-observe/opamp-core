@@ -114,15 +114,16 @@ The API prefix is `/client-config-generator-service/api/v1`:
 The component is an independently versioned wheel with a console entry point. It is included in the component-wheel deployment matrix and the CLI version-target manifest. Build it directly with:
 
 ```bash
-python -m build --wheel client-config-generator-service
+uv build --wheel client-config-generator-service
 ```
 
 Focused quality checks:
 
 ```bash
 cd client-config-generator-service
-python -m ruff check src tests
-python -m pylint src/client_config_generator_service
+uv sync --extra dev
+uv run python -m ruff check src tests
+uv run python -m pylint src/client_config_generator_service
 python -m pytest -q -s
 ```
 

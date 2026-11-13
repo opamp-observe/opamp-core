@@ -17,7 +17,7 @@ limitations under the License.
 `opamp-dev-tools` is the consolidated developer CLI for repository maintenance
 work such as schema validation, version updates, packaging, SBOM generation,
 test execution, security checks, container image cleanup, release wheel
-publishing, generated-folder cleanup, and certificate helpers.
+publishing, generated-folder cleanup, Docker-backed OWASP ZAP scans, and certificate helpers.
 
 Run from the repository root during development:
 
@@ -193,6 +193,30 @@ opamp-dev-cli dev push-to-cloud --origin azure --release v5.1.0
 Cloud pushes write to `releases/<release>/wheels/`. Use `--dry-run` on either
 command to inspect the transfer before it runs.
 
+PyPI and TestPyPI publication use `uv publish` after validating the standard
+first-party wheel set and dependency closure:
+
+```bash
+opamp-dev-cli dev publish-pypi --index testpypi --dry-run
+opamp-dev-cli dev publish-pypi --index testpypi
+opamp-dev-cli dev publish-pypi --index pypi
+```
+
+Authentication comes from PyPI trusted publishing or `UV_PUBLISH_TOKEN`; tokens
+are never placed in the logged command line. The default publication requires
+the shared library, server and plugin wheels, consumer, suite meta-package,
+CLI, and consumer simulator. Use `--allow-partial` for deliberate partial
+releases.
+
+Published GitHub releases invoke `.github/workflows/publish_pypi.yml`. The
+workflow first verifies that `main_fluent-opamp.yml` completed successfully for
+the exact commit on `main`. It then builds and validates without publication
+credentials, transfers only the wheel artifact, and uses GitHub OIDC and the
+protected `pypi` environment to publish with PyPI Trusted Publishing. Register
+every first-party PyPI project against owner `opamp-observe`, repository
+`opamp-core`, workflow `publish_pypi.yml`, and environment `pypi`; do not
+create a GitHub API-token secret for this workflow.
+
 See [developer maintenance commands](docs/developer_maintenance.md) for all
 wheel transfer controls.
 
@@ -201,6 +225,18 @@ wheel transfer controls.
 The `build` group creates artifacts and SBOMs, runs component or repository
 tests and security gates, builds documentation and UI outputs, and assembles
 release assets.
+
+Run passive or explicitly acknowledged active ZAP scans against the isolated full-app container:
+
+```bash
+opamp-dev-cli build dast baseline
+opamp-dev-cli build dast full --allow-active-scan
+```
+
+The CLI scans a runtime-only HTTP image first, then a self-signed-certificate HTTPS image. Each
+target joins ZAP on its own private network and is removed after its scan. HTTP reports retain the
+existing location; HTTPS reports are stored in its `https/` child directory. A separately managed
+deployment requires the explicit `--external-target --target <url>` options and runs one scan.
 
 See [build, test, and release commands](docs/build_test_and_release.md) for the
 workflows and examples.

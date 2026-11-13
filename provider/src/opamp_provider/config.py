@@ -25,8 +25,10 @@ from datetime import datetime
 from typing import Any
 
 ROOT_PATH = pathlib.Path(__file__).resolve().parents[3]  # Repository root used for default config path resolution.
-if str(ROOT_PATH) not in sys.path:
-    sys.path.insert(0, str(ROOT_PATH))
+SHARED_SOURCE_PATH = ROOT_PATH / "shared" / "src"  # Editable shared-package source directory.
+for import_path in (ROOT_PATH, SHARED_SOURCE_PATH):
+    if str(import_path) not in sys.path:
+        sys.path.insert(0, str(import_path))
 
 from shared.opamp_config import UTF8_ENCODING  # noqa: E402,I001 - requires repo-root path adjustment above
 from shared.observability import (  # noqa: E402
@@ -87,7 +89,7 @@ DEFAULT_ALLOW_CONNECTION_SETTINGS_REQUEST = False  # Default behavior does not a
 DEFAULT_ALLOW_MCP = False  # Default behavior leaves /mcp disabled unless explicitly enabled.
 OPAMP_USE_AUTHORIZATION_NONE = "none"  # Disable OpAMP endpoint bearer auth checks.
 OPAMP_USE_AUTHORIZATION_CONFIG_TOKEN = (
-    "config-token"  # Validate OpAMP bearer token against OPAMP_AUTH_STATIC_TOKEN.
+    "config-token"  # noqa: S105 - authorization mode label, not a credential.
 )
 OPAMP_USE_AUTHORIZATION_IDP = (
     "idp"  # Validate OpAMP bearer token via IdP JWT verification settings.
@@ -110,6 +112,15 @@ DEFAULT_STATE_AUTOSAVE_INTERVAL = 600  # Default autosave interval in seconds.
 
 @dataclass(frozen=True)
 class ProviderTLSConfig:
+    """Describe the certificate material used by the provider TLS listener.
+
+    Attributes:
+        cert_file: Path to the PEM-encoded server certificate chain.
+        key_file: Path to the PEM-encoded private key for ``cert_file``.
+        trust_anchor_mode: Certificate-chain validation policy. Supported values are
+            ``none``, ``partial_chain``, and ``full_chain_to_root``.
+    """
+
     cert_file: str
     key_file: str
     trust_anchor_mode: str = DEFAULT_TLS_TRUST_ANCHOR_MODE
@@ -117,6 +128,17 @@ class ProviderTLSConfig:
 
 @dataclass(frozen=True)
 class ProviderStatePersistenceConfig:
+    """Describe how provider runtime state snapshots are stored and retained.
+
+    Attributes:
+        enabled: Whether runtime state snapshots are written to disk.
+        state_file_prefix: Path prefix used to construct snapshot filenames.
+        retention_count: Maximum number of completed snapshots to retain.
+        flush_mode: Strategy that determines when pending state is flushed.
+        autosave_interval_seconds_since_change: Minimum changed-state age, in seconds,
+            before the autosave process writes a snapshot.
+    """
+
     enabled: bool = DEFAULT_STATE_PERSISTENCE_ENABLED
     state_file_prefix: str = DEFAULT_STATE_FILE_PREFIX
     retention_count: int = DEFAULT_STATE_RETENTION_COUNT
@@ -126,12 +148,49 @@ class ProviderStatePersistenceConfig:
 
 @dataclass(frozen=True)
 class ProviderMetricsConfig:
+    """Describe provider metrics exposure and in-memory graph retention.
+
+    Attributes:
+        enabled: Whether Prometheus and provider graph endpoints are available.
+        graph_history_minutes: Number of minutes of gauge samples retained for graphs;
+            zero disables graph history retention.
+    """
+
     enabled: bool = DEFAULT_METRICS_ENABLED
     graph_history_minutes: int = DEFAULT_METRICS_GRAPH_HISTORY_MINUTES
 
 
 @dataclass(frozen=True)
 class ProviderConfig:
+    """Hold the provider's validated, immutable runtime configuration.
+
+    The immutable object gives provider subsystems a consistent configuration snapshot.
+    Update helpers replace the module-level instance instead of mutating fields in place.
+
+    Attributes:
+        delayed_comms_seconds: Silence duration that marks client communication as delayed.
+        significant_comms_seconds: Silence duration considered a significant outage.
+        webui_port: TCP port used by the provider HTTP and browser UI listener.
+        minutes_keep_disconnected: Minutes disconnected clients remain in provider state.
+        retry_after_seconds: Retry delay advertised when the provider throttles a request.
+        client_event_history_size: Maximum event records retained for each client.
+        log_level: Provider logging level name, such as ``DEBUG`` or ``INFO``.
+        default_heartbeat_frequency: Default heartbeat interval assigned to clients, in seconds.
+        latest_docs_url: Target URL used by the latest-documentation redirect.
+        human_in_loop_approval: Whether new agents require manual approval.
+        allow_remote_config: Whether remote-configuration UI and queueing flows are enabled.
+        allow_effective_config: Whether effective-configuration reports are accepted.
+        allow_connection_settings: Whether connection-setting offers are advertised.
+        allow_connection_settings_request: Whether connection-setting requests are accepted.
+        allow_mcp: Whether the Streamable HTTP MCP route is exposed.
+        opamp_use_authorization: Authorization mode for OpAMP transport endpoints.
+        ui_use_authorization: Authorization mode for non-OpAMP HTTP and WebSocket endpoints.
+        metrics: Metrics endpoint and graph-history settings.
+        tls: TLS listener settings, or ``None`` when TLS is not configured or is disabled.
+        state_persistence: Runtime snapshot storage and retention settings.
+        observability: Shared logging, tracing, and metrics-export configuration.
+    """
+
     delayed_comms_seconds: int
     significant_comms_seconds: int
     webui_port: int
@@ -160,7 +219,17 @@ class ProviderConfig:
 
 
 def resolve_log_level(log_level: str | None) -> int:
-    """Resolve a log level name to a logging level using logging's level map."""
+    """Resolve a configured log-level name to a standard logging level number.
+
+    Unknown or missing names deliberately fall back to ``logging.INFO`` so malformed
+    configuration cannot prevent logging initialization.
+
+    Parameters:
+        log_level: Case-insensitive logging level name, or ``None`` to use the default.
+
+    Returns:
+        Numeric logging level understood by the standard-library logging package.
+    """
     normalized_level = str(log_level or DEFAULT_LOG_LEVEL).strip().upper()
     # Use getLevelName() for compatibility with Python 3.10 where
     # getLevelNamesMapping() is not available.
@@ -171,17 +240,35 @@ def resolve_log_level(log_level: str | None) -> int:
 
 
 def _repo_root() -> pathlib.Path:
-    """Return the repository root path."""
+    """Return the repository root used to resolve development-time defaults.
+
+    Returns:
+        Absolute or source-relative repository root derived when this module was imported.
+    """
     return ROOT_PATH
 
 
 def _ensure_shared_on_path() -> None:
-    """Compatibility no-op for shared import handling."""
+    """Preserve the former shared-import bootstrap API as a compatibility no-op.
+
+    Shared import paths are now installed during module initialization. Keeping this helper
+    avoids breaking callers that still invoke it while making the completed setup explicit.
+
+    Returns:
+        ``None``; no additional path mutation is required.
+    """
     return None
 
 
 def _config_path() -> pathlib.Path:
-    """Resolve the provider config path from environment or default."""
+    """Resolve the provider configuration path from environment or repository defaults.
+
+    ``OPAMP_CONFIG_PATH`` has precedence so deployments can select a mounted configuration
+    file without changing source-controlled defaults.
+
+    Returns:
+        Environment-selected path, or ``config/opamp.json`` beneath the repository root.
+    """
     path = os.environ.get(ENV_OPAMP_CONFIG_PATH)
     if path:
         return pathlib.Path(path)
@@ -189,21 +276,48 @@ def _config_path() -> pathlib.Path:
 
 
 def get_effective_config_path(config_path: str | pathlib.Path | None = None) -> pathlib.Path:
-    """Return the effective provider config path used for loading configuration."""
+    """Return the normalized provider configuration path used for reads and writes.
+
+    Parameters:
+        config_path: Explicit path override. When omitted, environment and repository
+            defaults are resolved by :func:`_config_path`.
+
+    Returns:
+        Expanded, absolute configuration path.
+    """
     if config_path is not None:
         return pathlib.Path(config_path).expanduser().resolve()
     return _config_path().expanduser().resolve()
 
 
 def _load_json(path: pathlib.Path) -> dict[str, Any]:
-    """Load JSON from a path, raising when missing."""
+    """Load a required UTF-8 JSON configuration object from disk.
+
+    Parameters:
+        path: File containing the JSON configuration payload.
+
+    Returns:
+        Parsed top-level JSON object.
+
+    Raises:
+        FileNotFoundError: If ``path`` does not identify an existing file.
+        json.JSONDecodeError: If the file does not contain valid JSON.
+    """
     if not path.exists():
         raise FileNotFoundError(f"config file not found: {path}")
     return json.loads(path.read_text(encoding=UTF8_ENCODING))
 
 
 def _as_bool(value: Any, default: bool) -> bool:
-    """Coerce common JSON/env boolean forms while preserving explicit defaults."""
+    """Coerce common JSON and environment boolean forms into a Boolean value.
+
+    Parameters:
+        value: Candidate value, including Boolean values and common true/false strings.
+        default: Value returned when ``value`` is ``None``.
+
+    Returns:
+        Parsed Boolean, the supplied default, or normal Python truthiness for other values.
+    """
     if isinstance(value, bool):
         return value
     if isinstance(value, str):
@@ -221,7 +335,19 @@ def _normalize_authorization_mode(
     cfg_key: str,
     default_mode: str,
 ) -> str:
-    """Normalize auth mode from canonical provider config values."""
+    """Normalize an authorization mode and safely reject unsupported configured values.
+
+    Invalid modes are logged and replaced with the caller's default so a typo does not
+    accidentally select an undefined authentication path.
+
+    Parameters:
+        value: Raw authorization-mode value from provider configuration.
+        cfg_key: Configuration key included in validation warning messages.
+        default_mode: Supported mode used when the value is absent, blank, or invalid.
+
+    Returns:
+        One of ``none``, ``config-token``, or ``idp``.
+    """
     if value is None:
         return default_mode
     normalized = str(value).strip().lower()
@@ -243,7 +369,17 @@ def _normalize_authorization_mode(
 
 
 def _normalize_trust_anchor_mode(value: Any) -> str:
-    """Normalize trust-anchor mode from provider TLS config values."""
+    """Normalize and validate the provider TLS trust-anchor policy.
+
+    Parameters:
+        value: Raw trust-anchor mode, or ``None`` to select the secure default.
+
+    Returns:
+        A supported normalized trust-anchor mode.
+
+    Raises:
+        ValueError: If a non-empty value is not one of the supported modes.
+    """
     if value is None:
         return DEFAULT_TLS_TRUST_ANCHOR_MODE
     normalized = str(value).strip().lower()
@@ -262,7 +398,18 @@ def _normalize_trust_anchor_mode(value: Any) -> str:
 
 
 def _validate_required_file_path(*, cfg_key: str, value: Any) -> str:
-    """Validate required file path settings and return normalized path string."""
+    """Validate that a required configuration value names an existing file.
+
+    Parameters:
+        cfg_key: Fully qualified configuration key used in validation errors.
+        value: Candidate filesystem path from the configuration payload.
+
+    Returns:
+        Stripped path string suitable for the provider TLS configuration.
+
+    Raises:
+        ValueError: If the value is blank, missing, or does not identify a file.
+    """
     normalized = str(value or "").strip()
     if not normalized:
         raise ValueError(f"{cfg_key} is required")
@@ -273,7 +420,18 @@ def _validate_required_file_path(*, cfg_key: str, value: Any) -> str:
 
 
 def _load_provider_tls_config(provider_raw: dict[str, Any]) -> ProviderTLSConfig | None:
-    """Load provider TLS settings from provider config mapping."""
+    """Load and validate optional provider TLS settings.
+
+    Parameters:
+        provider_raw: Provider section from the shared OpAMP configuration object.
+
+    Returns:
+        Validated TLS settings, or ``None`` when the section is absent or disabled.
+
+    Raises:
+        ValueError: If the TLS section has the wrong shape, required files are invalid, or
+            the trust-anchor mode is unsupported.
+    """
     tls_raw = provider_raw.get(CFG_TLS)
     if tls_raw is None:
         return None
@@ -303,7 +461,17 @@ def _validate_state_persistence_directory(
     *,
     state_file_prefix: str,
 ) -> tuple[bool, str]:
-    """Validate state snapshot directory readability/writability; create when missing."""
+    """Prepare and validate the directory that will hold provider state snapshots.
+
+    The directory is created when missing because persistence may be enabled before the
+    first snapshot exists. Operational failures are returned for controlled startup handling.
+
+    Parameters:
+        state_file_prefix: Snapshot filename prefix whose parent directory is validated.
+
+    Returns:
+        Pair containing a success flag and either the resolved directory or failure reason.
+    """
     prefix_path = pathlib.Path(str(state_file_prefix).strip() or DEFAULT_STATE_FILE_PREFIX)
     directory = prefix_path.parent
     if str(directory).strip() in {"", "."}:
@@ -322,7 +490,22 @@ def _validate_state_persistence_directory(
 def _load_state_persistence_config(
     provider_raw: dict[str, Any],
 ) -> ProviderStatePersistenceConfig:
-    """Load and validate provider state persistence settings from config mapping."""
+    """Load provider state-persistence settings and verify their storage directory.
+
+    Persistence is disabled for the current run when its directory cannot be prepared. This
+    keeps the provider available while logging the storage problem for the operator.
+
+    Parameters:
+        provider_raw: Provider section from the shared OpAMP configuration object.
+
+    Returns:
+        Normalized persistence settings, possibly with ``enabled`` forced to ``False`` when
+        the configured directory is unusable.
+
+    Raises:
+        ValueError: If the persistence section is not an object or numeric values cannot be
+            converted to integers.
+    """
     raw = provider_raw.get(CFG_STATE_PERSISTENCE)
     if raw is None:
         return ProviderStatePersistenceConfig()
@@ -376,7 +559,18 @@ def _load_state_persistence_config(
 
 
 def _load_metrics_config(provider_raw: dict[str, Any]) -> ProviderMetricsConfig:
-    """Load provider metrics settings from provider config mapping."""
+    """Load and normalize provider metrics settings.
+
+    Parameters:
+        provider_raw: Provider section from the shared OpAMP configuration object.
+
+    Returns:
+        Metrics settings with graph history clamped to a non-negative duration.
+
+    Raises:
+        ValueError: If the metrics section is not an object or its history value is not an
+            integer-compatible value.
+    """
     raw = provider_raw.get(CFG_METRICS)
     if raw is None:
         return ProviderMetricsConfig()
@@ -400,7 +594,20 @@ def _load_metrics_config(provider_raw: dict[str, Any]) -> ProviderMetricsConfig:
 
 
 def load_config() -> ProviderConfig:
-    """Load provider config from disk."""
+    """Load the provider's configured runtime snapshot from the effective JSON file.
+
+    Component settings are read from the provider section while shared observability settings
+    are loaded from the complete payload. Defaults are applied for omitted optional values.
+
+    Returns:
+        Validated immutable provider configuration.
+
+    Raises:
+        FileNotFoundError: If the effective configuration file does not exist.
+        json.JSONDecodeError: If the configuration file contains invalid JSON.
+        TypeError: If the provider section is not a JSON object.
+        ValueError: If a configured value cannot be normalized or validated.
+    """
     logging.getLogger(__name__).debug("About to load_config")
 
     raw = _load_json(_config_path())
@@ -514,7 +721,26 @@ def load_config_with_overrides(
     config_path: pathlib.Path | None,
     log_level: str | None,
 ) -> ProviderConfig:
-    """Load provider config with CLI overrides applied."""
+    """Load provider configuration and apply explicit command-line overrides.
+
+    The explicit path selects the source file and the explicit log level takes precedence
+    over its JSON counterpart. All other settings use the same validation and defaults as
+    :func:`load_config`.
+
+    Parameters:
+        config_path: Explicit JSON configuration path, or ``None`` to use environment and
+            repository defaults.
+        log_level: Explicit logging level name, or ``None`` to retain the JSON/default value.
+
+    Returns:
+        Validated immutable provider configuration with overrides applied.
+
+    Raises:
+        FileNotFoundError: If the selected configuration file does not exist.
+        json.JSONDecodeError: If the selected file contains invalid JSON.
+        TypeError: If the provider section is not a JSON object.
+        ValueError: If a configured value cannot be normalized or validated.
+    """
     logging.getLogger(__name__).debug("About to load_config_with_overrides")
     base_raw = _load_json(config_path or _config_path())
     provider_raw = base_raw.get(CFG_PROVIDER, {})
@@ -625,7 +851,17 @@ def load_config_with_overrides(
 
 
 def set_config(config: ProviderConfig) -> None:
-    """Update the module-level config singleton."""
+    """Replace the module-level provider configuration snapshot.
+
+    Centralizing replacement ensures runtime update helpers and provider consumers observe
+    the same immutable object.
+
+    Parameters:
+        config: Fully constructed provider configuration to publish to module consumers.
+
+    Returns:
+        ``None``; the module-level ``CONFIG`` reference is updated as a side effect.
+    """
     global CONFIG
     CONFIG = config  # Module-level provider config singleton.
     logging.getLogger(__name__).debug("setting config to: \n%s", config)
@@ -644,7 +880,30 @@ def update_comms_thresholds(
     retention_count: int | None = None,
     autosave_interval_seconds_since_change: int | None = None,
 ) -> ProviderConfig:
-    """Return a new config with updated server comm settings and set it."""
+    """Apply server communication and persistence updates to the active configuration.
+
+    Unspecified optional values are copied from the current immutable configuration. The
+    replacement is published through :func:`set_config` so all runtime consumers see it.
+
+    Parameters:
+        delayed: Silence threshold, in seconds, for delayed client communication.
+        significant: Silence threshold, in seconds, for a significant communication outage.
+        minutes_keep_disconnected: Optional disconnected-client retention window in minutes.
+        client_event_history_size: Optional maximum retained event count per client.
+        human_in_loop_approval: Optional switch for manual agent approval.
+        state_persistence_enabled: Optional switch for runtime state snapshots.
+        state_save_folder: Optional directory in which the existing snapshot basename is used.
+        retention_count: Optional maximum number of snapshots to retain.
+        autosave_interval_seconds_since_change: Optional minimum changed-state age before an
+            autosave, in seconds.
+
+    Returns:
+        Newly published provider configuration snapshot.
+
+    Raises:
+        ValueError: If a retention duration, persistence count, autosave interval, or state
+            save directory is invalid.
+    """
     keep_minutes = (
         CONFIG.minutes_keep_disconnected
         if minutes_keep_disconnected is None
@@ -746,7 +1005,15 @@ def update_comms_thresholds(
 
 
 def update_default_heartbeat_frequency(*, default_heartbeat_frequency: int) -> ProviderConfig:
-    """Return a new config with updated default heartbeat frequency and set it."""
+    """Update the active default heartbeat frequency while preserving other settings.
+
+    Parameters:
+        default_heartbeat_frequency: New client heartbeat interval in seconds. Values below
+            one are clamped to one second to keep the interval valid.
+
+    Returns:
+        Newly published provider configuration snapshot.
+    """
     config = ProviderConfig(
         delayed_comms_seconds=CONFIG.delayed_comms_seconds,
         significant_comms_seconds=CONFIG.significant_comms_seconds,
@@ -779,7 +1046,23 @@ def persist_provider_config(
     *,
     config_path: str | pathlib.Path | None = None,
 ) -> pathlib.Path:
-    """Write provider config values back to opamp.json."""
+    """Persist provider-owned settings to the shared OpAMP JSON configuration file.
+
+    Unrelated top-level and component settings are preserved. A timestamped backup is created
+    before the original file is replaced so an operator can recover the previous values.
+
+    Parameters:
+        config: Provider configuration to persist, or ``None`` to persist the active snapshot.
+        config_path: Explicit target file, or ``None`` to use the effective configured path.
+
+    Returns:
+        Absolute path of the updated JSON configuration file.
+
+    Raises:
+        FileNotFoundError: If the target configuration file does not exist.
+        json.JSONDecodeError: If the existing file contains invalid JSON.
+        OSError: If backup creation or writing the updated file fails.
+    """
     resolved_path = get_effective_config_path(config_path)
     raw = _load_json(resolved_path)
     provider_raw = raw.get(CFG_PROVIDER)
@@ -847,7 +1130,15 @@ def persist_provider_config(
 
 
 def _build_backup_path(config_path: pathlib.Path) -> pathlib.Path:
-    """Return a unique timestamped backup path like opamp.json.<date time>."""
+    """Build a unique timestamped sibling path for a configuration backup.
+
+    Parameters:
+        config_path: Configuration file whose name and directory seed the backup path.
+
+    Returns:
+        Non-existing sibling path containing a high-resolution timestamp and, only when
+        necessary, an incrementing collision suffix.
+    """
     timestamp = datetime.now().strftime("%Y%m%dT%H%M%S%f")
     backup_path = config_path.with_name(f"{config_path.name}.{timestamp}")
     suffix = 1

@@ -56,10 +56,14 @@ def test_default_release_component_selection_includes_independent_deployables() 
     component_keys = parse_release_component_keys(",".join(DEFAULT_RELEASE_COMPONENT_KEYS))
 
     assert component_keys == [
+        "shared",
         "provider",
-        "consumer",
+        "config-service",
         "catalog-service",
         "client-config-generator-service",
+        "svr-credentials-mgr",
+        "consumer",
+        "opamp-suite",
         "cli",
         "consumer-sim",
     ]

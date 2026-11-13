@@ -1,0 +1,124 @@
+# Copyright 2026 opamp.info
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[build-system]
+requires = ["setuptools>=82", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opamp-suite"
+version = "0.6.0"
+description = "Installation profiles for OpAMP server, editor, and consumer packages"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{ name = "Phil Wilkins" }]
+keywords = ["opamp", "observability", "server", "editor", "consumer"]
+dependencies = []
+
+[project.optional-dependencies]
+server = [
+  "catalog-service==0.6.0",
+  "client-config-generator-service==0.6.0",
+  "config-service==0.6.0",
+  "opamp-server==0.6.0",
+  "svr-credentials-manager-service==0.1.0",
+]
+editors = [
+  "catalog-service==0.6.0",
+  "client-config-generator-service==0.6.0",
+  "config-service==0.6.0",
+  "svr-credentials-manager-service==0.1.0",
+]
+config-editor = [
+  "config-service==0.6.0",
+]
+catalog = [
+  "catalog-service==0.6.0",
+]
+client-config-editor = [
+  "client-config-generator-service==0.6.0",
+]
+credentials-editor = [
+  "svr-credentials-manager-service==0.1.0",
+]
+consumer = [
+  "opamp-consumer==0.6.0",
+]
+all = [
+  "catalog-service==0.6.0",
+  "client-config-generator-service==0.6.0",
+  "config-service==0.6.0",
+  "opamp-consumer==0.6.0",
+  "opamp-server==0.6.0",
+  "svr-credentials-manager-service==0.1.0",
+]
+dev = [
+  "pylint>=3.0",
+  "pytest>=8.0",
+  "pytest-cov>=7.0.0",
+  "ruff>=0.15.0",
+]
+
+[project.urls]
+Repository = "https://github.com/opamp-observe/opamp-core"
+Homepage = "https://htmlpreview.github.io/?https://raw.githubusercontent.com/opamp-observe/opamp-core/main/github-landingpage/index.html"
+Blog = "https://blog.mp3monster.org/category/technology/fluent-observability/opamp/"
+
+[tool.uv.sources]
+catalog-service = { path = "../catalog-service", editable = true }
+client-config-generator-service = { path = "../client-config-generator-service", editable = true }
+config-service = { path = "../config-service", editable = true }
+opamp-consumer = { path = "../consumer", editable = true }
+opamp-server = { path = "../provider", editable = true }
+svr-credentials-manager-service = { path = "../svr-credentials-mgr", editable = true }
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "-s",
+  "--cov=opamp_suite",
+  "--cov-report=term-missing",
+  "--cov-report=xml:coverage.xml",
+  "--cov-branch",
+]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["opamp_suite"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+precision = 2
+exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "S"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["opamp_suite"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]

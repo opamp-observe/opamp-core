@@ -18,5 +18,7 @@ import sys
 from pathlib import Path
 
 SOURCE_ROOT = Path(__file__).resolve().parents[1] / "src"
-if str(SOURCE_ROOT) not in sys.path:
-    sys.path.insert(0, str(SOURCE_ROOT))
+SHARED_SOURCE_ROOT = Path(__file__).resolve().parents[2] / "shared" / "src"
+for source_path in (SHARED_SOURCE_ROOT, SOURCE_ROOT):
+    if str(source_path) not in sys.path:
+        sys.path.insert(0, str(source_path))

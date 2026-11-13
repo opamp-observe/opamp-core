@@ -17,8 +17,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "catalog-service" / "src"
+SHARED_SRC = ROOT / "shared" / "src"
 
-for candidate in (ROOT, SRC):
+for candidate in (ROOT, SHARED_SRC, SRC):
     resolved = str(candidate.resolve())
     if resolved not in sys.path:
         sys.path.insert(0, resolved)

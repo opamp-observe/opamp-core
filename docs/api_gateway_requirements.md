@@ -68,6 +68,53 @@ authorization:
    that browser.
 4. Machine-to-machine routes should use a distinct authorization scope and, where appropriate,
    mTLS or another workload identity mechanism.
+
+## Browser Framing, Form Submission, And Clickjacking Protection
+
+Provider and standalone browser services deny framing, restrict form submissions to the same
+origin, and prevent browser MIME sniffing by default on every HTTP response:
+
+```text
+Content-Security-Policy: frame-ancestors 'none'; form-action 'self'
+Content-Security-Policy-Report-Only: default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; manifest-src 'self'; worker-src 'none'
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+```
+
+The `frame-ancestors` directive is the primary modern control. `X-Frame-Options` remains as a
+compatible fallback for older clients. The provider's embedded Config Editor, Config Catalog,
+and Client Config Generator are routes in the same Quart process; they do not require an iframe
+and therefore inherit the deny policy without needing an exception. `X-Content-Type-Options`
+prevents browsers from reinterpreting a response as a different MIME type from the declared
+`Content-Type`. The explicit `form-action 'self'` directive prevents forms from submitting to
+another origin. It must be stated separately because `form-action` does not fall back to
+`default-src`.
+
+The report-only policy is a migration control. Browsers report strict-policy violations in their
+developer console without blocking the existing UI. Packaged UI templates use external
+same-origin scripts and styles, have no HTML event-handler attributes, and use local system font
+stacks instead of third-party font services. Response producers may add `report-uri` or
+`report-to`; the shared logic preserves those reporting directives. Before promoting the strict
+policy to the enforced header, exercise representative UI workflows and resolve any remaining
+violations from runtime DOM style changes or deployment-specific asset overrides.
+
+Gateways must preserve all four response headers or overwrite them with the same or a stricter
+policy. Do not strip them, use the obsolete `X-Frame-Options: ALLOW-FROM` value, or introduce a
+second independently managed Content Security Policy. The application preserves other CSP
+directives already present on a response while replacing any `frame-ancestors` directive with
+`frame-ancestors 'none'` and any `form-action` directive with `form-action 'self'`. A gateway may
+set `X-Content-Type-Options`, but its effective value must remain `nosniff`. A gateway may append
+a report destination to the report-only policy but must not weaken its monitored directives.
+
+If a future host application has a reviewed requirement to frame an OpAMP page, treat that as a
+security design change. Same-origin framing can use `frame-ancestors 'self'` with
+`X-Frame-Options: SAMEORIGIN`. Cross-origin framing requires an explicit HTTPS source allowlist
+in `frame-ancestors`; `X-Frame-Options` cannot express a reliable cross-origin allowlist. Keep
+authorization, CSRF protection, and sensitive-action confirmation independent of framing policy.
+
+See the
+[OWASP Clickjacking Defense Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Clickjacking_Defense_Cheat_Sheet.html)
+for the rationale and browser compatibility guidance.
 5. UI, automation, agent, and MCP routes should remain partitioned so rate limits, request-shape
    validation, audit policy, and incident response can differ by caller class.
 

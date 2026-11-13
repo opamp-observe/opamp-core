@@ -25,6 +25,12 @@ from opamp_dev_tools import security
 from opamp_dev_tools.components import BuildComponent
 
 
+def test_repository_audit_includes_shared_and_suite_projects() -> None:
+    """Verify local first-party dependencies are excluded from public-index audit inputs."""
+    assert Path("shared") in security.REPO_PYTHON_PROJECT_PATHS
+    assert Path("opamp-suite") in security.REPO_PYTHON_PROJECT_PATHS
+
+
 class _SecurityRuntime:
     """Capture repository security commands without running external tools.
 

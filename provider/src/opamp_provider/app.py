@@ -96,9 +96,11 @@ from shared.opamp_config import (
     UTF8_ENCODING,
     ServerCapabilities,
 )
+from shared.security_headers import register_security_headers
 
 app = Quart("opamp_server")
 app.config.setdefault("DIAGNOSTIC_MODE", False)
+register_security_headers(app)
 register_tool_routes(app)
 # Expose both SSE and streamable HTTP wiring; /mcp itself is still gated at
 # request time by provider.allow-mcp so operators can disable direct streamable
@@ -118,7 +120,7 @@ _UI_FEATURE_MENU_ITEMS: list[UiFeatureMenuItem] = ui_menu_items_from_component_e
 )
 LANDING_PAGE_REDIRECT_URL = (
     "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
-    "mp3monster/fluent-opamp/main/github-landingpage/index.html"
+    "opamp-observe/opamp-core/main/github-landingpage/index.html"
 )
 
 CONTENT_TYPE_PROTO = "application/x-protobuf"  # Content-Type for protobuf payloads.

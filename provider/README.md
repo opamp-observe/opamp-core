@@ -40,21 +40,19 @@ for developers working from a provider source checkout.
 ## Developer quickstart (source checkout)
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
+uv sync --extra dev
 ```
 
 Generate protobufs (optional; auto-generated on first import):
 
 ```bash
-python -m opamp_provider.proto.ensure
+uv run python -m opamp_provider.proto.ensure
 ```
 
 Run the server:
 
 ```bash
-python -m opamp_provider.server --port 4320
+uv run python -m opamp_provider.server --port 4320
 ```
 
 Installed CLI command:
@@ -67,6 +65,9 @@ Packaging note:
 
 - the provider runtime command `opamp-provider` is separate from the workspace launcher `opamp-cli`
 - provider wheel builds warn when `opamp-cli` is not detected in the workspace or active Python environment
+- the provider declares `opamp-shared` as a runtime dependency; local `uv`
+  commands resolve it from `../shared`, while published installations resolve
+  the independently released wheel
 - install/deploy `opamp-cli` separately if you want the guided start/stop and status tooling
 
 Version/help:
@@ -321,6 +322,7 @@ For the shared provider+consumer guide on implementing and deploying custom acti
 - The Client Config Generator is enabled with the same entry-point mechanism and exposes schema, list, load, validation, save, UI, and static-help routes only when its component entry is enabled.
 - Provider catalog feature is configured under top-level `opamp.config_catalog` and scans configured folders/extensions for metadata columns derived from top comment lines (`config-service: key=value`).
 - Embedded feature pages such as Config Editor, Config Catalog, and Client Config Generator show provider navigation in their headers; standalone deployments hide provider-only navigation.
+- All provider HTTP responses, including embedded component pages, redirects, and errors, send `Content-Security-Policy: frame-ancestors 'none'; form-action 'self'`, a strict `Content-Security-Policy-Report-Only` migration policy, `X-Frame-Options: DENY`, and `X-Content-Type-Options: nosniff`. The report-only policy surfaces incompatible resources without blocking them. Gateways must preserve or enforce the same policy; see `../docs/api_gateway_requirements.md`.
 - The main client table renders column filters directly beneath the headings.
 - Text filters update immediately for free-text columns such as service instance ID and host fields.
 - Connection status, health status, config version, host type, and host version use multi-select dropdown filters populated from the currently loaded table data.

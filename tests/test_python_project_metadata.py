@@ -39,6 +39,15 @@ REQUIRED_SECURITY_DEPENDENCIES = {
     "semgrep>=1.182.1",
 }
 SECURITY_TOOLING_PROJECT_PATH = "dev-tools/pyproject.toml"
+EXPECTED_REPOSITORY_URL = "https://github.com/opamp-observe/opamp-core"
+CATALOG_PROJECT_PATH = "catalog-service/pyproject.toml"
+CATALOG_REQUIRED_PACKAGE_DATA = {
+    "config/*.json",
+    "html/*.css",
+    "html/*.html",
+    "html/*.js",
+    "html/*.png",
+}
 
 PYTHON_PROJECT_PATHS = (
     "agent_broker/pyproject.toml",
@@ -50,7 +59,9 @@ PYTHON_PROJECT_PATHS = (
     "consumer-sim/pyproject.toml",
     "dev-tools/pyproject.toml",
     "mcp/pyproject.toml",
+    "opamp-suite/pyproject.toml",
     "provider/pyproject.toml",
+    "shared/pyproject.toml",
     "svr-credentials-mgr/pyproject.toml",
     "svr-credentials-mgr/plaintext-keyring/pyproject.toml",
 )
@@ -76,6 +87,14 @@ def test_hatchling_projects_require_pep_639_support() -> None:
         assert PEP_639_HATCHLING_REQUIREMENT in metadata
 
 
+def test_python_projects_reference_canonical_repository() -> None:
+    """Keep every packaged module linked to the current OpAMP GitHub repository."""
+    for relative_path in PYTHON_PROJECT_PATHS:
+        with (REPOSITORY_ROOT / relative_path).open("rb") as project_handle:
+            payload = tomllib.load(project_handle)
+        assert payload["project"]["urls"]["Repository"] == EXPECTED_REPOSITORY_URL, relative_path
+
+
 def test_python_projects_expose_the_shared_development_baseline() -> None:
     """Keep lint, test, and coverage dependencies available in every packaged module."""
     for relative_path in PYTHON_PROJECT_PATHS:
@@ -95,3 +114,13 @@ def test_developer_tools_declares_the_security_toolchain() -> None:
         payload["project"]["optional-dependencies"]["security"]
     )
     assert REQUIRED_SECURITY_DEPENDENCIES == security_dependencies
+
+
+def test_catalog_service_packages_all_browser_assets() -> None:
+    """Keep every catalog UI asset type available in installed wheel deployments."""
+    with (REPOSITORY_ROOT / CATALOG_PROJECT_PATH).open("rb") as project_handle:
+        payload = tomllib.load(project_handle)
+
+    package_data = set(payload["tool"]["setuptools"]["package-data"]["catalog_service"])
+
+    assert CATALOG_REQUIRED_PACKAGE_DATA <= package_data

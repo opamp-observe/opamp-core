@@ -10,15 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Vendored shared OpenTelemetry configuration parsing and runtime wiring helpers."""
+"""Shared OpenTelemetry configuration parsing and runtime wiring helpers."""
 
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from quart import Quart
+if TYPE_CHECKING:
+    from quart import Quart
 
 CFG_OTLP_ENDPOINTS = "otlp-endpoints"
 CFG_OTLP_ALL = "ALL"
@@ -48,6 +49,19 @@ class ObservabilityConfig:
     keeping one normalized config object prevents each runtime from inventing
     slightly different precedence rules for `ALL`, per-signal overrides, and
     export interval handling.
+
+    Attributes
+    ----------
+    all_endpoint:
+        Optional OTLP endpoint used as the fallback for every signal.
+    logs_endpoint:
+        Optional endpoint overriding the fallback for log export.
+    metrics_endpoint:
+        Optional endpoint overriding the fallback for metric export.
+    traces_endpoint:
+        Optional endpoint overriding the fallback for trace export.
+    export_interval_seconds:
+        Positive interval between periodic metric exports, in seconds.
     """
 
     all_endpoint: str | None = None
@@ -85,7 +99,20 @@ class ObservabilityConfig:
 
 
 def _coerce_positive_int(value: Any, default: int) -> int:
-    """Return a positive integer value or the supplied default."""
+    """Return a positive integer value or the supplied default.
+
+    Parameters
+    ----------
+    value:
+        Raw configuration value to convert to an integer.
+    default:
+        Positive fallback returned when conversion fails or the value is not positive.
+
+    Returns
+    -------
+    int
+        The normalized positive integer or ``default``.
+    """
     try:
         number = int(value)
     except (TypeError, ValueError):
@@ -94,7 +121,18 @@ def _coerce_positive_int(value: Any, default: int) -> int:
 
 
 def _coerce_optional_text(value: Any) -> str | None:
-    """Normalize optional config text values to a stripped string or `None`."""
+    """Normalize optional configuration text to a stripped string or ``None``.
+
+    Parameters
+    ----------
+    value:
+        Raw optional value to normalize.
+
+    Returns
+    -------
+    str | None
+        Stripped text when present; otherwise ``None``.
+    """
     normalized = str(value or "").strip()
     return normalized or None
 
@@ -107,6 +145,16 @@ def load_observability_config_from_payload(
     Why this helper exists:
     most runtimes load larger config payloads first and then need a predictable
     way to extract the shared top-level `otlp-endpoints` section.
+
+    Parameters
+    ----------
+    payload:
+        Optional JSON-style configuration object containing ``otlp-endpoints``.
+
+    Returns
+    -------
+    ObservabilityConfig
+        Normalized per-signal endpoints and metric export interval.
     """
     raw = payload if isinstance(payload, dict) else {}
     observability_raw = raw.get(CFG_OTLP_ENDPOINTS, {})
@@ -133,6 +181,11 @@ def _warn_if_service_name_changes(service_name: str) -> None:
     Why this warning exists:
     OpenTelemetry providers are process-global in this implementation, so the
     first configured `service.name` effectively wins for later shared runtimes.
+
+    Parameters
+    ----------
+    service_name:
+        Service name requested by the runtime currently enabling observability.
     """
     global _ACTIVE_SERVICE_NAME
     if _ACTIVE_SERVICE_NAME is None:
@@ -140,14 +193,26 @@ def _warn_if_service_name_changes(service_name: str) -> None:
         return
     if _ACTIVE_SERVICE_NAME != service_name:
         LOGGER.warning(
-            "observability already configured for service.name=%s; reusing existing process-level providers for service.name=%s",
+            "observability already configured for service.name=%s; "
+            "reusing existing process-level providers for service.name=%s",
             _ACTIVE_SERVICE_NAME,
             service_name,
         )
 
 
 def _insecure_for_endpoint(endpoint: str) -> bool:
-    """Return whether the OTLP exporter should use insecure gRPC transport."""
+    """Return whether the OTLP exporter should use insecure gRPC transport.
+
+    Parameters
+    ----------
+    endpoint:
+        OTLP endpoint URL whose scheme determines transport security.
+
+    Returns
+    -------
+    bool
+        ``True`` for an explicit HTTP endpoint; otherwise ``False``.
+    """
     return endpoint.lower().startswith("http://")
 
 
@@ -158,6 +223,16 @@ def _load_opentelemetry_modules() -> dict[str, Any]:
     several repo components can run without OTLP export enabled, so importing
     heavy optional dependencies only when needed keeps startup behavior aligned
     with those deployment modes.
+
+    Returns
+    -------
+    dict[str, Any]
+        Named OpenTelemetry classes, modules, and provider functions used by setup.
+
+    Raises
+    ------
+    RuntimeError
+        If optional OpenTelemetry dependencies are unavailable when requested.
     """
     try:
         from opentelemetry import metrics, trace
@@ -209,6 +284,25 @@ def configure_process_observability(
     Why this helper exists:
     Quart apps and non-Quart runtimes both need the same process-level provider
     setup, while only some runtimes need app-level middleware registration.
+
+    Parameters
+    ----------
+    service_name:
+        OpenTelemetry ``service.name`` resource value for the current runtime.
+    config:
+        Normalized endpoints and export interval controlling enabled signals.
+    log_level:
+        Python logging level applied when OTLP log export is first configured.
+
+    Returns
+    -------
+    ObservabilityConfig
+        The supplied configuration, allowing callers to retain the effective settings.
+
+    Raises
+    ------
+    RuntimeError
+        If observability is enabled but its optional dependencies are unavailable.
     """
     global _LOGGING_ENABLED
     global _METRICS_ENABLED
@@ -301,6 +395,27 @@ def attach_observability(
     Why this helper exists:
     Quart-based runtimes need the shared process-level exporters and, when
     enabled, request tracing and a simple request counter on the app itself.
+
+    Parameters
+    ----------
+    app:
+        Quart application receiving middleware and request instrumentation.
+    service_name:
+        OpenTelemetry ``service.name`` resource value for the application.
+    config:
+        Normalized endpoints and export interval controlling enabled signals.
+    log_level:
+        Python logging level applied when OTLP log export is first configured.
+
+    Returns
+    -------
+    Quart
+        The supplied application after any enabled instrumentation is attached.
+
+    Raises
+    ------
+    RuntimeError
+        If observability is enabled but its optional dependencies are unavailable.
     """
     if config.enabled() is not True:
         return app

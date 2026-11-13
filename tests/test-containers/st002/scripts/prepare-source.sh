@@ -10,7 +10,7 @@ set -euo pipefail
 
 destination="${OPAMP_SOURCE_DIR:-/opt/opamp/source}"
 local_source="${OPAMP_LOCAL_SOURCE:-/workspace/source}"
-source_repo="${OPAMP_SOURCE_REPO:-https://github.com/mp3monster/fluent-opamp.git}"
+source_repo="${OPAMP_SOURCE_REPO:-https://github.com/opamp-observe/opamp-core.git}"
 source_ref="${OPAMP_SOURCE_REF:-main}"
 use_local="${OPAMP_USE_LOCAL_SOURCE:-false}"
 

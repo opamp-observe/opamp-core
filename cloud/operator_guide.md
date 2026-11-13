@@ -233,9 +233,8 @@ or storage account and `--dry-run` to verify a transfer before running it.
 
 ## Main workflow cloud control
 
-`.github/workflows/main_fluent-opamp.yml` always performs its build and uses
-the `CLOUD_PROVIDER` GitHub repository variable to select deployment behavior
-for pushes to `main`:
+`.github/workflows/main_fluent-opamp.yml` uses the `CLOUD_PROVIDER` GitHub
+repository variable to select deployment behavior for pushes to `main`:
 
 | `CLOUD_PROVIDER` | Behavior |
 |---|---|
@@ -247,6 +246,14 @@ for pushes to `main`:
 A manual workflow run can select `azure`, `aws`, or `none` directly. Selecting
 `configured` applies the repository variable when it exists and otherwise
 performs the build-only `none` flow.
+
+Pushes that change only Markdown files, documentation directories,
+`github-landingpage/`, or `quick-references/` do not start this application
+workflow, so its build, deployment, and regression jobs are omitted. Changes
+under `docs/` continue to start the dedicated `Build and deploy GitHub Pages`
+workflow. If a push contains any non-documentation change, the application
+workflow runs normally. Manual runs remain available regardless of changed
+paths.
 
 The shared GitHub OIDC helper at
 `cloud/aws/scripts/configure_github_oidc_role.py` can configure either provider

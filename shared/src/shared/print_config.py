@@ -61,7 +61,18 @@ def _ensure_repo_on_path() -> None:
 
 
 def _safe_import_config_module(module_name: str) -> ModuleType | None:
-    """Import one config module and return ``None`` when it cannot be loaded."""
+    """Import one configuration module without aborting diagnostic output.
+
+    Parameters
+    ----------
+    module_name:
+        Fully qualified module name to import.
+
+    Returns
+    -------
+    ModuleType | None
+        Imported module, or ``None`` when its import fails.
+    """
     LOGGER.info("importing config module module=%s", module_name)
     try:
         module = importlib.import_module(module_name)

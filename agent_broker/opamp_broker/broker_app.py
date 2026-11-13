@@ -18,6 +18,9 @@ stays in one place. Keeping the sequence in a single coroutine simplifies
 resource management for async components like socket mode and session sweeping.
 """
 
+# Source-checkout imports intentionally follow the local shared-package path bootstrap.
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import argparse
@@ -35,29 +38,25 @@ from pathlib import Path
 from typing import Any
 
 
-def _add_source_tree_repo_root_to_path() -> None:
-    """Make repo-level shared modules importable when run from source checkout."""
+def _add_shared_source_tree_to_path() -> None:
+    """Make the local opamp-shared source importable from a repository checkout."""
     try:
         repo_root = Path(__file__).resolve().parents[2]
     except IndexError:  # pragma: no cover - defensive for unusual import loaders
         return
-    if (repo_root / "shared").is_dir() is not True:
+    shared_source_root = repo_root / "shared" / "src"
+    if shared_source_root.is_dir() is not True:
         return
-    repo_root_text = str(repo_root)
-    if repo_root_text not in sys.path:
-        sys.path.insert(0, repo_root_text)
+    shared_source_root_text = str(shared_source_root)
+    if shared_source_root_text not in sys.path:
+        sys.path.insert(0, shared_source_root_text)
 
 
-_add_source_tree_repo_root_to_path()
+_add_shared_source_tree_to_path()
 
 from dotenv import load_dotenv
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HypercornConfig
-from shared.observability import (
-    attach_observability,
-    configure_process_observability,
-    load_observability_config_from_payload,
-)
 
 from opamp_broker.component_version import (
     component_version_text,
@@ -84,6 +83,11 @@ from opamp_broker.session.manager import (
 from opamp_broker.session.sweeper import SessionSweeper
 from opamp_broker.social_collaboration.factory import (
     create_social_collaboration_adapter,
+)
+from shared.observability import (
+    attach_observability,
+    configure_process_observability,
+    load_observability_config_from_payload,
 )
 
 ENV_BROKER_LOGGING_CONFIG_PATH = "OPAMP_BROKER_LOGGING_CONFIG"

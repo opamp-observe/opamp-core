@@ -14,6 +14,10 @@ limitations under the License.
 
 # OpAMP Consumer Configuration
 
+The consumer wheel depends on the independently published `opamp-shared`
+runtime library. Local `uv` development resolves that dependency from
+`../shared`; shared modules are not copied into the consumer wheel.
+
 This document consolidates all consumer configuration options and their CLI override support.
 
 For server-side product installation and the point at which a consumer is
