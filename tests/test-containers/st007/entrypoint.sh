@@ -40,6 +40,7 @@ mkdir -p "${results_dir}" "${results_dir}/screenshots"
 ui_runtime_dir="$(mktemp -d "${results_dir}/ui-runtime.XXXXXX")"
 
 python -m pip install --no-cache-dir \
+  -e "${staged_root}/shared" \
   -e "${staged_root}/provider" \
   -e "${staged_root}/consumer" \
   -e "${staged_root}/svr-credentials-mgr[dev]"

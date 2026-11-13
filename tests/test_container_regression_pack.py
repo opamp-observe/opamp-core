@@ -23,6 +23,24 @@ from pathlib import Path
 
 MODULE_NAME = "opamp_container_regression_pack"
 SCENARIO_IDS = ("st004b", "st007", "st009", "st010", "st011")
+LOCAL_INSTALL_SCRIPTS = (
+    "agent-shutdown-e2e/scripts/provider-entrypoint.sh",
+    "st001/scripts/provider-entrypoint.sh",
+    "st001/scripts/consumer-entrypoint.sh",
+    "st002/scripts/provider-entrypoint.sh",
+    "st002/scripts/consumer-entrypoint.sh",
+    "st004/scripts/provider-entrypoint.sh",
+    "st004/scripts/consumer-entrypoint.sh",
+    "st004b/scripts/provider-entrypoint.sh",
+    "st004b/scripts/consumer-entrypoint.sh",
+    "st007/entrypoint.sh",
+    "st009/entrypoint.sh",
+    "st010/entrypoint.sh",
+    "st011/entrypoint.sh",
+    "vector-plugin-e2e/scripts/provider-entrypoint.sh",
+    "vector-plugin-e2e/scripts/consumer-entrypoint.sh",
+    "config-service-ui-playwright-batch/entrypoint.sh",
+)
 
 
 def _load_regression_pack_module():
@@ -63,3 +81,12 @@ def test_regression_directories_include_new_scenario_evidence(tmp_path: Path) ->
 
     for scenario_id in SCENARIO_IDS:
         assert (tmp_path / "dist" / "test-reports" / scenario_id).is_dir()
+
+
+def test_local_component_installers_supply_shared_project() -> None:
+    """Container installs should resolve unpublished opamp-shared from local source."""
+    test_container_root = Path(__file__).resolve().parent / "test-containers"
+
+    for relative_script_path in LOCAL_INSTALL_SCRIPTS:
+        script_content = (test_container_root / relative_script_path).read_text(encoding="utf-8")
+        assert "/shared" in script_content, relative_script_path

@@ -25,7 +25,9 @@ if [[ ! -f "${config_path}" ]]; then
   exit 2
 fi
 
-python -m pip install --no-cache-dir -e "${staged_root}/consumer"
+python -m pip install --no-cache-dir \
+  -e "${staged_root}/shared" \
+  -e "${staged_root}/consumer"
 export PYTHONPATH="${staged_root}/consumer/src:${staged_root}:${PYTHONPATH:-}"
 export APP_ENABLE_DEV_FEATURES="${APP_ENABLE_DEV_FEATURES:-true}"
 

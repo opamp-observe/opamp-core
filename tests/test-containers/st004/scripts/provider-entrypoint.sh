@@ -7,7 +7,9 @@ set -euo pipefail
 
 source_dir="$(st004-prepare-source)"
 
-python -m pip install --no-cache-dir -e "${source_dir}/provider"
+python -m pip install --no-cache-dir \
+  -e "${source_dir}/shared" \
+  -e "${source_dir}/provider"
 
 export PYTHONPATH="${source_dir}/provider/src:${source_dir}:${PYTHONPATH:-}"
 

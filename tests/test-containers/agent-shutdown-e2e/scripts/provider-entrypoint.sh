@@ -14,9 +14,23 @@
 
 set -euo pipefail
 
-source_dir="/workspace/source"
+mounted_source_dir="/workspace/source"
+source_dir="$(mktemp -d /tmp/opamp-agent-shutdown-provider.XXXXXX)"
 
-python3 -m pip install --no-cache-dir -e "${source_dir}/provider"
+(
+  cd "${mounted_source_dir}"
+  git config --global --add safe.directory "${mounted_source_dir}"
+  git ls-files -z -co --exclude-standard \
+    | while IFS= read -r -d '' source_path; do
+        [[ -e "${source_path}" ]] && printf '%s\0' "${source_path}"
+      done \
+    | tar --null -T - -cf - \
+    | tar -C "${source_dir}" -xf -
+)
+
+python3 -m pip install --no-cache-dir \
+  -e "${source_dir}/shared" \
+  -e "${source_dir}/provider"
 export PYTHONPATH="${source_dir}/provider/src:${source_dir}:${PYTHONPATH:-}"
 
 exec python3 -m opamp_provider.server \

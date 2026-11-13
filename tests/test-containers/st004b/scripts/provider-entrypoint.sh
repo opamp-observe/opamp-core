@@ -39,7 +39,9 @@ if [[ "${profile}" == "tls" ]]; then
   chmod 600 "${private_key_file}"
 fi
 
-python -m pip install --no-cache-dir -e "${staged_root}/provider"
+python -m pip install --no-cache-dir \
+  -e "${staged_root}/shared" \
+  -e "${staged_root}/provider"
 export PYTHONPATH="${staged_root}/provider/src:${staged_root}:${PYTHONPATH:-}"
 
 exec python -m opamp_provider.server \

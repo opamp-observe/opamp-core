@@ -19,6 +19,7 @@ staged_root="$(/runner/prepare_source.sh)"
 mkdir -p "${results_dir}"
 
 python -m pip install --no-cache-dir \
+  "${staged_root}/shared" \
   "${staged_root}/provider[dev]" \
   "${staged_root}/mcp[dev,yaml]" \
   "${staged_root}/agent_broker[dev]"

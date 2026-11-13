@@ -18,7 +18,11 @@ results_dir="${RESULTS_DIR:-/host-output}"
 staged_root="$(/runner/prepare_source.sh)"
 mkdir -p "${results_dir}"
 
-python -m pip install --no-cache-dir "${staged_root}/consumer" "${staged_root}/consumer-sim" "${staged_root}/provider"
+python -m pip install --no-cache-dir \
+  "${staged_root}/shared" \
+  "${staged_root}/consumer" \
+  "${staged_root}/consumer-sim" \
+  "${staged_root}/provider"
 
 set +e
 {

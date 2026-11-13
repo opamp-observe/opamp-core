@@ -18,6 +18,12 @@ connecting to an OpAMP provider. That keeps the test deterministic while still
 exercising the consumer plugin registry, config loading, plugin-specific config
 processing, and client startup initialization.
 
+The clean container installs the mounted `shared` and `consumer` projects in
+one editable pip transaction. Supplying both local projects is required because
+plain pip does not use the consumer project's `[tool.uv.sources]` mapping and
+must not fall back to an unpublished or differently versioned `opamp-shared`
+distribution from PyPI.
+
 ## Run
 
 From the repository root:

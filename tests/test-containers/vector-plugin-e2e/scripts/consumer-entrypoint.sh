@@ -6,7 +6,9 @@ set -euo pipefail
 
 source_dir="$(vector-e2e-prepare-source)"
 
-python3 -m pip install --break-system-packages --no-cache-dir -e "${source_dir}/consumer"
+python3 -m pip install --break-system-packages --no-cache-dir \
+  -e "${source_dir}/shared" \
+  -e "${source_dir}/consumer"
 
 export PYTHONPATH="${source_dir}/consumer/src:${source_dir}:${PYTHONPATH:-}"
 export APP_ENABLE_DEV_FEATURES="${APP_ENABLE_DEV_FEATURES:-true}"

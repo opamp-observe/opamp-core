@@ -37,6 +37,8 @@ DOWNLOADS_DIR = RUNTIME_ROOT / "downloads"
 UNPACKED_WHEEL_DIR = RUNTIME_ROOT / "wheel-unpacked"
 ELK_DOWNLOADS_DIR = DOWNLOADS_DIR / "elk"
 LOG_GENERATOR_DOWNLOADS_DIR = DOWNLOADS_DIR / "log-generator"
+LOCAL_SHARED_PROJECT = Path("/host-assets/shared")
+STAGED_SHARED_PROJECT = RUNTIME_ROOT / "shared"
 
 SUPPORTED_DEPLOYMENTS = {
     "elastic_agent",
@@ -196,7 +198,7 @@ def _select_fluentbit_asset(assets: list[dict[str, Any]]) -> str | None:
             score += 20
         if "debug" in lower:
             score -= 20
-        if lower.endswith(".sha256") or lower.endswith(".sig"):
+        if lower.endswith((".sha256", ".sig")):
             score -= 200
         if score > best_score:
             best_score = score
@@ -242,7 +244,7 @@ def _install_fluentbit(version: str, cfg: dict[str, str]) -> None:
             "Set FLUENTBIT_DOWNLOAD_URL to a known binary package."
         )
 
-    source_binary = sorted(binary_candidates, key=lambda p: len(str(p)))[0]
+    source_binary = min(binary_candidates, key=lambda candidate: len(str(candidate)))
     target_binary = Path("/usr/local/bin/fluent-bit")
     shutil.copy2(source_binary, target_binary)
     target_binary.chmod(target_binary.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
@@ -274,7 +276,7 @@ def _install_heartbeat(version: str, cfg: dict[str, str]) -> None:
             "Set HEARTBEAT_DOWNLOAD_URL to a known Linux x86_64 package."
         )
 
-    source_binary = sorted(binary_candidates, key=lambda p: len(str(p)))[0]
+    source_binary = min(binary_candidates, key=lambda candidate: len(str(candidate)))
     target_binary = Path("/usr/local/bin/heartbeat")
     shutil.copy2(source_binary, target_binary)
     target_binary.chmod(target_binary.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
@@ -370,8 +372,27 @@ def _unpack_wheel(wheel_path: Path) -> None:
 
 
 def _install_consumer_wheel(wheel_path: Path) -> None:
+    """Install the local shared project and consumer wheel in one resolver transaction.
+
+    Args:
+        wheel_path: Consumer wheel mounted from the host build output.
+    """
     _unpack_wheel(wheel_path)
-    _run([sys.executable, "-m", "pip", "install", "--no-cache-dir", f"{wheel_path}[dev]"])
+    if STAGED_SHARED_PROJECT.exists():
+        shutil.rmtree(STAGED_SHARED_PROJECT)
+    shutil.copytree(LOCAL_SHARED_PROJECT, STAGED_SHARED_PROJECT)
+    _log(f"shared project staged to {STAGED_SHARED_PROJECT}")
+    _run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--no-cache-dir",
+            str(STAGED_SHARED_PROJECT),
+            f"{wheel_path}[dev]",
+        ]
+    )
 
 
 def _install_consumer_plugin_packages(cfg: dict[str, str]) -> None:
