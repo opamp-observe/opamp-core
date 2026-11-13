@@ -19,6 +19,11 @@ This source-mounted container verifies the server plugin deployment boundary in 
 - an enabled `component-entry-points.quart` record registers the plugin, exposes its feature-menu metadata, and makes `/client-config-generator-service/ui` reachable;
 - the same record with `enabled: false` produces no feature-menu item and leaves the UI route unavailable.
 
+The verifier adds the `shared/src`, `provider/src`, and
+`client-config-generator-service/src` roots from the mounted checkout to its
+Python import path. This mirrors the repository's independent `src`-layout
+packages without relying on a preinstalled or stale `opamp-shared` wheel.
+
 Run from the repository root:
 
 ```bash
