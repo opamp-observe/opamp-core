@@ -158,8 +158,30 @@ APP_ENABLE_DEV_FEATURES=true opamp-cli dev-flb-config
 APP_ENABLE_DEV_FEATURES=true opamp-cli dev-pid-lookup
 APP_ENABLE_DEV_FEATURES=true opamp-cli dev-version-bump
 APP_ENABLE_DEV_FEATURES=true opamp-cli dev-version-bump 0.5.0
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests all
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests unit
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests e2e
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests security
 opamp-cli dev-containers
 ```
+
+Development regression tests:
+
+- `dev-tests` is available when `APP_ENABLE_DEV_FEATURES=true`.
+- With no selection it prompts for `all`, `unit`, `e2e`, or `security`.
+- `dev-tests list` shows the configured suites and tests after discovery without running them.
+- `dev-tests terminate` terminates the recorded test process tree and force-removes only containers
+  created since that test started; containers that were already running are preserved.
+- Each child process streams combined output to the terminal and a timestamped `.log` file. After
+  every test, the CLI prints its status, exit code, elapsed time, and log path.
+- A machine-readable timing and status summary is retained under
+  `cli/runtime/test-reports/`.
+- Suite definitions, commands, include relationships, Python-project discovery rules, output paths,
+  and the container runtime are configured in `cli/config/dev_test_suites.json`. Use
+  `--config <path>` to run against another configuration.
+- `all` runs unit tests, the socket end-to-end test, the full container regression pack, and the
+  repository security gate. Suites continue after individual failures by default so the final
+  report contains all available results.
 
 When `SMART_LOG_VIEWER=true` is used with `enable-process-tail`,
 `smart-log-viewer` also needs a `tail` executable on `PATH`. On Windows,

@@ -162,6 +162,28 @@ configuration surfaces but are not installed or run by the current aggregate set
 
 ## Test and Security Workflow
 
+The main CLI provides a configuration-driven regression entry point when development features are
+enabled:
+
+```bash
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests all
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests unit
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests e2e
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests security
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests list
+```
+
+On PowerShell, set `$env:APP_ENABLE_DEV_FEATURES = "true"` before running the same `opamp-cli`
+commands. The suite catalog in `cli/config/dev_test_suites.json` controls suite composition,
+commands, Python-project discovery, retained reports, and the Docker-compatible container runtime.
+Output is streamed and retained per test, with status and wall-clock duration printed after each
+test and stored in a JSON summary under `cli/runtime/test-reports/`.
+
+Use `opamp-cli dev-tests terminate` from another terminal to terminate the active test process tree.
+For container-based tests, the runner records the containers that existed before the test and
+force-removes only containers created by that test. Ctrl+C performs the same process-tree and
+container cleanup in the running terminal.
+
 Use the developer CLI for consistent component discovery and retained results:
 
 ```bash
