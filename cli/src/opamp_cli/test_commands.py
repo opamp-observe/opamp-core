@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 import signal
 import subprocess
 import time
@@ -40,6 +41,7 @@ CONFIG_KEY_DISCOVERY_TYPE = "type"
 CONFIG_KEY_ID = "id"
 CONFIG_KEY_INCLUDES = "includes"
 CONFIG_KEY_LABEL = "label"
+CONFIG_KEY_REQUIRED_EXECUTABLE = "required_executable"
 CONFIG_KEY_REPORT_DIRECTORY = "report_directory"
 CONFIG_KEY_STATE_FILE = "state_file"
 CONFIG_KEY_SUITES = "suites"
@@ -48,6 +50,7 @@ CONFIG_KEY_USES_CONTAINERS = "uses_containers"
 CONFIG_KEY_WORKING_DIRECTORY = "working_directory"
 DISCOVERY_TYPE_PYTHON_PROJECTS = "python_projects"
 DISCOVERY_TYPE_NODE_PROJECTS = "node_projects"
+DISCOVERY_TYPE_FILE_PROJECTS = "file_projects"
 DEFAULT_CONFIG_PATH = Path("cli/config/dev_test_suites.json")
 DEFAULT_REPORT_DIRECTORY = Path("cli/runtime/test-reports")
 DEFAULT_STATE_FILE = Path("cli/runtime/dev_test_run.json")
@@ -60,6 +63,7 @@ FIELD_PROJECT_ID = "project_id"
 FIELD_PROJECT_LABEL = "project_label"
 FIELD_PROJECT_PATH = "project_path"
 FIELD_REPO_ROOT = "repo_root"
+FIELD_REQUIRED_EXECUTABLE_PATH = "required_executable_path"
 OPTION_CONFIG = "--config"
 PACKAGE_KEY_SCRIPTS = "scripts"
 POPEN_KEY_BUFFER_SIZE = "bufsize"
@@ -397,13 +401,32 @@ def _resolve_test_definition(test_payload: dict[str, Any], *, repo_root: Path) -
     # Discovery templates necessarily carry the marker, exclusion, and formatting
     # values together; keeping them local makes one configuration entry auditable.
     # pylint: disable=too-many-locals
+    required_executable = str(
+        test_payload.get(CONFIG_KEY_REQUIRED_EXECUTABLE) or ""
+    ).strip()
+    availability_fields: dict[str, str] = {}
+    if required_executable:
+        executable_path = shutil.which(required_executable)
+        if executable_path is None:
+            return []
+        availability_fields[FIELD_REQUIRED_EXECUTABLE_PATH] = executable_path
     discovery = test_payload.get(CONFIG_KEY_DISCOVERY)
     if discovery is None:
-        return [_materialize_task(test_payload, repo_root=repo_root, fields={})]
+        return [
+            _materialize_task(
+                test_payload,
+                repo_root=repo_root,
+                fields=availability_fields,
+            )
+        ]
     if not isinstance(discovery, dict):
         raise ValueError("test discovery must be a JSON object")
     discovery_type = str(discovery.get(CONFIG_KEY_DISCOVERY_TYPE) or "")
-    supported_types = {DISCOVERY_TYPE_NODE_PROJECTS, DISCOVERY_TYPE_PYTHON_PROJECTS}
+    supported_types = {
+        DISCOVERY_TYPE_FILE_PROJECTS,
+        DISCOVERY_TYPE_NODE_PROJECTS,
+        DISCOVERY_TYPE_PYTHON_PROJECTS,
+    }
     if discovery_type not in supported_types:
         raise ValueError(f"unsupported test discovery type: {discovery_type!r}")
     pattern = str(discovery.get(CONFIG_KEY_DISCOVERY_PATTERN) or DEFAULT_DISCOVERY_PATTERN)
@@ -435,6 +458,7 @@ def _resolve_test_definition(test_payload: dict[str, Any], *, repo_root: Path) -
         relative_project = project_path.relative_to(repo_root).as_posix()
         project_id = relative_project.replace("/", "-").replace("_", "-")
         fields = {
+            **availability_fields,
             FIELD_PROJECT_ID: project_id,
             FIELD_PROJECT_LABEL: relative_project,
             FIELD_PROJECT_PATH: relative_project,

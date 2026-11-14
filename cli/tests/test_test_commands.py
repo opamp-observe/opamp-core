@@ -111,6 +111,66 @@ def test_node_project_discovery_requires_configured_script(tmp_path: Path) -> No
     assert [task.task_id for task in tasks] == ["node-web-component"]
 
 
+def test_file_project_discovery_materializes_lock_file_projects(tmp_path: Path) -> None:
+    """File-marker discovery should create one task for each non-excluded lock project."""
+
+    project_path = tmp_path / "locked-component"
+    project_path.mkdir()
+    (project_path / "uv.lock").write_text("version = 1\n", encoding="utf-8")
+    ignored_path = tmp_path / ".venv" / "ignored-component"
+    ignored_path.mkdir(parents=True)
+    (ignored_path / "uv.lock").write_text("version = 1\n", encoding="utf-8")
+    test_payload = {
+        "id": "audit-{project_id}",
+        "command": ["audit", "{project_path}"],
+        "working_directory": ".",
+        "discovery": {
+            "type": "file_projects",
+            "pattern": "**/uv.lock",
+            "exclude": [".venv/**", "**/.venv/**"],
+        },
+    }
+
+    tasks = test_commands._resolve_test_definition(test_payload, repo_root=tmp_path)
+
+    assert [task.task_id for task in tasks] == ["audit-locked-component"]
+    assert tasks[0].command == ("audit", "locked-component")
+
+
+def test_optional_executable_task_is_discovered_only_when_available(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Optional tools should add tasks only when their executable is on PATH."""
+
+    test_payload = {
+        "id": "renovate-local",
+        "command": ["{required_executable_path}", "--platform=local"],
+        "working_directory": ".",
+        "required_executable": "renovate",
+    }
+    monkeypatch.setattr(test_commands.shutil, "which", lambda _executable: None)
+
+    unavailable_tasks = test_commands._resolve_test_definition(
+        test_payload,
+        repo_root=tmp_path,
+    )
+
+    monkeypatch.setattr(
+        test_commands.shutil,
+        "which",
+        lambda _executable: str(tmp_path / "renovate"),
+    )
+    available_tasks = test_commands._resolve_test_definition(
+        test_payload,
+        repo_root=tmp_path,
+    )
+
+    assert unavailable_tasks == []
+    assert [task.task_id for task in available_tasks] == ["renovate-local"]
+    assert available_tasks[0].command[0] == str(tmp_path / "renovate")
+
+
 def test_execute_workflow_streams_output_and_writes_timed_summary(
     tmp_path: Path,
     capsys,

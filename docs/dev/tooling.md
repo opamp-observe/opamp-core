@@ -170,14 +170,20 @@ APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests all
 APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests unit
 APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests e2e
 APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests security
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests dependencies
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests pip-audit
+APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests renovate
 APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests list
 ```
 
 On PowerShell, set `$env:APP_ENABLE_DEV_FEATURES = "true"` before running the same `opamp-cli`
 commands. The suite catalog in `cli/config/dev_test_suites.json` controls suite composition,
-commands, Python-project discovery, retained reports, and the Docker-compatible container runtime.
-Output is streamed and retained per test, with status and wall-clock duration printed after each
-test and stored in a JSON summary under `cli/runtime/test-reports/`.
+commands, project-marker discovery, optional executable requirements, retained reports, and the
+Docker-compatible container runtime. The `pip-audit` suite discovers every `uv.lock` and audits the
+complete exported dependency graph. The `renovate` suite is discovered only when Renovate is on
+`PATH`; it uses Renovate's read-only local platform. The `dependencies` suite runs both checks, and
+is included in `all`. Output is streamed and retained per test, with status and wall-clock duration
+printed after each test and stored in a JSON summary under `cli/runtime/test-reports/`.
 
 Use `opamp-cli dev-tests terminate` from another terminal to terminate the active test process tree.
 For container-based tests, the runner records the containers that existed before the test and
@@ -245,7 +251,7 @@ package:
 |---|---|
 | [GitHub Pages](https://pages.github.com/) and [Jekyll](https://jekyllrb.com/) | Build and publish the formal `docs/` website. |
 | [Jekyll Theme Yat](https://github.com/jeffreytse/jekyll-theme-yat) | Documentation site theme selected by `docs/_config.yml`. |
-| [Jekyll Feed](https://github.com/jekyll/jekyll-feed), [Remote Theme](https://github.com/benbalter/jekyll-remote-theme), [SEO Tag](https://github.com/jekyll/jekyll-seo-tag), and [Sitemap](https://github.com/jekyll/jekyll-sitemap) | Plugins used by the GitHub Pages build. |
+| [Jekyll Feed](https://github.com/jekyll/jekyll-feed), [SEO Tag](https://github.com/jekyll/jekyll-seo-tag), and [Sitemap](https://github.com/jekyll/jekyll-sitemap) | Plugins used by the GitHub Pages build. |
 | [Kramdown](https://kramdown.gettalong.org/) | GitHub-Flavored Markdown processing for the Jekyll site. |
 | [Mermaid](https://mermaid.js.org/) and [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli) | Source-controlled diagrams and rendered image assets. |
 | [ReportLab](https://www.reportlab.com/dev/docs/) | PDF manual generation by `opamp-dev-tools`. |

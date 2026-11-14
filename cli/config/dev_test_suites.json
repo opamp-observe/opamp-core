@@ -10,7 +10,8 @@
       "includes": [
         "unit",
         "e2e",
-        "security"
+        "security",
+        "dependencies"
       ]
     },
     "unit": {
@@ -24,7 +25,7 @@
             "uv",
             "run",
             "--project",
-            "{project_path}",
+            ".",
             "--extra",
             "dev",
             "python",
@@ -33,7 +34,7 @@
             "-q",
             "-s"
           ],
-          "working_directory": ".",
+          "working_directory": "{project_path}",
           "discovery": {
             "type": "python_projects",
             "pattern": "**/pyproject.toml",
@@ -151,6 +152,63 @@
             "all"
           ],
           "working_directory": "."
+        }
+      ]
+    },
+    "dependencies": {
+      "label": "Dependency checks",
+      "continue_on_failure": true,
+      "includes": [
+        "pip-audit",
+        "renovate"
+      ]
+    },
+    "pip-audit": {
+      "label": "Python dependency vulnerability audits",
+      "continue_on_failure": true,
+      "tests": [
+        {
+          "id": "pip-audit-{project_id}",
+          "label": "{project_label} locked dependency audit",
+          "command": [
+            "uv",
+            "run",
+            "--project",
+            "cli",
+            "--extra",
+            "dev",
+            "python",
+            "-m",
+            "opamp_cli.dependency_audit",
+            "--project",
+            "{project_path}"
+          ],
+          "working_directory": ".",
+          "discovery": {
+            "type": "file_projects",
+            "pattern": "**/uv.lock",
+            "exclude": [
+              ".venv/**",
+              "**/.venv/**",
+              "dev-tools/runtime/**"
+            ]
+          }
+        }
+      ]
+    },
+    "renovate": {
+      "label": "Renovate dependency analysis",
+      "continue_on_failure": true,
+      "tests": [
+        {
+          "id": "renovate-local",
+          "label": "Renovate local dependency analysis",
+          "command": [
+            "{required_executable_path}",
+            "--platform=local"
+          ],
+          "working_directory": ".",
+          "required_executable": "renovate"
         }
       ]
     }
