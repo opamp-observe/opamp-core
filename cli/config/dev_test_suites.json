@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "container_runtime": "docker",
+  "report_directory": "cli/runtime/test-reports",
+  "state_file": "cli/runtime/dev_test_run.json",
+  "suites": {
+    "all": {
+      "label": "All tests",
+      "continue_on_failure": true,
+      "includes": [
+        "unit",
+        "e2e",
+        "security",
+        "dependencies"
+      ]
+    },
+    "unit": {
+      "label": "All unit tests",
+      "continue_on_failure": true,
+      "tests": [
+        {
+          "id": "component-unit-{project_id}",
+          "label": "{project_label} unit tests",
+          "command": [
+            "uv",
+            "run",
+            "--project",
+            ".",
+            "--extra",
+            "dev",
+            "python",
+            "-m",
+            "pytest",
+            "-q",
+            "-s"
+          ],
+          "working_directory": "{project_path}",
+          "discovery": {
+            "type": "python_projects",
+            "pattern": "**/pyproject.toml",
+            "test_directory": "tests",
+            "exclude": [
+              ".venv/**",
+              "**/.venv/**",
+              "dev-tools/runtime/**",
+              "svr-credentials-mgr/plaintext-keyring/**"
+            ]
+          }
+        },
+        {
+          "id": "node-unit-{project_id}",
+          "label": "{project_label} browser unit tests",
+          "command": [
+            "npm",
+            "run",
+            "ui:unit"
+          ],
+          "working_directory": "{project_path}",
+          "discovery": {
+            "type": "node_projects",
+            "pattern": "**/package.json",
+            "required_script": "ui:unit",
+            "exclude": [
+              ".venv/**",
+              "**/.venv/**",
+              "node_modules/**",
+              "**/node_modules/**",
+              "dev-tools/runtime/**"
+            ]
+          }
+        },
+        {
+          "id": "repository-unit-tests",
+          "label": "Repository unit tests",
+          "command": [
+            "uv",
+            "run",
+            "--project",
+            "dev-tools",
+            "--extra",
+            "security",
+            "python",
+            "-m",
+            "pytest",
+            "-q",
+            "-s",
+            "--import-mode=prepend",
+            "tests",
+            "--ignore=tests/test_socket_e2e.py"
+          ],
+          "working_directory": "."
+        }
+      ]
+    },
+    "e2e": {
+      "label": "End-to-end tests",
+      "continue_on_failure": true,
+      "tests": [
+        {
+          "id": "socket-e2e",
+          "label": "Socket end-to-end test",
+          "command": [
+            "uv",
+            "run",
+            "--project",
+            "dev-tools",
+            "--extra",
+            "dev",
+            "opamp-dev-tools",
+            "build",
+            "test",
+            "e2e"
+          ],
+          "working_directory": "."
+        },
+        {
+          "id": "container-regression-pack",
+          "label": "Container regression pack",
+          "command": [
+            "uv",
+            "run",
+            "--project",
+            "dev-tools",
+            "--extra",
+            "dev",
+            "python",
+            "tests/test-containers/run_regression_pack.py",
+            "--continue-on-failure"
+          ],
+          "working_directory": ".",
+          "uses_containers": true
+        }
+      ]
+    },
+    "security": {
+      "label": "Security tests",
+      "continue_on_failure": true,
+      "tests": [
+        {
+          "id": "repository-security-gate",
+          "label": "Repository security gate",
+          "command": [
+            "uv",
+            "run",
+            "--project",
+            "dev-tools",
+            "--extra",
+            "security",
+            "opamp-dev-tools",
+            "build",
+            "secure",
+            "all"
+          ],
+          "working_directory": "."
+        }
+      ]
+    },
+    "dependencies": {
+      "label": "Dependency checks",
+      "continue_on_failure": true,
+      "includes": [
+        "pip-audit",
+        "renovate"
+      ]
+    },
+    "pip-audit": {
+      "label": "Python dependency vulnerability audits",
+      "continue_on_failure": true,
+      "tests": [
+        {
+          "id": "pip-audit-{project_id}",
+          "label": "{project_label} locked dependency audit",
+          "command": [
+            "uv",
+            "run",
+            "--project",
+            "cli",
+            "--extra",
+            "dev",
+            "python",
+            "-m",
+            "opamp_cli.dependency_audit",
+            "--project",
+            "{project_path}"
+          ],
+          "working_directory": ".",
+          "discovery": {
+            "type": "file_projects",
+            "pattern": "**/uv.lock",
+            "exclude": [
+              ".venv/**",
+              "**/.venv/**",
+              "dev-tools/runtime/**"
+            ]
+          }
+        }
+      ]
+    },
+    "renovate": {
+      "label": "Renovate dependency analysis",
+      "continue_on_failure": true,
+      "tests": [
+        {
+          "id": "renovate-local",
+          "label": "Renovate local dependency analysis",
+          "command": [
+            "{required_executable_path}",
+            "--platform=local"
+          ],
+          "working_directory": ".",
+          "required_executable": "renovate"
+        }
+      ]
+    }
+  }
+}

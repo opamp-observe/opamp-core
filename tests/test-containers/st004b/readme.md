@@ -61,8 +61,9 @@ ST-004B provide the complete ST-004 scenario coverage.
 - `consumer-valid` and `consumer-invalid` select profile-specific simulator
   configuration where a live consumer is part of the assertion.
 - The TLS provider generates a two-day self-signed certificate with SANs for
-  `provider`, `localhost`, and `127.0.0.1`. The certificate is retained only in
-  ignored test evidence.
+  `provider`, `localhost`, and `127.0.0.1`. The public certificate is retained
+  in ignored test evidence, while the private key remains in container-local
+  runtime storage and is destroyed with the provider container.
 - All components stage tracked and non-ignored source into writable
   container-local storage before installation.
 
@@ -101,9 +102,9 @@ dist/test-reports/st004b/<profile>/
 
 Evidence includes `results.md`, `summary.json`, `route-matrix.json`,
 `provider.log`, `compose.log`, and `verify.log`. Negative consumer profiles also
-retain `consumer-invalid.log`. The TLS profile retains its generated certificate
-and private key under `tls/certs/`; these are local test artefacts and must not be
-published as deployment credentials.
+retain `consumer-invalid.log`. The TLS profile retains only its generated public
+certificate under `tls/certs/`; its private key is never written to retained
+evidence or uploaded to cloud storage.
 
 An aggregate result is written to:
 

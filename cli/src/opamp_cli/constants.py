@@ -40,6 +40,7 @@ OPAMP_CONFIG_PATH_ENV = "OPAMP_CONFIG_PATH"
 PYTHONPATH_ENV = "PYTHONPATH"
 CLI_DEMO_CONFIG_PATH = Path("cli/config/demo_consumer_profiles.json")
 CLI_VERSION_TARGETS_CONFIG_PATH = Path("cli/config/version_targets.json")
+CLI_DEV_TEST_SUITES_CONFIG_PATH = Path("cli/config/dev_test_suites.json")
 ARG_CONFIG_PATH = "--config-path"
 ARG_AGENT_CONFIG_PATH = "--agent-config-path"
 VERSION_FLAG = "--version"
@@ -82,6 +83,7 @@ COMMAND_DEV_MCP_CONFIG = "dev-mcp-config"
 COMMAND_DEV_PID_LOOKUP = "dev-pid-lookup"
 COMMAND_DEV_CONTAINERS = "dev-containers"
 COMMAND_DEV_VERSION_BUMP = "dev-version-bump"
+COMMAND_DEV_TESTS = "dev-tests"
 ACTION_KIND_BACKGROUND_START = "background_start"
 ACTION_KIND_SIMULATOR_START = "simulator_start"
 ACTION_KIND_DEMO_CONSUMERS_START = "demo_consumers_start"
@@ -193,6 +195,7 @@ HELP_TEXT = """Usage:
   opamp-cli dev-pid-lookup
   opamp-cli dev-containers
   opamp-cli dev-version-bump [VERSION] [--config <path>]
+  opamp-cli dev-tests [all|unit|e2e|security|list|terminate] [--config <path>]
 
 Behavior:
   - Interactive `start`, `stop`, and `restart` commands open guided multi-stage choices.
@@ -276,6 +279,9 @@ Examples:
   # Bump each configured component version by one minor version
   opamp-cli dev-version-bump
 
+  # Run every configured development test suite
+  opamp-cli dev-tests all
+
 Notes:
   - Interactive autocomplete uses prompt_toolkit when installed.
   - Fallback completion uses readline when available.
@@ -288,6 +294,7 @@ Notes:
   - When APP_ENABLE_DEV_FEATURES=true, `dev-pid-lookup` prompts for a regex and searches running processes for PID/name/command-line matches.
   - `dev-containers` appears when a container runtime and configured container starts are available.
   - When APP_ENABLE_DEV_FEATURES=true, `dev-version-bump` updates configured component semantic versions independently.
+  - When APP_ENABLE_DEV_FEATURES=true, `dev-tests` discovers and runs configured test suites, records timing/output, and cleans up containers created by the run.
   - `setup-venv` installs Python packages into `.venv`, runs npm installs for checked-in Node tooling, and prompts before opening an activated shell in interactive terminals.
   - Guided start/stop/restart actions run components directly instead of relying on repo wrapper scripts.
   - Set OPAMP_DEMO=true to enable demo consumer options from cli/config/demo_consumer_profiles.json.

@@ -33,6 +33,7 @@ container_management = importlib.import_module("opamp_cli.container_management")
 dev_commands = importlib.import_module("opamp_cli.dev_commands")
 setup_venv = importlib.import_module("opamp_cli.setup_venv")
 version_bump = importlib.import_module("opamp_cli.version_bump")
+test_commands = importlib.import_module("opamp_cli.test_commands")
 
 
 def _sample_fluentbit_config() -> str:
@@ -103,6 +104,28 @@ def test_build_exec_env_enables_unbuffered_python_output(monkeypatch) -> None:
     env = cli_main._build_exec_env()  # type: ignore[attr-defined]
 
     assert env["PYTHONUNBUFFERED"] == "1"
+
+
+def test_dev_tests_command_routes_arguments_to_test_workflow(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_execute(argv, **kwargs):
+        """Capture routed arguments without starting development tests."""
+
+        captured["argv"] = argv
+        captured["repo_root"] = kwargs["repo_root"]
+        captured["dev_features_enabled"] = kwargs["dev_features_enabled"]
+        return 7
+
+    monkeypatch.setenv("APP_ENABLE_DEV_FEATURES", "true")
+    monkeypatch.setattr(test_commands, "execute_dev_tests_workflow", fake_execute)
+
+    exit_code = cli_main._handle_command("dev-tests security")  # type: ignore[attr-defined]
+
+    assert exit_code == 7
+    assert captured["argv"] == ["security"]
+    assert captured["repo_root"] == cli_main._repo_root()  # type: ignore[attr-defined]
+    assert captured["dev_features_enabled"] is True
 
 
 def test_split_guided_command_supports_restart() -> None:

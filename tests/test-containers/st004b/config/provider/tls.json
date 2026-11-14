@@ -10,7 +10,7 @@
     "tls": {
       "enabled": true,
       "cert_file": "/evidence/tls/certs/provider-cert.pem",
-      "key_file": "/evidence/tls/certs/provider-key.pem",
+      "key_file": "/tmp/opamp-st004b-tls/provider-key.pem",
       "trust_anchor_mode": "none"
     },
     "state_persistence": {"enabled": false}

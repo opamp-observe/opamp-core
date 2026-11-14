@@ -35,6 +35,23 @@ EXPECTED_STATIC_UI_TOOL_CHECKS = {
 COMPOSE_PATH = (
     REPOSITORY_ROOT / "tests" / "test-containers" / "st004b" / "docker-compose.yml"
 )
+PROVIDER_ENTRYPOINT_PATH = (
+    REPOSITORY_ROOT
+    / "tests"
+    / "test-containers"
+    / "st004b"
+    / "scripts"
+    / "provider-entrypoint.sh"
+)
+TLS_PROVIDER_CONFIG_PATH = (
+    REPOSITORY_ROOT
+    / "tests"
+    / "test-containers"
+    / "st004b"
+    / "config"
+    / "provider"
+    / "tls.json"
+)
 GITLEAKS_ALLOW_MARKER = "# gitleaks:allow"
 JWT_AUDIENCE_ENVIRONMENT_KEYS = (
     "OPAMP_AUTH_JWT_AUDIENCE:",
@@ -89,6 +106,17 @@ def test_public_jwt_audiences_are_explicitly_allowlisted_for_gitleaks() -> None:
         matching_lines = [line for line in compose_lines if environment_key in line]
         assert len(matching_lines) == 1
         assert GITLEAKS_ALLOW_MARKER in matching_lines[0]
+
+
+def test_tls_private_key_uses_container_local_runtime_storage() -> None:
+    """TLS evidence should retain the certificate without exposing its private key."""
+    provider_config = TLS_PROVIDER_CONFIG_PATH.read_text(encoding="utf-8")
+    provider_entrypoint = PROVIDER_ENTRYPOINT_PATH.read_text(encoding="utf-8")
+
+    assert '"key_file": "/tmp/opamp-st004b-tls/provider-key.pem"' in provider_config
+    assert 'private_key_file="${runtime_secret_dir}/provider-key.pem"' in provider_entrypoint
+    assert 'private_key_file="${retained_certificate_dir}' not in provider_entrypoint
+    assert 'rm -f "${retained_certificate_dir}/provider-key.pem"' in provider_entrypoint
 
 
 def test_route_check_records_expected_and_observed_status(monkeypatch) -> None:

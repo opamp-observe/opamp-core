@@ -49,6 +49,7 @@ try:
         dev_commands,
         process_tail,
         setup_venv,
+        test_commands,
     )
     from .common import (
         _is_windows,
@@ -92,6 +93,7 @@ try:
         CLI_COMPONENT_LOG_FILENAME,
         CLI_DEMO_CONFIG_PATH,
         CLI_DEMO_FLAG_ENV,
+        CLI_DEV_TEST_SUITES_CONFIG_PATH,
         CLI_LOG_DIRNAME,
         CLI_PROCESS_STATE_FILENAME,
         CLI_RUNTIME_DIRNAME,
@@ -109,6 +111,7 @@ try:
         COMMAND_DEV_FLB_CONFIG,
         COMMAND_DEV_MCP_CONFIG,
         COMMAND_DEV_PID_LOOKUP,
+        COMMAND_DEV_TESTS,
         COMMAND_DEV_VERSION_BUMP,
         COMMAND_DISABLE_PROCESS_TAIL,
         COMMAND_ENABLE_PROCESS_TAIL,
@@ -181,6 +184,7 @@ except ImportError:
     import dev_commands  # type: ignore[no-redef]
     import process_tail  # type: ignore[no-redef]
     import setup_venv  # type: ignore[no-redef]
+    import test_commands  # type: ignore[no-redef]
     from common import (  # type: ignore[no-redef]
         _is_windows,
         _normalize_python_script_command,
@@ -226,6 +230,7 @@ except ImportError:
         CLI_COMPONENT_LOG_FILENAME,
         CLI_DEMO_CONFIG_PATH,
         CLI_DEMO_FLAG_ENV,
+        CLI_DEV_TEST_SUITES_CONFIG_PATH,
         CLI_LOG_DIRNAME,
         CLI_PROCESS_STATE_FILENAME,
         CLI_RUNTIME_DIRNAME,
@@ -243,6 +248,7 @@ except ImportError:
         COMMAND_DEV_FLB_CONFIG,
         COMMAND_DEV_MCP_CONFIG,
         COMMAND_DEV_PID_LOOKUP,
+        COMMAND_DEV_TESTS,
         COMMAND_DEV_VERSION_BUMP,
         COMMAND_DISABLE_PROCESS_TAIL,
         COMMAND_ENABLE_PROCESS_TAIL,
@@ -428,7 +434,7 @@ def _get_logger() -> logging.Logger:
         return cached_logger
 
     logger = logging.getLogger(CLI_LOGGER_NAME)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     logger.propagate = False
     for handler in list(logger.handlers):
         logger.removeHandler(handler)
@@ -438,7 +444,7 @@ def _get_logger() -> logging.Logger:
             pass
 
     file_handler = logging.FileHandler(log_path, encoding="utf-8")
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(
         logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
     )
@@ -690,6 +696,16 @@ def _handle_command(
             repo_root_provider=_repo_root,
             dev_features_enabled=_dev_features_enabled,
         )
+    if lowered == COMMAND_DEV_TESTS or lowered.startswith(f"{COMMAND_DEV_TESTS} "):
+        logger.info("starting development test workflow command=%s", command_text)
+        test_args = _split_internal_command_args(command_text)
+        return test_commands.execute_dev_tests_workflow(
+            test_args[1:],
+            repo_root=_repo_root(),
+            dev_features_enabled=_dev_features_enabled(),
+            prompt_text=lambda prompt: _prompt_text(prompt, input_reader=input_reader),
+            logger=logger,
+        )
     if lowered == COMMAND_DEV_CONTAINERS or lowered.startswith(f"{COMMAND_DEV_CONTAINERS} "):
         logger.info("starting dev container workflow command=%s", command_text)
         selection = match_text[len(COMMAND_DEV_CONTAINERS) :].strip()
@@ -773,6 +789,8 @@ def _top_level_commands() -> list[str]:
         commands.append(COMMAND_DEV_PID_LOOKUP)
     if _dev_version_bump_available():
         commands.append(COMMAND_DEV_VERSION_BUMP)
+    if _dev_tests_available():
+        commands.append(COMMAND_DEV_TESTS)
     if container_management.container_runtime_executable() and _configured_container_start_actions():
         commands.append(COMMAND_DEV_CONTAINERS)
     return commands
@@ -957,6 +975,15 @@ def _dev_pid_lookup_available() -> bool:
 def _dev_version_bump_available() -> bool:
     """Return whether the dev version bump workflow should be exposed."""
     return _dev_features_enabled()
+
+
+def _dev_tests_available() -> bool:
+    """Return whether the configured development test workflow should be exposed."""
+
+    return _dev_features_enabled() and test_commands.dev_test_config_available(
+        repo_root=_repo_root(),
+        config_path=CLI_DEV_TEST_SUITES_CONFIG_PATH,
+    )
 
 
 def _prompt_text(
@@ -4451,6 +4478,8 @@ def _interactive_loop() -> int:  # noqa: PLR0912,PLR0915
         print(f"Use `{COMMAND_DEV_PID_LOOKUP}` to find running process IDs by regex.")
     if _dev_version_bump_available():
         print(f"Use `{COMMAND_DEV_VERSION_BUMP}` to bump configured component versions.")
+    if _dev_tests_available():
+        print(f"Use `{COMMAND_DEV_TESTS}` to run configured development test suites.")
     print(f"Use `{COMMAND_SETUP_VENV}` to create/update the repository virtual environment.")
     print("Use `enable-process-tail` to tail managed process logs in a new shell.")
     detected_flags = _detected_behavior_flags()

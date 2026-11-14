@@ -20,13 +20,12 @@ name = "opamp-dev-tools"
 version = "0.4.0"
 description = "Developer CLI utility for building, validating, and maintaining OpAMP components"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [{ name = "Phil Wilkins" }]
 keywords = ["opamp", "developer-tools", "containers", "release-automation"]
 dependencies = [
   "prompt_toolkit>=3.0",
-  "tomli>=2; python_version < '3.11'",
 ]
 
 [project.urls]
@@ -86,7 +85,7 @@ exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 src = ["src", "tests"]
 
 [tool.ruff.lint]

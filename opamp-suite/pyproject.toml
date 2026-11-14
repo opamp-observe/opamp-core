@@ -19,7 +19,7 @@ name = "opamp-suite"
 version = "0.6.0"
 description = "Installation profiles for OpAMP server, editor, and consumer packages"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [{ name = "Phil Wilkins" }]
 keywords = ["opamp", "observability", "server", "editor", "consumer"]
@@ -110,7 +110,7 @@ exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 src = ["src", "tests"]
 
 [tool.ruff.lint]

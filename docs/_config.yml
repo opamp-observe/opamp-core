@@ -22,11 +22,10 @@ repository: opamp-observe/opamp-core
 lang: en
 favicon: "https://raw.githubusercontent.com/opamp-observe/opamp-core/main/config-service/src/config_service/html/opamp_logo.png"
 
-remote_theme: jeffreytse/jekyll-theme-yat@v1.10.0
+theme: jekyll-theme-yat
 
 plugins:
   - jekyll-feed
-  - jekyll-remote-theme
   - jekyll-seo-tag
   - jekyll-sitemap
 
