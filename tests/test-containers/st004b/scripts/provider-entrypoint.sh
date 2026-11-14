@@ -24,10 +24,12 @@ if [[ ! -f "${config_path}" ]]; then
 fi
 
 if [[ "${profile}" == "tls" ]]; then
-  certificate_dir="/evidence/tls/certs"
-  certificate_file="${certificate_dir}/provider-cert.pem"
-  private_key_file="${certificate_dir}/provider-key.pem"
-  mkdir -p "${certificate_dir}"
+  retained_certificate_dir="/evidence/tls/certs"
+  runtime_secret_dir="/tmp/opamp-st004b-tls"
+  certificate_file="${retained_certificate_dir}/provider-cert.pem"
+  private_key_file="${runtime_secret_dir}/provider-key.pem"
+  mkdir -p "${retained_certificate_dir}" "${runtime_secret_dir}"
+  rm -f "${retained_certificate_dir}/provider-key.pem"
   openssl req -x509 -newkey rsa:2048 -sha256 -nodes \
     -keyout "${private_key_file}" \
     -out "${certificate_file}" \
@@ -37,6 +39,7 @@ if [[ "${profile}" == "tls" ]]; then
     -addext "basicConstraints=critical,CA:TRUE" \
     >/dev/null 2>&1
   chmod 600 "${private_key_file}"
+  chmod 644 "${certificate_file}"
 fi
 
 python -m pip install --no-cache-dir \
