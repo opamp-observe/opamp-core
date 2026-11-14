@@ -12,7 +12,9 @@ source_dir="$(st002-prepare-source)"
 # Install inside the runtime container rather than baking the project into the
 # image so uncommitted local changes can be exercised without rebuilding images
 # from a copied source context.
-python -m pip install --no-cache-dir -e "${source_dir}/provider"
+python -m pip install --no-cache-dir \
+  -e "${source_dir}/shared" \
+  -e "${source_dir}/provider"
 
 # PYTHONPATH includes the repo root for shared modules used by the provider.
 export PYTHONPATH="${source_dir}/provider/src:${source_dir}:${PYTHONPATH:-}"

@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+# Copyright 2026 opamp.info
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Containerized startup regression probe for built-in consumer plugins."""
 
 from __future__ import annotations
@@ -59,11 +72,41 @@ PLUGIN_SPECS = [
         "agent_filename": "vector.yaml",
     },
 ]
+CONSUMER_PROJECT_DIRECTORY = "consumer"
+EDITABLE_INSTALL_ARGUMENT = "-e"
+SHARED_PROJECT_DIRECTORY = "shared"
 
 
 def _run(command: list[str], *, cwd: Path) -> None:
+    """Run one required setup command from the mounted repository.
+
+    Args:
+        command: Executable and arguments to run.
+        cwd: Repository directory used as the child process working directory.
+    """
     print(f"[consumer-plugin-startup] run: {' '.join(command)}", flush=True)
     subprocess.run(command, cwd=str(cwd), check=True)
+
+
+def _install_local_projects(repo_root: Path) -> None:
+    """Install shared and consumer together so pip resolves the local dependency.
+
+    Args:
+        repo_root: Mounted repository containing both independent Python projects.
+    """
+    _run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            EDITABLE_INSTALL_ARGUMENT,
+            str(repo_root / SHARED_PROJECT_DIRECTORY),
+            EDITABLE_INSTALL_ARGUMENT,
+            str(repo_root / CONSUMER_PROJECT_DIRECTORY),
+        ],
+        cwd=repo_root,
+    )
 
 
 def _write_agent_configs(work_dir: Path) -> dict[str, Path]:
@@ -224,7 +267,12 @@ def _consumer_config(
 
 
 def _load_config(config_path: Path):
-    from opamp_consumer import config as consumer_config
+    """Load one generated consumer configuration through production parsing.
+
+    Args:
+        config_path: Generated consumer JSON configuration to load.
+    """
+    from opamp_consumer import config as consumer_config  # pylint: disable=import-error,import-outside-toplevel
 
     return consumer_config.load_config_with_overrides(
         config_path=config_path,
@@ -238,7 +286,16 @@ def _load_config(config_path: Path):
     )
 
 
-def _probe_service(service_type: str, config_path: Path) -> dict[str, Any]:
+def _probe_service(  # pylint: disable=too-many-statements
+    service_type: str,
+    config_path: Path,
+) -> dict[str, Any]:
+    """Construct one plugin client and return its retained probe result.
+
+    Args:
+        service_type: Built-in consumer plugin key to exercise.
+        config_path: Generated configuration for this plugin probe.
+    """
     started = time.monotonic()
     result: dict[str, Any] = {
         "service_type": service_type,
@@ -247,12 +304,16 @@ def _probe_service(service_type: str, config_path: Path) -> dict[str, Any]:
     }
     try:
         os.environ["OPAMP_CONFIG_PATH"] = str(config_path)
-        from opamp_consumer.abstract_client import LOCALHOST_BASE
-        from opamp_consumer.client_bootstrap import (
+        from opamp_consumer.abstract_client import (  # pylint: disable=import-error,import-outside-toplevel
+            LOCALHOST_BASE,
+        )
+        from opamp_consumer.client_bootstrap import (  # pylint: disable=import-error,import-outside-toplevel
             configure_observability_for_config,
             validate_runtime_server_config,
         )
-        from opamp_consumer.plugin_loader import load_consumer_plugin
+        from opamp_consumer.plugin_loader import (  # pylint: disable=import-error,import-outside-toplevel
+            load_consumer_plugin,
+        )
 
         config = _load_config(config_path)
         os.environ["APP_ENABLE_DEV_FEATURES"] = "true"
@@ -345,7 +406,7 @@ def _probe_service(service_type: str, config_path: Path) -> dict[str, Any]:
                 "client_class": type(client).__name__,
             }
         )
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-except
         result["error"] = f"{type(exc).__name__}: {exc}"
         result["traceback"] = traceback.format_exc()
     finally:
@@ -354,6 +415,12 @@ def _probe_service(service_type: str, config_path: Path) -> dict[str, Any]:
 
 
 def _write_reports(results: list[dict[str, Any]], report_dir: Path) -> None:
+    """Write JSON and Markdown reports for all plugin probes.
+
+    Args:
+        results: Per-plugin probe results to retain.
+        report_dir: Destination directory for both report formats.
+    """
     report_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "name": "consumer-plugin-startup",
@@ -373,13 +440,9 @@ def _write_reports(results: list[dict[str, Any]], report_dir: Path) -> None:
     ]
     for result in results:
         lines.append(
-            "| {service_type} | {status} | {entry_point} | {client_class} | {duration_seconds}s |".format(
-                service_type=result["service_type"],
-                status=result["status"],
-                entry_point=result.get("entry_point", ""),
-                client_class=result.get("client_class", ""),
-                duration_seconds=result["duration_seconds"],
-            )
+            f"| {result['service_type']} | {result['status']} | "
+            f"{result.get('entry_point', '')} | {result.get('client_class', '')} | "
+            f"{result['duration_seconds']}s |"
         )
     failures = [result for result in results if result["status"] != "passed"]
     if failures:
@@ -396,16 +459,25 @@ def _write_reports(results: list[dict[str, Any]], report_dir: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Install requested sources, probe all plugins, and return aggregate status.
+
+    Args:
+        argv: Optional command-line arguments used instead of process arguments.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
-    parser.add_argument("--report-dir", type=Path, default=Path("dist/test-reports/consumer-plugin-startup"))
+    parser.add_argument(
+        "--report-dir",
+        type=Path,
+        default=Path("dist/test-reports/consumer-plugin-startup"),
+    )
     parser.add_argument("--install", action="store_true")
     parser.add_argument("--skip-install", action="store_true")
     args = parser.parse_args(argv)
 
     repo_root = args.repo_root.resolve()
     if args.install and not args.skip_install:
-        _run([sys.executable, "-m", "pip", "install", "-e", str(repo_root / "consumer")], cwd=repo_root)
+        _install_local_projects(repo_root)
 
     src_path = repo_root / "consumer" / "src"
     if str(src_path) not in sys.path:

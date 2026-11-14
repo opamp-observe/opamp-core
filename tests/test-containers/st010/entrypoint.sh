@@ -21,6 +21,7 @@ wheel_results_dir="${results_dir}/wheel-deployment"
 mkdir -p "${results_dir}" "${wheel_results_dir}"
 
 python -m pip install --no-cache-dir \
+  "${staged_root}/shared" \
   "${staged_root}/cli[dev]" \
   "${staged_root}/config-service" \
   "${staged_root}/dev-tools[dev]"

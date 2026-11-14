@@ -46,7 +46,7 @@ fi
 make_consumer_evidence_readable() {
   local container_name="$1"
   echo "DEBUG Making evidence readable for ${container_name}."
-  docker exec "${container_name}" \
+  MSYS_NO_PATHCONV=1 docker exec "${container_name}" \
     chmod -R "${readable_evidence_mode}" "${container_evidence_directory}"
 }
 

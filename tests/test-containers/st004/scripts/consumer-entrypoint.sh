@@ -8,7 +8,9 @@ set -euo pipefail
 
 source_dir="$(st004-prepare-source)"
 
-python -m pip install --no-cache-dir -e "${source_dir}/consumer"
+python -m pip install --no-cache-dir \
+  -e "${source_dir}/shared" \
+  -e "${source_dir}/consumer"
 
 export PYTHONPATH="${source_dir}/consumer/src:${source_dir}:${PYTHONPATH:-}"
 export APP_ENABLE_DEV_FEATURES="${APP_ENABLE_DEV_FEATURES:-true}"

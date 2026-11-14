@@ -120,6 +120,41 @@ def test_resolve_wheel_path_selects_latest_wheel_from_directory(tmp_path: Path) 
     assert bootstrap._resolve_wheel_path(str(tmp_path)) == newer  # type: ignore[attr-defined]
 
 
+def test_install_consumer_wheel_supplies_local_shared_project(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Wheel installation should resolve opamp-shared from the mounted checkout."""
+    bootstrap = _load_bootstrap_module()
+    wheel_path = tmp_path / "opamp_consumer-0.6.0-py3-none-any.whl"
+    local_shared_project = tmp_path / "shared-source"
+    local_shared_project.mkdir()
+    (local_shared_project / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
+    staged_shared_project = tmp_path / "staged-shared"
+    captured_commands: list[list[str]] = []
+
+    monkeypatch.setattr(bootstrap, "LOCAL_SHARED_PROJECT", local_shared_project)
+    monkeypatch.setattr(bootstrap, "STAGED_SHARED_PROJECT", staged_shared_project)
+    monkeypatch.setattr(bootstrap, "_unpack_wheel", lambda _wheel_path: None)
+    monkeypatch.setattr(
+        bootstrap,
+        "_run",
+        lambda command, **_kwargs: captured_commands.append(command),
+    )
+
+    bootstrap._install_consumer_wheel(wheel_path)  # type: ignore[attr-defined]
+
+    assert len(captured_commands) == 1
+    install_command = captured_commands[0]
+    assert staged_shared_project.is_dir()
+    assert (staged_shared_project / "pyproject.toml").is_file()
+    assert str(staged_shared_project) in install_command
+    assert f"{wheel_path}[dev]" in install_command
+    assert install_command.index(str(staged_shared_project)) < install_command.index(
+        f"{wheel_path}[dev]"
+    )
+
+
 def test_stage_consumer_config_applies_identity_and_simulator_responses(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

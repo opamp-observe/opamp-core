@@ -10,7 +10,9 @@ source_dir="$(st002-prepare-source)"
 
 # Use an editable install so the consumer runs the same staged source as the
 # provider, avoiding wheel/version drift in the baseline harness.
-python -m pip install --no-cache-dir -e "${source_dir}/consumer"
+python -m pip install --no-cache-dir \
+  -e "${source_dir}/shared" \
+  -e "${source_dir}/consumer"
 
 export PYTHONPATH="${source_dir}/consumer/src:${source_dir}:${PYTHONPATH:-}"
 # Simulator mode uses development-only switches that are intentionally explicit

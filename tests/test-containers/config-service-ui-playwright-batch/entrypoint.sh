@@ -29,7 +29,9 @@ echo "Installing latest wheel: ${LATEST_WHEEL}"
 python3 -m venv /opt/config-service-venv
 . /opt/config-service-venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install --force-reinstall "${LATEST_WHEEL}"
+python -m pip install --force-reinstall \
+  "${OPAMP_REPO}/shared" \
+  "${LATEST_WHEEL}"
 export PYTHONPATH="${OPAMP_REPO}:${PYTHONPATH:-}"
 
 if [ ! -d "${LOGS_REPO_DIR}/.git" ]; then
