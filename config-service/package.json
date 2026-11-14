@@ -16,6 +16,6 @@
     "@playwright/test": "1.64.0",
     "js-yaml": "^4.1.0",
     "jsdom": "^26.1.0",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.11"
   }
 }

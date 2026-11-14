@@ -28,7 +28,7 @@ RUN apt-get update \
         tini \
     && rm -rf /var/lib/apt/lists/* \
     && python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && python -m pip install --no-cache-dir "cryptography>=42.0" "PyJWT>=2.8"
+    && python -m pip install --no-cache-dir "cryptography>=42.0" "PyJWT>=2.15.0"
 
 COPY tests/test-containers/scripts/prepare_source.sh /usr/local/bin/st004b-prepare-source
 COPY tests/test-containers/st004b/scripts/consumer-entrypoint.sh /usr/local/bin/st004b-consumer-entrypoint

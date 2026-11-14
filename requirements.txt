@@ -1,3 +1,6 @@
+anyio>=4.14.2
+authlib>=1.9.1
+certifi>=2026.10.19
 quart>=0.19
 pydantic>=2.6
 defusedxml>=0.7.1
@@ -5,7 +8,7 @@ protobuf>=5.27
 grpcio-tools>=1.60
 fastmcp>=2.0
 PyYAML>=6.0
-PyJWT>=2.8
+PyJWT>=2.15.0
 PyNaCl>=1.5
 lark>=1.2.2
 luaparser>=4.0.0
