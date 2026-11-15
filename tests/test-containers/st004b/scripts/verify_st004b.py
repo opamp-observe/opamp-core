@@ -37,6 +37,7 @@ DEFAULT_BASE_URL = "http://127.0.0.1:18084"
 DEFAULT_ISSUER_URL = "http://127.0.0.1:18085"
 DEFAULT_HTTP_TIMEOUT_SECONDS = 5.0
 DEFAULT_VERIFY_TIMEOUT_SECONDS = 120.0
+DEFAULT_LOG_WAIT_TIMEOUT_SECONDS = 30.0
 POLL_INTERVAL_SECONDS = 1.0
 ROUTE_BODY_EVIDENCE_LIMIT = 1000
 
@@ -143,6 +144,13 @@ ROUTE_MATRIX_FILE_NAME = "route-matrix.json"
 SUMMARY_FILE_NAME = "summary.json"
 PROVIDER_LOG_FILE_NAME = "provider.log"
 INVALID_CONSUMER_LOG_FILE_NAME = "consumer-invalid.log"
+INVALID_CONSUMER_SERVICE_NAME = "consumer-invalid"
+TLS_CONSUMER_LOG_REQUIRED_MARKERS = (
+    "error sending http client-to-server message",
+    "transport=http",
+    "tls_verify=true",
+    "tls_ca_file=system-default",
+)
 
 
 def _utc_now() -> str:
@@ -423,6 +431,90 @@ def _compose_logs(compose_file: Path, compose_project: str, service_name: str) -
         check=False,
     )
     return (completed.stdout or "") + (completed.stderr or "")
+
+
+def _wait_for_compose_log_markers(
+    compose_file: Path,
+    compose_project: str,
+    service_name: str,
+    required_markers: tuple[str, ...],
+    *,
+    timeout_seconds: float = DEFAULT_LOG_WAIT_TIMEOUT_SECONDS,
+) -> str:
+    """Wait for one service log to contain every required diagnostic marker.
+
+    Args:
+        compose_file: Compose definition used by the profile runner.
+        compose_project: Active Compose project name.
+        service_name: Service whose logs are polled.
+        required_markers: Lower-case diagnostic fragments that must all appear.
+        timeout_seconds: Maximum time to wait for buffered service output.
+
+    Returns:
+        Most recently captured service log, whether markers appeared or time expired.
+    """
+
+    deadline = time.monotonic() + timeout_seconds
+    captured_logs = ""
+    while time.monotonic() < deadline:
+        captured_logs = _compose_logs(compose_file, compose_project, service_name)
+        lower_logs = captured_logs.lower()
+        if all(marker in lower_logs for marker in required_markers):
+            return captured_logs
+        time.sleep(POLL_INTERVAL_SECONDS)
+    return captured_logs
+
+
+def _capture_invalid_consumer_evidence(
+    *,
+    profile: str,
+    compose_file: Path,
+    compose_project: str,
+    output_dir: Path,
+) -> tuple[dict[str, Any], Path]:
+    """Capture a negative consumer log and evaluate its actionable diagnostic.
+
+    Args:
+        profile: Static-token or TLS profile being verified.
+        compose_file: Compose definition used by the profile runner.
+        compose_project: Active Compose project name.
+        output_dir: Evidence directory receiving the retained consumer log.
+
+    Returns:
+        Verification check and path of the retained consumer log.
+    """
+
+    if profile == PROFILE_TLS:
+        invalid_logs = _wait_for_compose_log_markers(
+            compose_file,
+            compose_project,
+            INVALID_CONSUMER_SERVICE_NAME,
+            TLS_CONSUMER_LOG_REQUIRED_MARKERS,
+        )
+        expected_markers = TLS_CONSUMER_LOG_REQUIRED_MARKERS
+        diagnostic_present = all(
+            marker in invalid_logs.lower() for marker in expected_markers
+        )
+    else:
+        invalid_logs = _compose_logs(
+            compose_file,
+            compose_project,
+            INVALID_CONSUMER_SERVICE_NAME,
+        )
+        expected_markers = ("401", "unauthorized")
+        diagnostic_present = any(
+            marker in invalid_logs.lower() for marker in expected_markers
+        )
+
+    invalid_log_path = output_dir / INVALID_CONSUMER_LOG_FILE_NAME
+    _write_text(invalid_log_path, invalid_logs)
+    check = _check(
+        "invalid_consumer_has_actionable_log",
+        diagnostic_present,
+        "matching diagnostic present",
+        expected_markers,
+    )
+    return check, invalid_log_path
 
 
 def _append_route(checks: list[dict[str, Any]], route: dict[str, Any]) -> None:
@@ -970,28 +1062,14 @@ def main() -> int:
                 )
             )
         if arguments.profile in {PROFILE_STATIC_OPAMP, PROFILE_TLS}:
-            invalid_logs = _compose_logs(
-                arguments.compose_file,
-                arguments.compose_project,
-                "consumer-invalid",
+            invalid_check, invalid_log_path = _capture_invalid_consumer_evidence(
+                profile=arguments.profile,
+                compose_file=arguments.compose_file,
+                compose_project=arguments.compose_project,
+                output_dir=arguments.output_dir,
             )
-            invalid_log_path = arguments.output_dir / INVALID_CONSUMER_LOG_FILE_NAME
-            _write_text(invalid_log_path, invalid_logs)
+            checks.append(invalid_check)
             evidence[INVALID_CONSUMER_LOG_FILE_NAME] = str(invalid_log_path)
-            expected_markers = (
-                ("401", "unauthorized")
-                if arguments.profile == PROFILE_STATIC_OPAMP
-                else ("certificate verify failed", "self-signed certificate")
-            )
-            lower_invalid_logs = invalid_logs.lower()
-            checks.append(
-                _check(
-                    "invalid_consumer_has_actionable_log",
-                    any(marker in lower_invalid_logs for marker in expected_markers),
-                    "matching diagnostic present",
-                    expected_markers,
-                )
-            )
         all_checks_passed = checks and all(check.get(KEY_PASSED) for check in checks)
         result = PASSED_RESULT if all_checks_passed else FAILED_RESULT
     except Exception as verification_error:  # noqa: BLE001  # pylint: disable=broad-exception-caught

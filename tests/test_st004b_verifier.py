@@ -139,6 +139,84 @@ def test_route_check_records_expected_and_observed_status(monkeypatch) -> None:
     assert result[verifier.KEY_BODY] == "rejected"
 
 
+def test_tls_log_wait_accepts_structured_transport_diagnostic(monkeypatch) -> None:
+    """TLS evidence should wait for stable consumer-owned diagnostic fields."""
+
+    verifier = _load_module(VERIFIER_MODULE_NAME, VERIFIER_PATH)
+    captured_logs = iter(
+        (
+            "consumer startup complete",
+            (
+                "Error sending HTTP client-to-server message\n"
+                "transport=http endpoint=https://provider:8080/v1/opamp "
+                "tls_verify=True tls_ca_file=system-default "
+                "error_details=ConnectError"
+            ),
+        )
+    )
+    monkeypatch.setattr(
+        verifier,
+        "_compose_logs",
+        lambda *_arguments: next(captured_logs),
+    )
+    monkeypatch.setattr(verifier.time, "sleep", lambda _seconds: None)
+
+    result = verifier._wait_for_compose_log_markers(
+        Path("compose.yml"),
+        "st004b-tls",
+        "consumer-invalid",
+        verifier.TLS_CONSUMER_LOG_REQUIRED_MARKERS,
+    )
+
+    assert "error_details=ConnectError" in result
+
+
+def test_tls_consumer_evidence_uses_structured_diagnostic(tmp_path: Path, monkeypatch) -> None:
+    """TLS evidence should require all stable transport diagnostic fields."""
+
+    verifier = _load_module(VERIFIER_MODULE_NAME, VERIFIER_PATH)
+    diagnostic = " ".join(verifier.TLS_CONSUMER_LOG_REQUIRED_MARKERS)
+    monkeypatch.setattr(
+        verifier,
+        "_wait_for_compose_log_markers",
+        lambda *_arguments: diagnostic,
+    )
+
+    check, log_path = verifier._capture_invalid_consumer_evidence(
+        profile=verifier.PROFILE_TLS,
+        compose_file=Path("compose.yml"),
+        compose_project="st004b-tls",
+        output_dir=tmp_path,
+    )
+
+    assert check[verifier.KEY_PASSED] is True
+    assert log_path.read_text(encoding=verifier.UTF_8_ENCODING) == diagnostic
+
+
+def test_static_consumer_evidence_retains_authorization_diagnostic(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Static-token evidence should continue accepting an HTTP rejection log."""
+
+    verifier = _load_module(VERIFIER_MODULE_NAME, VERIFIER_PATH)
+    monkeypatch.setattr(
+        verifier,
+        "_compose_logs",
+        lambda *_arguments: "HTTP 401 Unauthorized",
+    )
+
+    check, log_path = verifier._capture_invalid_consumer_evidence(
+        profile=verifier.PROFILE_STATIC_OPAMP,
+        compose_file=Path("compose.yml"),
+        compose_project="st004b-static-opamp",
+        output_dir=tmp_path,
+    )
+
+    assert check[verifier.KEY_PASSED] is True
+    assert log_path.read_text(encoding=verifier.UTF_8_ENCODING) == "HTTP 401 Unauthorized"
+
+
 def test_jwt_issuer_creates_isolated_claim_variants() -> None:
     """Signed negative JWTs should differ only in their targeted claims."""
     issuer = _load_module(ISSUER_MODULE_NAME, ISSUER_PATH)

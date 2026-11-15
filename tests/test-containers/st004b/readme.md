@@ -102,9 +102,12 @@ dist/test-reports/st004b/<profile>/
 
 Evidence includes `results.md`, `summary.json`, `route-matrix.json`,
 `provider.log`, `compose.log`, and `verify.log`. Negative consumer profiles also
-retain `consumer-invalid.log`. The TLS profile retains only its generated public
-certificate under `tls/certs/`; its private key is never written to retained
-evidence or uploaded to cloud storage.
+retain `consumer-invalid.log`. TLS verification waits for the consumer's
+structured transport diagnostic fields so asynchronous log buffering and
+dependency-specific OpenSSL wording do not make the result intermittent. The
+TLS profile retains only its generated public certificate under `tls/certs/`;
+its private key is never written to retained evidence or uploaded to cloud
+storage.
 
 An aggregate result is written to:
 
