@@ -22,7 +22,14 @@ import sys
 from pathlib import Path
 
 MODULE_NAME = "opamp_container_regression_pack"
-SCENARIO_IDS = ("st004b", "st007", "st009", "st010", "st011")
+SCENARIO_IDS = (
+    "opamp-cli-standalone-deployment",
+    "st004b",
+    "st007",
+    "st009",
+    "st010",
+    "st011",
+)
 LOCAL_INSTALL_SCRIPTS = (
     "agent-shutdown-e2e/scripts/provider-entrypoint.sh",
     "st001/scripts/provider-entrypoint.sh",

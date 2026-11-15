@@ -1,0 +1,33 @@
+# Copyright 2026 opamp.info
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+FROM python:3.11-slim AS wheel-builder
+
+COPY cli /build/cli
+RUN python -m pip wheel --wheel-dir /wheels /build/cli
+
+FROM python:3.11-slim
+
+LABEL opamp-observe.managed="true"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+COPY --from=wheel-builder /wheels /wheels
+RUN python -m pip install --no-cache-dir --no-index --find-links /wheels opamp-cli \
+    && rm -rf /wheels
+
+COPY tests/test-containers/opamp-cli-standalone-deployment/scripts/verify_standalone_cli.py \
+    /runner/verify_standalone_cli.py
+
+VOLUME ["/host-output"]
+ENTRYPOINT ["python", "/runner/verify_standalone_cli.py"]

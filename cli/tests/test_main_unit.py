@@ -3164,6 +3164,25 @@ def test_top_level_commands_offer_developer_bridge_only_when_installed(monkeypat
     assert "dev-tests" not in commands
 
 
+def test_help_offers_developer_bridge_only_when_installed(monkeypatch) -> None:
+    """Installed help should advertise only executable developer bridge commands."""
+
+    monkeypatch.setattr(developer_cli, "developer_cli_available", lambda: True)
+
+    help_with_dev_cli = cli_main._help_text_for_environment()  # type: ignore[attr-defined]
+
+    assert "opamp-cli dev [developer-command...]" in help_with_dev_cli
+    assert "opamp-cli dev-tests" in help_with_dev_cli
+
+    monkeypatch.setattr(developer_cli, "developer_cli_available", lambda: False)
+
+    standalone_help = cli_main._help_text_for_environment()  # type: ignore[attr-defined]
+
+    assert "opamp-cli dev [developer-command...]" not in standalone_help
+    assert "opamp-cli dev-tests" not in standalone_help
+    assert "opamp-dev-cli" not in standalone_help
+
+
 def test_config_subcommand_prefix_detects_second_level_keyword() -> None:
     assert cli_main._config_subcommand_prefix("config ") == ""  # type: ignore[attr-defined]
     assert cli_main._config_subcommand_prefix("config val") == "val"  # type: ignore[attr-defined]
