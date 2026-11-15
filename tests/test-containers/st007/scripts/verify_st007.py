@@ -122,6 +122,7 @@ KEY_WEBUI_PORT = "webui_port"
 ENV_APP_ENABLE_DEV_FEATURES = "APP_ENABLE_DEV_FEATURES"
 ENV_OPAMP_CONFIG_PATH = "OPAMP_CONFIG_PATH"
 
+EVIDENCE_FILE_MODE = 0o644
 VALUE_ACCEPT = "accept"
 VALUE_FALLBACK_LOG = "fallback_log"
 VALUE_PROVIDER_QUEUE = "provider_queue"
@@ -137,6 +138,22 @@ def _write_json(path: Path, payload: Any) -> None:
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding=UTF8_ENCODING)
+
+
+def _copy_evidence_file(source_path: Path, destination_path: Path) -> None:
+    """Copy test evidence without retaining private runtime metadata.
+
+    Runtime credential files intentionally use restrictive permissions. Evidence
+    contains synthetic test data and must be readable by the host regression
+    runner on both Linux and Windows-backed Docker mounts.
+
+    Args:
+        source_path: Existing runtime file containing synthetic test evidence.
+        destination_path: Host-mounted evidence path to create or replace.
+    """
+    destination_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source_path, destination_path)
+    destination_path.chmod(EVIDENCE_FILE_MODE)
 
 
 def _request_json(
@@ -645,14 +662,20 @@ def _exercise_credentials_api(  # pylint: disable=too-many-locals,too-many-state
     stale_mappings = dict(mappings[KEY_MAPPINGS])
     stale_mappings["stale-client"] = "missing-definition"
     _write_json(mapping_path, {KEY_CLIENTS: stale_mappings})
-    shutil.copy2(mapping_path, output_dir / "mapping-before-reconciliation.json")
+    _copy_evidence_file(
+        mapping_path,
+        output_dir / "mapping-before-reconciliation.json",
+    )
     status, reconciled = _request_json("GET", _credentials_url(credentials_port, "/mappings"))
     _assert_status(status, HTTP_OK, reconciled)
     assert "stale-client" not in reconciled[KEY_MAPPINGS]
     assert "stale-client" in json.dumps(reconciled.get(KEY_RECONCILIATION, {}))
     _write_json(output_dir / "mapping-after-reconciliation.json", reconciled)
-    shutil.copy2(mapping_path, output_dir / "mapping-storage.json")
-    shutil.copy2(credentials_path, output_dir / "plaintext-test-backend.json")
+    _copy_evidence_file(mapping_path, output_dir / "mapping-storage.json")
+    _copy_evidence_file(
+        credentials_path,
+        output_dir / "plaintext-test-backend.json",
+    )
 
     status, apply_payload = _request_json(
         "POST",
@@ -701,7 +724,7 @@ def _exercise_fallback(
         if line.strip()
     ]
     _assert_fallback_records(records, expected_client_ids=client_ids)
-    shutil.copy2(fallback_path, output_dir / "fallback-deliveries.jsonl")
+    _copy_evidence_file(fallback_path, output_dir / "fallback-deliveries.jsonl")
     _write_json(output_dir / "fallback-apply-response.json", apply_payload)
 
 

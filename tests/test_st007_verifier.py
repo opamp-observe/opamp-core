@@ -18,6 +18,8 @@
 from __future__ import annotations
 
 import importlib.util
+import os
+import stat
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -91,6 +93,32 @@ def test_entrypoint_removes_private_runtime_directories_on_exit() -> None:
     assert 'readonly ui_runtime_name="ui-runtime.*"' in entrypoint
     assert 'find "${results_dir}" -maxdepth 1 -type d' in entrypoint
     assert '-exec rm -rf -- {} +' in entrypoint
+
+
+def test_entrypoint_makes_retained_evidence_host_readable_on_exit() -> None:
+    """Allow the non-root cloud runner to upload container-generated evidence."""
+    entrypoint = ENTRYPOINT_PATH.read_text(encoding="utf-8")
+
+    assert 'readonly readable_evidence_mode="a+rX"' in entrypoint
+    assert (
+        'chmod -R "${readable_evidence_mode}" "${results_dir}" 2>/dev/null || true'
+        in entrypoint
+    )
+
+
+def test_evidence_copy_does_not_preserve_private_runtime_mode(tmp_path: Path) -> None:
+    """Copy synthetic evidence as host-readable data without copying metadata."""
+    verifier = _load_script(VERIFY_MODULE_NAME, "verify_st007.py")
+    source_path = tmp_path / "private-runtime.json"
+    destination_path = tmp_path / "evidence" / "retained.json"
+    source_path.write_text('{"synthetic": true}\n', encoding="utf-8")
+    source_path.chmod(0o600)
+
+    verifier._copy_evidence_file(source_path, destination_path)
+
+    assert destination_path.read_text(encoding="utf-8") == '{"synthetic": true}\n'
+    if os.name != "nt":
+        assert stat.S_IMODE(destination_path.stat().st_mode) == verifier.EVIDENCE_FILE_MODE
 
 
 def test_fallback_record_validation_enforces_assigned_client_set() -> None:

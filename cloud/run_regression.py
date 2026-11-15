@@ -32,6 +32,8 @@ DEFAULT_AZURE_CONTAINER = "opamp-regression-results"
 DEFAULT_AZURE_STORAGE_FILE = "dist/azure-retention-storage-account.txt"
 DEFAULT_RESULTS_DIRECTORY = "dist/test-reports"
 MANIFEST_FILE_NAME = "cloud_upload_manifest.json"
+CONSOLE_EVIDENCE_BEGIN_TEMPLATE = "--- BEGIN CLOUD EVIDENCE: {path} ---"
+CONSOLE_EVIDENCE_END_TEMPLATE = "--- END CLOUD EVIDENCE: {path} ---"
 MANIFEST_CREATED_AT_KEY = "created_at_utc"
 MANIFEST_DESTINATION_KEY = "destination"
 MANIFEST_PROVIDER_KEY = "provider"
@@ -55,6 +57,13 @@ REPORT_TEST_ID_KEY = "test_id"
 REPORTS_FILE_PATTERN = "*-results.json"
 PROVIDER_CHOICES = (AWS_PROVIDER, AZURE_PROVIDER)
 REGRESSION_RUNNER = "tests/test-containers/run_regression_pack.py"
+REGRESSION_REPORT_RELATIVE_PATH = Path(
+    "regression-pack/regression-pack-results.md"
+)
+CONSOLE_EVIDENCE_RELATIVE_PATHS = (
+    REGRESSION_REPORT_RELATIVE_PATH,
+    Path(MANIFEST_FILE_NAME),
+)
 RESULT_SET_TIMESTAMP_FORMAT = "%Y-%m-%d-%H-%M-%S"
 SUMMARY_TEXT_LIMIT = 500
 STATUS_PASSED = "passed"
@@ -123,6 +132,8 @@ def _run_regression_pack(
     return _run_command(command, repository_root)
 
 
+# The manifest fields are deliberately explicit at this command boundary.
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def _write_upload_manifest(
     results_directory: Path,
     provider: str,
@@ -161,6 +172,34 @@ def _manifest_status(
     if regression_exit_code is None:
         return STATUS_UPLOAD_ONLY
     return STATUS_PASSED
+
+
+def _write_console_evidence(results_directory: Path) -> None:
+    """Print essential text evidence when cloud retention is unavailable.
+
+    The GitHub runner retains stdout with the workflow step log. Only the
+    top-level text report and upload manifest are printed; binary screenshots,
+    traces, and archives are intentionally excluded from console output.
+
+    Args:
+        results_directory: Root directory containing regression evidence.
+    """
+    for relative_path in CONSOLE_EVIDENCE_RELATIVE_PATHS:
+        evidence_path = results_directory / relative_path
+        if not evidence_path.is_file():
+            continue
+        display_path = relative_path.as_posix()
+        print(CONSOLE_EVIDENCE_BEGIN_TEMPLATE.format(path=display_path))
+        try:
+            evidence_text = evidence_path.read_text(
+                encoding="utf-8",
+                errors="replace",
+            )
+        except OSError as error:
+            print(f"Unable to read console evidence: {error}")
+        else:
+            print(evidence_text, end="" if evidence_text.endswith("\n") else "\n")
+        print(CONSOLE_EVIDENCE_END_TEMPLATE.format(path=display_path))
 
 
 def _default_result_set() -> str:
@@ -310,6 +349,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="upload existing reports without running the regression pack",
     )
     parser.add_argument(
+        "--warn-on-upload-failure-after-pass",
+        action="store_true",
+        help=(
+            "return success with a warning when regression tests pass but evidence "
+            "upload fails"
+        ),
+    )
+    parser.add_argument(
         "--result-set",
         default="",
         help="storage folder name; defaults to hyphen-separated UTC time",
@@ -399,6 +446,18 @@ def main(argv: list[str] | None = None) -> int:
         upload_exit_code,
     )
     if upload_exit_code != 0:
+        _write_console_evidence(results_directory)
+        if (
+            regression_exit_code == 0
+            and arguments.warn_on_upload_failure_after_pass
+        ):
+            LOGGER.warning(
+                "Regression pack passed, but retained evidence upload failed with "
+                "exit code %s; preserving the upload failure in %s",
+                upload_exit_code,
+                results_directory / MANIFEST_FILE_NAME,
+            )
+            return 0
         if regression_exit_code in (None, 0):
             LOGGER.error(
                 "Regression result upload failed with exit code %s after the "

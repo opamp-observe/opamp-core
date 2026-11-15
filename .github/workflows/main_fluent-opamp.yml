@@ -328,7 +328,11 @@ jobs:
           AWS_REGRESSION_SKIP: ${{ vars.AWS_REGRESSION_SKIP }}
         run: |
           set -uo pipefail
-          regression_arguments=(--provider aws --aws-region "$AWS_REGION")
+          regression_arguments=(
+            --provider aws
+            --aws-region "$AWS_REGION"
+            --warn-on-upload-failure-after-pass
+          )
           for test_id in $AWS_REGRESSION_ONLY; do
             regression_arguments+=(--only "$test_id")
           done
@@ -365,7 +369,7 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Fail when AWS regression or evidence upload failed
+      - name: Fail when AWS regression failed
         if: always() && steps.aws_regression.outputs.exit_code != '' && steps.aws_regression.outputs.exit_code != '0'
         shell: bash
         run: |

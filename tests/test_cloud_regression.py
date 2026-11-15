@@ -12,6 +12,9 @@
 
 """Unit tests for running and retaining cloud regression evidence."""
 
+# The standalone command intentionally exposes private helpers only to this focused test.
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 import importlib.util
@@ -223,6 +226,105 @@ def test_upload_failure_records_upload_status_after_regression_passed(
     assert manifest["regression_exit_code"] == 0
     assert manifest["status"] == "upload_failed"
     assert manifest["upload_exit_code"] == upload_failure_code
+
+
+def test_upload_failure_can_warn_after_regression_passed(
+    regression_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Allow CI to report passed tests while retaining the upload warning."""
+    upload_failure_code = 2
+    _prepare_reports(tmp_path, "dist/aws-artifact-bucket.txt", "warning-bucket")
+    regression_report = (
+        tmp_path
+        / "dist"
+        / "test-reports"
+        / "regression-pack"
+        / "regression-pack-results.md"
+    )
+    regression_report.parent.mkdir(parents=True)
+    regression_report.write_text(
+        "# Regression results\n\nOverall: passed\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(regression_module, "_repository_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        regression_module,
+        "_run_regression_pack",
+        lambda _arguments, _repository_root, _results_directory: 0,
+    )
+    monkeypatch.setattr(
+        regression_module,
+        "_upload_aws_results",
+        lambda *_arguments: (
+            upload_failure_code,
+            "s3://warning-bucket/regression-results/evidence/",
+        ),
+    )
+
+    with caplog.at_level(logging.WARNING):
+        exit_code = regression_module.main(
+            [
+                "--provider",
+                "aws",
+                "--result-set",
+                TEST_RESULT_SET,
+                "--warn-on-upload-failure-after-pass",
+            ]
+        )
+
+    assert exit_code == 0
+    assert "Regression pack passed, but retained evidence upload failed" in caplog.text
+    captured_output = capsys.readouterr()
+    assert "--- BEGIN CLOUD EVIDENCE: regression-pack/regression-pack-results.md ---" in (
+        captured_output.out
+    )
+    assert "Overall: passed" in captured_output.out
+    assert "--- BEGIN CLOUD EVIDENCE: cloud_upload_manifest.json ---" in (
+        captured_output.out
+    )
+    assert '"status": "upload_failed"' in captured_output.out
+    manifest = json.loads(
+        (tmp_path / "dist/test-reports/cloud_upload_manifest.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert manifest["regression_exit_code"] == 0
+    assert manifest["status"] == "upload_failed"
+    assert manifest["upload_exit_code"] == upload_failure_code
+
+
+def test_upload_only_failure_remains_fatal_with_warning_policy(
+    regression_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Require standalone evidence publishing to report its upload failure."""
+    upload_failure_code = 2
+    _prepare_reports(tmp_path, "dist/aws-artifact-bucket.txt", "strict-bucket")
+    monkeypatch.setattr(regression_module, "_repository_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        regression_module,
+        "_upload_aws_results",
+        lambda *_arguments: (
+            upload_failure_code,
+            "s3://strict-bucket/regression-results/evidence/",
+        ),
+    )
+
+    exit_code = regression_module.main(
+        [
+            "--provider",
+            "aws",
+            "--upload-only",
+            "--warn-on-upload-failure-after-pass",
+        ]
+    )
+
+    assert exit_code == upload_failure_code
 
 
 def test_failed_regression_logs_retained_report_summary(

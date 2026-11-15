@@ -88,6 +88,11 @@ Evidence is written under `dist/test-reports/st007/`:
 | `playwright-junit.xml`, `playwright.log`, `playwright/` | Browser result, log, and trace files. |
 | `screenshots/st007-browser-workflow.png` | Completed browser workflow. |
 
+Before the container exits, it removes private runtime directories and makes the
+retained evidence tree host-readable. Runtime credential stores remain private;
+only the synthetic test evidence copied into `dist/test-reports/st007/` receives
+the broader read permission required by cloud evidence uploaders.
+
 The randomly suffixed directories named `integration-runtime-*` and `ui-runtime.*` are isolated
 test fixtures. They can contain synthetic confidential markers, so the container removes them on
 exit instead of retaining or uploading them as evidence. A unique directory is created on every
