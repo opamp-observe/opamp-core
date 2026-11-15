@@ -123,7 +123,9 @@ def test_aws_mode_runs_and_retains_regression_evidence() -> None:
     assert "python3 cloud/run_regression.py" in workflow
     assert "set +e\n          python3 cloud/run_regression.py" in workflow
     assert "regression_exit_code=$?\n          set -e" in workflow
-    assert "--provider aws --aws-region" in workflow
+    assert "--provider aws" in workflow
+    assert '--aws-region "$AWS_REGION"' in workflow
+    assert "--warn-on-upload-failure-after-pass" in workflow
     assert "regression_arguments+=(--only \"$test_id\")" in workflow
     assert "regression_arguments+=(--skip \"$test_id\")" in workflow
     assert "regression-pack-results.md" in workflow
@@ -140,7 +142,7 @@ def test_aws_mode_runs_and_retains_regression_evidence() -> None:
     assert "AWS regression report: $regression_report" in workflow
     assert "AWS regression upload manifest: $upload_manifest" in workflow
     assert "No regression-pack-results.md file was found" in workflow
-    assert "Fail when AWS regression or evidence upload failed" in workflow
+    assert "Fail when AWS regression failed" in workflow
 
 
 def test_operator_guide_documents_cloud_provider_control() -> None:

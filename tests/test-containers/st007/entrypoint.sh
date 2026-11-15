@@ -16,6 +16,7 @@ set -euo pipefail
 
 readonly ui_port=18191
 readonly integration_runtime_name="integration-runtime-*"
+readonly readable_evidence_mode="a+rX"
 readonly ui_runtime_name="ui-runtime.*"
 results_dir="${RESULTS_DIR:-/host-output}"
 staged_root="$(/runner/prepare_source.sh)"
@@ -33,6 +34,9 @@ cleanup() {
   find "${results_dir}" -maxdepth 1 -type d \
     \( -name "${integration_runtime_name}" -o -name "${ui_runtime_name}" \) \
     -exec rm -rf -- {} + 2>/dev/null || true
+  # Credential storage is private at runtime. Its copied test evidence must be
+  # readable by the host runner so recursive cloud uploads do not skip it.
+  chmod -R "${readable_evidence_mode}" "${results_dir}" 2>/dev/null || true
 }
 trap cleanup EXIT
 

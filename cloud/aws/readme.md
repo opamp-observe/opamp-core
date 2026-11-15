@@ -340,6 +340,14 @@ an already completed run without rerunning it, use:
 py -3 cloud/run_regression.py --provider aws --upload-only
 ```
 
+The GitHub AWS workflow enables `--warn-on-upload-failure-after-pass`. A passed
+regression therefore remains successful when returning its retained evidence
+fails, while the command logs a warning and records `status: upload_failed` plus
+the upload exit code in `cloud_upload_manifest.json`. The complete top-level
+regression report and upload manifest are also written to stdout so GitHub keeps
+their contents in the workflow log. Binary evidence is not printed. Regression
+failures and standalone `--upload-only` failures remain fatal.
+
 For regression failures from the main workflow, start with the retained
 `regression-pack-results.md` report and then inspect the failing test's
 evidence directory under `test-reports/`. The provider-neutral
