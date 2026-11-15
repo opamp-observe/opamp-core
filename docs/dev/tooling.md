@@ -178,7 +178,8 @@ opamp-dev-cli test list
 The suite catalog packaged as `opamp_dev_tools/config/dev_test_suites.json` controls suite composition, commands,
 project-marker discovery, optional executable requirements, retained reports, and the
 Docker-compatible container runtime. The `pip-audit` suite discovers every `uv.lock` and audits the
-complete exported dependency graph. The `renovate` suite is discovered only when Renovate is on
+complete exported dependency graph without asking pip to resolve it again. This preserves uv security
+overrides for vulnerable transitive tooling dependencies. The `renovate` suite is discovered only when Renovate is on
 `PATH`; it uses Renovate's read-only local platform. The `dependencies` suite runs both checks, and
 is included in `all`. Output is streamed and retained per test, with status and wall-clock duration
 printed after each test and stored in a JSON summary under `dev-tools/runtime/test-reports/`.

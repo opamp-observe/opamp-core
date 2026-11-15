@@ -30,13 +30,14 @@ REQUIRED_RUFF_RULES = {"E", "F", "I", "S", "UP"}
 REQUIRED_SECURITY_DEPENDENCIES = {
     "bandit>=1.9.4",
     "detect-secrets>=1.5.0",
-    "mcp==1.29.0",
+    "mcp==1.30.0",
+    "opentelemetry-api>=1.45.2",
     "pip-audit>=2.10.1",
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "pytest-cov>=7.0.0",
     "ruff>=0.15.0",
-    "semgrep>=1.182.1",
+    "semgrep>=1.185.0",
 }
 SECURITY_TOOLING_PROJECT_PATH = "dev-tools/pyproject.toml"
 EXPECTED_REPOSITORY_URL = "https://github.com/opamp-observe/opamp-core"

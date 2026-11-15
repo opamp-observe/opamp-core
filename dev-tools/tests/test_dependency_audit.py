@@ -60,6 +60,7 @@ def test_audit_locked_project_exports_and_audits_complete_graph(
         "--locked",
     ]
     assert "--all-extras" in commands[0]
+    assert "--no-hashes" not in commands[0]
     assert "--no-emit-local" in commands[0]
     assert commands[1][:4] == [
         dependency_audit.sys.executable,
@@ -67,6 +68,8 @@ def test_audit_locked_project_exports_and_audits_complete_graph(
         "pip_audit",
         "--strict",
     ]
+    assert dependency_audit.PIP_AUDIT_DISABLE_PIP_OPTION in commands[1]
+    assert dependency_audit.PIP_AUDIT_REQUIRE_HASHES_OPTION in commands[1]
 
 
 def test_audit_locked_project_reports_missing_uv(tmp_path: Path, monkeypatch) -> None:

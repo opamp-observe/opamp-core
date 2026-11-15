@@ -29,6 +29,8 @@ AUDIT_REQUIREMENTS_FILE = "audit-requirements.txt"
 DEFAULT_LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s %(message)s"
 LOGGER = logging.getLogger(__name__)
 PIP_AUDIT_MODULE = "pip_audit"
+PIP_AUDIT_DISABLE_PIP_OPTION = "--disable-pip"
+PIP_AUDIT_REQUIRE_HASHES_OPTION = "--require-hashes"
 UV_EXECUTABLE = "uv"
 
 
@@ -88,7 +90,6 @@ def _build_export_command(
         str(project_path),
         "--locked",
         "--all-extras",
-        "--no-hashes",
         "--no-emit-project",
         "--no-emit-workspace",
         "--no-emit-local",
@@ -109,6 +110,8 @@ def _build_audit_command(*, requirements_path: Path) -> list[str]:
         "-m",
         PIP_AUDIT_MODULE,
         "--strict",
+        PIP_AUDIT_DISABLE_PIP_OPTION,
+        PIP_AUDIT_REQUIRE_HASHES_OPTION,
         "--requirement",
         str(requirements_path),
     ]
