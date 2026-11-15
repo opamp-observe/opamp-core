@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Configuration-driven development test execution for the OpAMP CLI."""
+"""Configuration-driven test execution for the OpAMP developer CLI."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ import subprocess
 import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any, TextIO
@@ -51,9 +51,9 @@ CONFIG_KEY_WORKING_DIRECTORY = "working_directory"
 DISCOVERY_TYPE_PYTHON_PROJECTS = "python_projects"
 DISCOVERY_TYPE_NODE_PROJECTS = "node_projects"
 DISCOVERY_TYPE_FILE_PROJECTS = "file_projects"
-DEFAULT_CONFIG_PATH = Path("cli/config/dev_test_suites.json")
-DEFAULT_REPORT_DIRECTORY = Path("cli/runtime/test-reports")
-DEFAULT_STATE_FILE = Path("cli/runtime/dev_test_run.json")
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "config" / "dev_test_suites.json"
+DEFAULT_REPORT_DIRECTORY = Path("dev-tools/runtime/test-reports")
+DEFAULT_STATE_FILE = Path("dev-tools/runtime/dev_test_run.json")
 DEFAULT_CONTAINER_RUNTIME = "docker"
 DEFAULT_DISCOVERY_PATTERN = "**/pyproject.toml"
 DEFAULT_TEST_DIRECTORY = "tests"
@@ -148,30 +148,27 @@ def dev_test_config_available(*, repo_root: Path, config_path: Path | None = Non
         config_path: Optional configuration path override.
     """
 
-    return _resolve_repo_path(repo_root, config_path or DEFAULT_CONFIG_PATH).is_file()
+    resolved_config_path = DEFAULT_CONFIG_PATH
+    if config_path is not None:
+        resolved_config_path = _resolve_repo_path(repo_root, config_path)
+    return resolved_config_path.is_file()
 
 
-def execute_dev_tests_workflow(
+def execute_test_suite_workflow(
     argv: list[str],
     *,
     repo_root: Path,
-    dev_features_enabled: bool,
     prompt_text: Callable[[str], str],
     logger: logging.Logger,
 ) -> int:
     """Select, discover, run, or terminate development tests.
 
     Parameters:
-        argv: Tokens following the ``dev-tests`` command.
+        argv: Tokens following the developer CLI ``test`` command.
         repo_root: Repository root containing configuration and test projects.
-        dev_features_enabled: Whether development-only CLI features are enabled.
         prompt_text: Interactive input callback used when no suite is supplied.
         logger: CLI logger receiving debug-level execution details.
     """
-
-    if dev_features_enabled is not True:
-        print("dev-tests requires APP_ENABLE_DEV_FEATURES=true")
-        return 2
     selection, config_path = _parse_arguments(argv, repo_root=repo_root)
     configuration = _load_configuration(config_path)
     suites = _suite_mapping(configuration)
@@ -247,7 +244,7 @@ def _parse_arguments(argv: list[str], *, repo_root: Path) -> tuple[str, Path]:
     """
 
     selection = ""
-    config_path = _resolve_repo_path(repo_root, DEFAULT_CONFIG_PATH)
+    config_path = DEFAULT_CONFIG_PATH
     argument_index = 0
     while argument_index < len(argv):
         token = str(argv[argument_index]).strip()
@@ -259,7 +256,7 @@ def _parse_arguments(argv: list[str], *, repo_root: Path) -> tuple[str, Path]:
         elif not selection:
             selection = token.lower()
         else:
-            raise ValueError(f"unexpected dev-tests argument: {token}")
+            raise ValueError(f"unexpected test-suite argument: {token}")
         argument_index += 1
     return selection, config_path
 
@@ -567,7 +564,7 @@ def _run_tasks(
     )
     runtime = str(configuration.get(CONFIG_KEY_CONTAINER_RUNTIME) or DEFAULT_CONTAINER_RUNTIME)
     report_directory.mkdir(parents=True, exist_ok=True)
-    started_at = datetime.now(timezone.utc)
+    started_at = datetime.now(UTC)
     run_id = started_at.strftime("%Y%m%dT%H%M%SZ")
     results: list[TestResult] = []
     selected_suite = _suite_mapping(configuration)[suite_name]
@@ -643,7 +640,7 @@ def _run_task(
                     STATE_KEY_CONTAINER_RUNTIME: runtime,
                     STATE_KEY_LOG_PATH: str(log_path),
                     STATE_KEY_PID: process.pid,
-                    STATE_KEY_STARTED_AT_UTC: datetime.now(timezone.utc).isoformat(),
+                    STATE_KEY_STARTED_AT_UTC: datetime.now(UTC).isoformat(),
                     STATE_KEY_TASK_ID: task.task_id,
                 },
             )
@@ -917,7 +914,7 @@ def _write_summary(
     """
 
     payload = {
-        REPORT_KEY_COMPLETED_AT_UTC: datetime.now(timezone.utc).isoformat(),
+        REPORT_KEY_COMPLETED_AT_UTC: datetime.now(UTC).isoformat(),
         REPORT_KEY_DURATION_SECONDS: round(
             sum(result.duration_seconds for result in results),
             6,
@@ -959,6 +956,6 @@ __all__ = [
     "TestResult",
     "TestTask",
     "dev_test_config_available",
-    "execute_dev_tests_workflow",
+    "execute_test_suite_workflow",
     "terminate_active_test_run",
 ]

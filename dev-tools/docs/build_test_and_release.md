@@ -43,6 +43,30 @@ opamp-dev-cli build test e2e
 opamp-dev-cli build dast baseline
 ```
 
+For configuration-driven repository regression suites, including retained
+per-test output, elapsed time, process termination, locked dependency audits,
+and optional Renovate analysis, use:
+
+```bash
+opamp-dev-cli test all
+opamp-dev-cli test unit
+opamp-dev-cli test e2e
+opamp-dev-cli test security
+opamp-dev-cli test dependencies
+opamp-dev-cli test list
+opamp-dev-cli test terminate
+```
+
+The default suite catalog is packaged at
+`opamp_dev_tools/config/dev_test_suites.json`; override it with `--config
+<path>`. These suites orchestrate the focused `build test` and
+`build secure` commands where appropriate rather than replacing those commands.
+
+Locked dependency audits export the complete uv graph and run `pip-audit` with
+dependency resolution disabled. This ensures the audit examines the versions
+selected by `uv.lock`, including repository security overrides for vulnerable
+transitive tool dependencies, instead of re-resolving stale upstream metadata.
+
 The all-component security path runs the repository security gate. Named paths
 use the selected component's configured checks. Test commands use component
 metadata to select the appropriate unit and UI workflows.

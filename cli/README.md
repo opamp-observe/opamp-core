@@ -40,6 +40,8 @@ This page focuses on the operator CLI's detailed local and developer workflows.
 ## How To Run
 
 You can run the CLI either from the repository root or from inside the `cli/` directory.
+Installed wheels discover the checkout by walking up from the current directory, so invoke
+`opamp-cli` from the checkout or one of its child directories.
 
 From repository root:
 
@@ -158,31 +160,34 @@ APP_ENABLE_DEV_FEATURES=true opamp-cli dev-flb-config
 APP_ENABLE_DEV_FEATURES=true opamp-cli dev-pid-lookup
 APP_ENABLE_DEV_FEATURES=true opamp-cli dev-version-bump
 APP_ENABLE_DEV_FEATURES=true opamp-cli dev-version-bump 0.5.0
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests all
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests unit
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests e2e
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests security
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests dependencies
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests pip-audit
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests renovate
+opamp-cli dev test all
+opamp-cli dev test unit
+opamp-cli dev test e2e
+opamp-cli dev test security
+opamp-cli dev test dependencies
+opamp-cli dev test pip-audit
+opamp-cli dev test renovate
 opamp-cli dev-containers
 ```
 
 Development regression tests:
 
-- `dev-tests` is available when `APP_ENABLE_DEV_FEATURES=true`.
+- `dev` is offered only when the independently packaged `opamp-dev-cli` executable is installed.
+- `opamp-cli` remains fully usable without `opamp-dev-cli`; no developer-tools runtime dependency is
+  declared by the operator package.
+- `dev-tests` remains as a compatibility alias for `dev test` when the developer CLI is available.
 - With no selection it prompts for `all`, `unit`, `e2e`, `security`, `dependencies`,
   `pip-audit`, or `renovate`.
-- `dev-tests list` shows the configured suites and tests after discovery without running them.
-- `dev-tests terminate` terminates the recorded test process tree and force-removes only containers
+- `dev test list` shows the configured suites and tests after discovery without running them.
+- `dev test terminate` terminates the recorded test process tree and force-removes only containers
   created since that test started; containers that were already running are preserved.
 - Each child process streams combined output to the terminal and a timestamped `.log` file. After
   every test, the CLI prints its status, exit code, elapsed time, and log path.
 - A machine-readable timing and status summary is retained under
-  `cli/runtime/test-reports/`.
+  `dev-tools/runtime/test-reports/`.
 - Suite definitions, commands, include relationships, project-marker discovery rules, optional
   executable requirements, output paths, and the container runtime are configured in
-  `cli/config/dev_test_suites.json`. Use
+  the developer package's `opamp_dev_tools/config/dev_test_suites.json`. Use
   `--config <path>` to run against another configuration.
 - `pip-audit` discovers every `uv.lock`, exports its complete pinned dependency graph, and audits it
   with the CLI development toolchain. Local unpublished packages are excluded from the exported

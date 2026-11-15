@@ -47,9 +47,9 @@ try:
         consumer_plugins,
         container_management,
         dev_commands,
+        developer_cli,
         process_tail,
         setup_venv,
-        test_commands,
     )
     from .common import (
         _is_windows,
@@ -93,7 +93,6 @@ try:
         CLI_COMPONENT_LOG_FILENAME,
         CLI_DEMO_CONFIG_PATH,
         CLI_DEMO_FLAG_ENV,
-        CLI_DEV_TEST_SUITES_CONFIG_PATH,
         CLI_LOG_DIRNAME,
         CLI_PROCESS_STATE_FILENAME,
         CLI_RUNTIME_DIRNAME,
@@ -113,6 +112,7 @@ try:
         COMMAND_DEV_PID_LOOKUP,
         COMMAND_DEV_TESTS,
         COMMAND_DEV_VERSION_BUMP,
+        COMMAND_DEVELOPER_CLI,
         COMMAND_DISABLE_PROCESS_TAIL,
         COMMAND_ENABLE_PROCESS_TAIL,
         COMMAND_EXIT,
@@ -182,9 +182,9 @@ except ImportError:
     import consumer_plugins  # type: ignore[no-redef]
     import container_management  # type: ignore[no-redef]
     import dev_commands  # type: ignore[no-redef]
+    import developer_cli  # type: ignore[no-redef]
     import process_tail  # type: ignore[no-redef]
     import setup_venv  # type: ignore[no-redef]
-    import test_commands  # type: ignore[no-redef]
     from common import (  # type: ignore[no-redef]
         _is_windows,
         _normalize_python_script_command,
@@ -230,7 +230,6 @@ except ImportError:
         CLI_COMPONENT_LOG_FILENAME,
         CLI_DEMO_CONFIG_PATH,
         CLI_DEMO_FLAG_ENV,
-        CLI_DEV_TEST_SUITES_CONFIG_PATH,
         CLI_LOG_DIRNAME,
         CLI_PROCESS_STATE_FILENAME,
         CLI_RUNTIME_DIRNAME,
@@ -250,6 +249,7 @@ except ImportError:
         COMMAND_DEV_PID_LOOKUP,
         COMMAND_DEV_TESTS,
         COMMAND_DEV_VERSION_BUMP,
+        COMMAND_DEVELOPER_CLI,
         COMMAND_DISABLE_PROCESS_TAIL,
         COMMAND_ENABLE_PROCESS_TAIL,
         COMMAND_EXIT,
@@ -345,6 +345,11 @@ WINDOWS_PROCESS_SNAPSHOT_COMMAND = [
     ),
 ]
 POSIX_PROCESS_SNAPSHOT_COMMAND = ["ps", "-eo", "pid=,comm=,args="]
+REPOSITORY_MARKER_PATHS = (
+    Path("cli/pyproject.toml"),
+    Path("dev-tools/pyproject.toml"),
+    Path("license.txt"),
+)
 _CLI_LOGGER_CACHE: dict[str, logging.Logger | Path | None] = {
     "logger": None,
     "path": None,
@@ -374,7 +379,16 @@ def _demo_mode_enabled() -> bool:
 
 
 def _repo_root() -> Path:
-    """Return repository root for this CLI component."""
+    """Return the active OpAMP checkout root for source and wheel installations."""
+
+    current_directory = Path.cwd().resolve()
+    for candidate_path in (current_directory, *current_directory.parents):
+        marker_paths_exist = all(
+            (candidate_path / marker_path).is_file()
+            for marker_path in REPOSITORY_MARKER_PATHS
+        )
+        if marker_paths_exist:
+            return candidate_path
     return Path(__file__).resolve().parents[3]
 
 
@@ -696,14 +710,20 @@ def _handle_command(
             repo_root_provider=_repo_root,
             dev_features_enabled=_dev_features_enabled,
         )
-    if lowered == COMMAND_DEV_TESTS or lowered.startswith(f"{COMMAND_DEV_TESTS} "):
-        logger.info("starting development test workflow command=%s", command_text)
-        test_args = _split_internal_command_args(command_text)
-        return test_commands.execute_dev_tests_workflow(
-            test_args[1:],
+    if lowered == COMMAND_DEVELOPER_CLI or lowered.startswith(f"{COMMAND_DEVELOPER_CLI} "):
+        logger.info("forwarding command to optional developer CLI command=%s", command_text)
+        developer_args = _split_internal_command_args(command_text)
+        return developer_cli.execute_developer_cli(
+            developer_args[1:],
             repo_root=_repo_root(),
-            dev_features_enabled=_dev_features_enabled(),
-            prompt_text=lambda prompt: _prompt_text(prompt, input_reader=input_reader),
+            logger=logger,
+        )
+    if lowered == COMMAND_DEV_TESTS or lowered.startswith(f"{COMMAND_DEV_TESTS} "):
+        logger.info("forwarding legacy development test command=%s", command_text)
+        test_args = _split_internal_command_args(command_text)
+        return developer_cli.execute_developer_cli(
+            ["test", *test_args[1:]],
+            repo_root=_repo_root(),
             logger=logger,
         )
     if lowered == COMMAND_DEV_CONTAINERS or lowered.startswith(f"{COMMAND_DEV_CONTAINERS} "):
@@ -790,6 +810,7 @@ def _top_level_commands() -> list[str]:
     if _dev_version_bump_available():
         commands.append(COMMAND_DEV_VERSION_BUMP)
     if _dev_tests_available():
+        commands.append(COMMAND_DEVELOPER_CLI)
         commands.append(COMMAND_DEV_TESTS)
     if container_management.container_runtime_executable() and _configured_container_start_actions():
         commands.append(COMMAND_DEV_CONTAINERS)
@@ -978,12 +999,9 @@ def _dev_version_bump_available() -> bool:
 
 
 def _dev_tests_available() -> bool:
-    """Return whether the configured development test workflow should be exposed."""
+    """Return whether the independently installed developer CLI is available."""
 
-    return _dev_features_enabled() and test_commands.dev_test_config_available(
-        repo_root=_repo_root(),
-        config_path=CLI_DEV_TEST_SUITES_CONFIG_PATH,
-    )
+    return developer_cli.developer_cli_available()
 
 
 def _prompt_text(
@@ -4479,7 +4497,11 @@ def _interactive_loop() -> int:  # noqa: PLR0912,PLR0915
     if _dev_version_bump_available():
         print(f"Use `{COMMAND_DEV_VERSION_BUMP}` to bump configured component versions.")
     if _dev_tests_available():
-        print(f"Use `{COMMAND_DEV_TESTS}` to run configured development test suites.")
+        print(f"Use `{COMMAND_DEVELOPER_CLI}` to open the installed developer CLI.")
+        print(
+            f"Use `{COMMAND_DEV_TESTS}` as a compatibility alias for "
+            f"`{COMMAND_DEVELOPER_CLI} test`."
+        )
     print(f"Use `{COMMAND_SETUP_VENV}` to create/update the repository virtual environment.")
     print("Use `enable-process-tail` to tail managed process logs in a new shell.")
     detected_flags = _detected_behavior_flags()

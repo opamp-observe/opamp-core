@@ -30,13 +30,14 @@ REQUIRED_RUFF_RULES = {"E", "F", "I", "S", "UP"}
 REQUIRED_SECURITY_DEPENDENCIES = {
     "bandit>=1.9.4",
     "detect-secrets>=1.5.0",
-    "mcp==1.29.0",
+    "mcp==1.30.0",
+    "opentelemetry-api>=1.45.2",
     "pip-audit>=2.10.1",
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "pytest-cov>=7.0.0",
     "ruff>=0.15.0",
-    "semgrep>=1.182.1",
+    "semgrep>=1.185.0",
 }
 SECURITY_TOOLING_PROJECT_PATH = "dev-tools/pyproject.toml"
 EXPECTED_REPOSITORY_URL = "https://github.com/opamp-observe/opamp-core"
@@ -48,6 +49,8 @@ CATALOG_REQUIRED_PACKAGE_DATA = {
     "html/*.js",
     "html/*.png",
 }
+DEV_TOOLS_PROJECT_PATH = "dev-tools/pyproject.toml"
+DEV_TOOLS_REQUIRED_PACKAGE_DATA = {"config/*.json"}
 
 PYTHON_PROJECT_PATHS = (
     "agent_broker/pyproject.toml",
@@ -124,3 +127,14 @@ def test_catalog_service_packages_all_browser_assets() -> None:
     package_data = set(payload["tool"]["setuptools"]["package-data"]["catalog_service"])
 
     assert CATALOG_REQUIRED_PACKAGE_DATA <= package_data
+
+
+def test_developer_tools_packages_default_configuration() -> None:
+    """Keep the configuration-driven test catalog available in installed wheels."""
+
+    with (REPOSITORY_ROOT / DEV_TOOLS_PROJECT_PATH).open("rb") as project_handle:
+        payload = tomllib.load(project_handle)
+
+    package_data = set(payload["tool"]["setuptools"]["package-data"]["opamp_dev_tools"])
+
+    assert DEV_TOOLS_REQUIRED_PACKAGE_DATA <= package_data

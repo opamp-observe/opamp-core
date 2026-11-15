@@ -31,9 +31,9 @@ import pytest
 cli_main = importlib.import_module("opamp_cli.main")
 container_management = importlib.import_module("opamp_cli.container_management")
 dev_commands = importlib.import_module("opamp_cli.dev_commands")
+developer_cli = importlib.import_module("opamp_cli.developer_cli")
 setup_venv = importlib.import_module("opamp_cli.setup_venv")
 version_bump = importlib.import_module("opamp_cli.version_bump")
-test_commands = importlib.import_module("opamp_cli.test_commands")
 
 
 def _sample_fluentbit_config() -> str:
@@ -106,26 +106,62 @@ def test_build_exec_env_enables_unbuffered_python_output(monkeypatch) -> None:
     assert env["PYTHONUNBUFFERED"] == "1"
 
 
-def test_dev_tests_command_routes_arguments_to_test_workflow(monkeypatch) -> None:
+def test_repo_root_discovers_checkout_from_nested_working_directory(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Installed CLIs should use the checkout containing the current directory."""
+
+    checkout_root = tmp_path / "checkout"
+    nested_directory = checkout_root / "docs" / "dev"
+    nested_directory.mkdir(parents=True)
+    for marker_path in cli_main.REPOSITORY_MARKER_PATHS:
+        resolved_marker = checkout_root / marker_path
+        resolved_marker.parent.mkdir(parents=True, exist_ok=True)
+        resolved_marker.write_text("marker\n", encoding="utf-8")
+    monkeypatch.chdir(nested_directory)
+
+    assert cli_main._repo_root() == checkout_root.resolve()  # type: ignore[attr-defined]
+
+
+def test_dev_tests_command_routes_arguments_to_developer_cli(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
-    def fake_execute(argv, **kwargs):
-        """Capture routed arguments without starting development tests."""
+    def fake_execute(arguments, **kwargs):
+        """Capture compatibility arguments without starting the developer CLI."""
 
-        captured["argv"] = argv
+        captured["arguments"] = arguments
         captured["repo_root"] = kwargs["repo_root"]
-        captured["dev_features_enabled"] = kwargs["dev_features_enabled"]
         return 7
 
-    monkeypatch.setenv("APP_ENABLE_DEV_FEATURES", "true")
-    monkeypatch.setattr(test_commands, "execute_dev_tests_workflow", fake_execute)
+    monkeypatch.setattr(developer_cli, "execute_developer_cli", fake_execute)
 
     exit_code = cli_main._handle_command("dev-tests security")  # type: ignore[attr-defined]
 
     assert exit_code == 7
-    assert captured["argv"] == ["security"]
+    assert captured["arguments"] == ["test", "security"]
     assert captured["repo_root"] == cli_main._repo_root()  # type: ignore[attr-defined]
-    assert captured["dev_features_enabled"] is True
+
+
+def test_dev_command_forwards_full_developer_cli_command(monkeypatch) -> None:
+    """The optional dev bridge should preserve the complete nested command path."""
+
+    captured: dict[str, object] = {}
+
+    def fake_execute(arguments, **kwargs):
+        """Capture bridged arguments without starting the developer CLI."""
+
+        captured["arguments"] = arguments
+        captured["repo_root"] = kwargs["repo_root"]
+        return 0
+
+    monkeypatch.setattr(developer_cli, "execute_developer_cli", fake_execute)
+
+    exit_code = cli_main._handle_command("dev build artefact all")  # type: ignore[attr-defined]
+
+    assert exit_code == 0
+    assert captured["arguments"] == ["build", "artefact", "all"]
+    assert captured["repo_root"] == cli_main._repo_root()  # type: ignore[attr-defined]
 
 
 def test_split_guided_command_supports_restart() -> None:
@@ -3104,6 +3140,28 @@ def test_top_level_commands_include_dev_version_bump_only_when_enabled(monkeypat
     monkeypatch.setattr(cli_main, "_dev_version_bump_available", lambda: False)
     commands = cli_main._top_level_commands()  # type: ignore[attr-defined]
     assert "dev-version-bump" not in commands
+
+
+def test_top_level_commands_offer_developer_bridge_only_when_installed(monkeypatch) -> None:
+    """The operator command surface should reflect optional developer CLI availability."""
+
+    monkeypatch.setattr(cli_main, "_demo_mode_enabled", lambda: False)
+    monkeypatch.setattr(cli_main, "_fluentbit_dev_tool_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_mcp_dev_tool_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_dev_pid_lookup_available", lambda: False)
+    monkeypatch.setattr(cli_main, "_dev_version_bump_available", lambda: False)
+    monkeypatch.setattr(container_management, "container_runtime_executable", lambda: None)
+    monkeypatch.setattr(developer_cli, "developer_cli_available", lambda: True)
+
+    commands = cli_main._top_level_commands()  # type: ignore[attr-defined]
+
+    assert "dev" in commands
+    assert "dev-tests" in commands
+
+    monkeypatch.setattr(developer_cli, "developer_cli_available", lambda: False)
+    commands = cli_main._top_level_commands()  # type: ignore[attr-defined]
+    assert "dev" not in commands
+    assert "dev-tests" not in commands
 
 
 def test_config_subcommand_prefix_detects_second_level_keyword() -> None:

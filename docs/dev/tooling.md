@@ -162,33 +162,36 @@ configuration surfaces but are not installed or run by the current aggregate set
 
 ## Test and Security Workflow
 
-The main CLI provides a configuration-driven regression entry point when development features are
-enabled:
+The developer CLI owns the configuration-driven repository regression entry point:
 
 ```bash
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests all
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests unit
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests e2e
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests security
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests dependencies
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests pip-audit
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests renovate
-APP_ENABLE_DEV_FEATURES=true opamp-cli dev-tests list
+opamp-dev-cli test all
+opamp-dev-cli test unit
+opamp-dev-cli test e2e
+opamp-dev-cli test security
+opamp-dev-cli test dependencies
+opamp-dev-cli test pip-audit
+opamp-dev-cli test renovate
+opamp-dev-cli test list
 ```
 
-On PowerShell, set `$env:APP_ENABLE_DEV_FEATURES = "true"` before running the same `opamp-cli`
-commands. The suite catalog in `cli/config/dev_test_suites.json` controls suite composition,
-commands, project-marker discovery, optional executable requirements, retained reports, and the
+The suite catalog packaged as `opamp_dev_tools/config/dev_test_suites.json` controls suite composition, commands,
+project-marker discovery, optional executable requirements, retained reports, and the
 Docker-compatible container runtime. The `pip-audit` suite discovers every `uv.lock` and audits the
-complete exported dependency graph. The `renovate` suite is discovered only when Renovate is on
+complete exported dependency graph without asking pip to resolve it again. This preserves uv security
+overrides for vulnerable transitive tooling dependencies. The `renovate` suite is discovered only when Renovate is on
 `PATH`; it uses Renovate's read-only local platform. The `dependencies` suite runs both checks, and
 is included in `all`. Output is streamed and retained per test, with status and wall-clock duration
-printed after each test and stored in a JSON summary under `cli/runtime/test-reports/`.
+printed after each test and stored in a JSON summary under `dev-tools/runtime/test-reports/`.
 
-Use `opamp-cli dev-tests terminate` from another terminal to terminate the active test process tree.
+Use `opamp-dev-cli test terminate` from another terminal to terminate the active test process tree.
 For container-based tests, the runner records the containers that existed before the test and
 force-removes only containers created by that test. Ctrl+C performs the same process-tree and
 container cleanup in the running terminal.
+
+When both packages are installed, the operator CLI exposes the developer command tree through
+`opamp-cli dev ...`, for example `opamp-cli dev test all`. The operator CLI remains independently
+installable and hides the bridge when `opamp-dev-cli` is not on `PATH`.
 
 Use the developer CLI for consistent component discovery and retained results:
 
