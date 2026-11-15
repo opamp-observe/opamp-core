@@ -48,6 +48,8 @@ CATALOG_REQUIRED_PACKAGE_DATA = {
     "html/*.js",
     "html/*.png",
 }
+DEV_TOOLS_PROJECT_PATH = "dev-tools/pyproject.toml"
+DEV_TOOLS_REQUIRED_PACKAGE_DATA = {"config/*.json"}
 
 PYTHON_PROJECT_PATHS = (
     "agent_broker/pyproject.toml",
@@ -124,3 +126,14 @@ def test_catalog_service_packages_all_browser_assets() -> None:
     package_data = set(payload["tool"]["setuptools"]["package-data"]["catalog_service"])
 
     assert CATALOG_REQUIRED_PACKAGE_DATA <= package_data
+
+
+def test_developer_tools_packages_default_configuration() -> None:
+    """Keep the configuration-driven test catalog available in installed wheels."""
+
+    with (REPOSITORY_ROOT / DEV_TOOLS_PROJECT_PATH).open("rb") as project_handle:
+        payload = tomllib.load(project_handle)
+
+    package_data = set(payload["tool"]["setuptools"]["package-data"]["opamp_dev_tools"])
+
+    assert DEV_TOOLS_REQUIRED_PACKAGE_DATA <= package_data

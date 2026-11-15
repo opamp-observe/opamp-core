@@ -100,6 +100,7 @@ from .runtime import (
 )
 from .schema_validation import validate_config_service_schemas
 from .security import run_component_security_checks, run_repo_security_checks
+from .test_commands import execute_test_suite_workflow
 from .versioning import set_repository_version
 from .wheel_publish import (
     AWS_DEFAULT_ARTIFACT_KEY,
@@ -133,6 +134,7 @@ FLUENT_RESOURCES_COMMAND_GROUP = "fluent-resources"
 HELP_COMMAND = "help"
 PURGE_CACHE_EGG_COMMAND = "purge-cache-egg"
 REPORT_FLUENTBIT_CHANGES_COMMAND = "report-fluentbit-changes"
+TEST_COMMAND_GROUP = "test"
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
@@ -171,6 +173,24 @@ def build_parser(  # pylint: disable=too-many-locals,too-many-statements
     )
 
     command_parsers = parser.add_subparsers(dest="command_group", required=True)
+
+    suite_test_parser = command_parsers.add_parser(
+        TEST_COMMAND_GROUP,
+        help="Run configured unit, end-to-end, security, and dependency test suites",
+    )
+    suite_test_parser.add_argument(
+        "test_suite",
+        nargs="?",
+        help=(
+            "Configured suite name, list, or terminate; omit to choose from the active "
+            "configuration"
+        ),
+    )
+    suite_test_parser.add_argument(
+        "--config",
+        dest="test_config",
+        help="Alternative test-suite configuration path relative to the repository root",
+    )
 
     dev_parser = command_parsers.add_parser("dev", help="Developer maintenance commands")
     dev_subparsers = dev_parser.add_subparsers(dest="dev_command", required=True)
@@ -622,6 +642,18 @@ def _run_parsed_command(args: argparse.Namespace) -> int:
     if args.command_group == HELP_COMMAND:
         _print_command_hierarchy(repo_root)
         return 0
+    if args.command_group == TEST_COMMAND_GROUP:
+        test_arguments: list[str] = []
+        if args.test_suite:
+            test_arguments.append(str(args.test_suite))
+        if args.test_config:
+            test_arguments.extend(["--config", str(args.test_config)])
+        return execute_test_suite_workflow(
+            test_arguments,
+            repo_root=repo_root,
+            prompt_text=input,
+            logger=LOGGER,
+        )
     tool_root = repo_root / "dev-tools"
     command_slug = _command_slug_from_args(args)
     runtime = CommandRuntime(repo_root=repo_root, tool_root=tool_root, command_slug=command_slug)
@@ -960,6 +992,7 @@ def _prompt_for_command_tokens(repo_root: Path) -> tuple[str, list[str]]:
                 "Manage Fluent configuration resources and catalog reports",
             ),
             ("build", "Build, test, and generate outputs"),
+            (TEST_COMMAND_GROUP, "Run configured development test suites"),
             ("certificate", "Certificate and auth helpers"),
             (HELP_COMMAND, "Show the complete developer CLI command hierarchy"),
         ],
@@ -972,6 +1005,8 @@ def _prompt_for_command_tokens(repo_root: Path) -> tuple[str, list[str]]:
         command_tokens = _prompt_for_fluent_resources_tokens(repo_root)
     elif command_group == "build":
         command_tokens = _prompt_for_build_tokens(available_components)
+    elif command_group == TEST_COMMAND_GROUP:
+        command_tokens = [TEST_COMMAND_GROUP]
     elif command_group == "certificate":
         command_tokens = _prompt_for_certificate_tokens()
     else:

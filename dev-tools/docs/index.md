@@ -32,3 +32,7 @@ Detailed guides:
 Run `opamp-dev-cli help` to see the commands available in the current
 checkout. Component-owned commands are conditional and may not appear when
 their publishing component is absent.
+
+Repository-wide regression suites are owned by `opamp-dev-cli test`. Run
+`opamp-dev-cli test list` to inspect configuration-driven discovery without
+executing tests.

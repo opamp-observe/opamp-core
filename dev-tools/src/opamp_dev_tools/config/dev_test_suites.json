@@ -1,8 +1,8 @@
 {
-  "version": 1,
   "container_runtime": "docker",
-  "report_directory": "cli/runtime/test-reports",
-  "state_file": "cli/runtime/dev_test_run.json",
+  "version": 1,
+  "report_directory": "dev-tools/runtime/test-reports",
+  "state_file": "dev-tools/runtime/dev_test_run.json",
   "suites": {
     "all": {
       "label": "All tests",
@@ -174,12 +174,12 @@
             "uv",
             "run",
             "--project",
-            "cli",
+            "dev-tools",
             "--extra",
-            "dev",
+            "security",
             "python",
             "-m",
-            "opamp_cli.dependency_audit",
+            "opamp_dev_tools.dependency_audit",
             "--project",
             "{project_path}"
           ],

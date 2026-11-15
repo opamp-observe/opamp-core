@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Audit one uv-locked Python project with pip-audit."""
+"""Audit one uv-locked Python project for the OpAMP developer CLI."""
 
 from __future__ import annotations
 

@@ -34,6 +34,27 @@ Installed packages expose `opamp-dev-cli`, `opamp-cli-dev`, and the legacy
 See the [developer CLI documentation index](docs/index.md) for the complete
 set of focused command guides.
 
+## Configured Test Suites
+
+The developer CLI owns repository-wide test orchestration. Suite composition,
+project discovery, optional tools, reports, and container cleanup are defined
+in the packaged `opamp_dev_tools/config/dev_test_suites.json` catalog:
+
+```bash
+opamp-dev-cli test all
+opamp-dev-cli test unit
+opamp-dev-cli test e2e
+opamp-dev-cli test security
+opamp-dev-cli test dependencies
+opamp-dev-cli test list
+opamp-dev-cli test terminate
+```
+
+Each test streams output, records elapsed time, and retains its log and JSON
+summary under `dev-tools/runtime/test-reports/`. The operator `opamp-cli`
+package is independent; when both packages are installed, `opamp-cli dev ...`
+forwards to this CLI without creating a package dependency in either direction.
+
 ## Command Hierarchy and Guided Completion
 
 Display the complete parser-derived command tree with:

@@ -15,10 +15,11 @@ This directory contains component-specific documentation for the OpAMP CLI.
 - Runtime inspection: `status`, `list`
 - Script generation: `script`
 - Repository setup: `setup-venv`
-- Development regression execution:
+- Optional developer CLI bridge: `dev [developer-command...]`
+- Compatibility regression alias, when developer tools are installed:
   `dev-tests all|unit|e2e|security|dependencies|pip-audit|renovate|list|terminate`
 - Demo/profile configuration from `cli/config/demo_consumer_profiles.json`
-- Development test-suite configuration from `cli/config/dev_test_suites.json`
+- Development test-suite ownership and configuration under `dev-tools/`
 - Runtime preferences in `cli/runtime/settings.json`
 - Config-service-backed config workflows when available:
   - `config validate <path>`

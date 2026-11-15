@@ -21,13 +21,25 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-test_commands = importlib.import_module("opamp_cli.test_commands")
+test_commands = importlib.import_module("opamp_dev_tools.test_commands")
 
 
 def _write_config(path: Path, payload: dict[str, object]) -> None:
     """Write one test-owned development suite configuration."""
 
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def test_packaged_default_configuration_is_available(tmp_path: Path) -> None:
+    """The installed developer CLI should carry its default suite catalog."""
+
+    assert test_commands.dev_test_config_available(repo_root=tmp_path)
+    selection, config_path = test_commands._parse_arguments(["list"], repo_root=tmp_path)
+    configuration = test_commands._load_configuration(config_path)
+
+    assert selection == "list"
+    assert config_path == test_commands.DEFAULT_CONFIG_PATH
+    assert "all" in configuration["suites"]
 
 
 def test_python_project_discovery_materializes_only_projects_with_tests(tmp_path: Path) -> None:
@@ -196,10 +208,9 @@ def test_execute_workflow_streams_output_and_writes_timed_summary(
         },
     )
 
-    exit_code = test_commands.execute_dev_tests_workflow(
+    exit_code = test_commands.execute_test_suite_workflow(
         ["unit", "--config", str(config_path)],
         repo_root=tmp_path,
-        dev_features_enabled=True,
         prompt_text=lambda _prompt: "unit",
         logger=logging.getLogger("test-dev-tests"),
     )
@@ -254,19 +265,6 @@ def test_terminate_uses_recorded_process_and_container_baseline(
     assert terminated_processes == [1234]
     assert cleanup_calls == [("docker", {"existing-container"})]
     assert not state_path.exists()
-
-
-def test_dev_features_must_be_enabled(tmp_path: Path, capsys) -> None:
-    exit_code = test_commands.execute_dev_tests_workflow(
-        [],
-        repo_root=tmp_path,
-        dev_features_enabled=False,
-        prompt_text=lambda _prompt: "all",
-        logger=logging.getLogger("test-dev-tests"),
-    )
-
-    assert exit_code == 2
-    assert "APP_ENABLE_DEV_FEATURES=true" in capsys.readouterr().out
 
 
 def test_container_cleanup_removes_only_ids_created_after_baseline(monkeypatch) -> None:

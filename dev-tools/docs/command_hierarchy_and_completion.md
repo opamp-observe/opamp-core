@@ -23,6 +23,7 @@ opamp-dev-cli
 |-- dev
 |-- fluent-resources
 |-- build
+|-- test
 |-- certificate
 `-- help
 ```

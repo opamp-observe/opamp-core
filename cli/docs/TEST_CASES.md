@@ -12,6 +12,8 @@ Test modules should reference this file so the implementation and the documented
   - Verifies direct Python script targets are normalized to use an explicit Python launcher.
 - `test_command_text_from_args_preserves_shell_quoting`
   - Verifies reconstructed command text preserves quoting semantics for shell execution.
+- `test_repo_root_discovers_checkout_from_nested_working_directory`
+  - Verifies wheel installations discover the active checkout from a nested working directory.
 - `test_materialize_ordered_actions_preserves_order_and_skips_missing`
   - Verifies guided action materialization preserves declared order and ignores undefined actions.
 - `test_catalog_launch_config_path_enables_catalog`

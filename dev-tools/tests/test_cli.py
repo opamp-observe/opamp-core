@@ -98,7 +98,8 @@ def test_main_without_arguments_prompts_for_command_group(
     assert "1. dev" in stdout
     assert "2. fluent-resources" in stdout
     assert "3. build" in stdout
-    assert "5. help" in stdout
+    assert "4. test" in stdout
+    assert "6. help" in stdout
     assert "Command complete. Returning to main menu." in stdout
     args = captured["args"]
     assert args.command_group == "dev"
@@ -120,8 +121,32 @@ def test_help_command_prints_complete_parser_hierarchy(tmp_path: Path, capsys) -
     assert "|   |-- set" in output
     assert "|   |   `-- version" in output
     assert "|-- fluent-resources" in output
+    assert "|-- test" in output
     assert "report-fluentbit-changes" in output
     assert "`-- help" in output
+
+
+def test_test_command_dispatches_configured_suite_runner(tmp_path: Path, monkeypatch) -> None:
+    """The developer CLI should own and dispatch configured test suites directly."""
+
+    captured: dict[str, object] = {}
+    parser = cli.build_parser(tmp_path)
+    args = parser.parse_args([cli.TEST_COMMAND_GROUP, "security", "--config", "custom.json"])
+
+    def fake_execute(arguments, **options):
+        """Capture suite-runner inputs and return its exact process status."""
+
+        captured["arguments"] = arguments
+        captured["options"] = options
+        return 7
+
+    monkeypatch.setattr(cli, "execute_test_suite_workflow", fake_execute)
+
+    exit_code = cli._run_parsed_command(args)  # pylint: disable=protected-access
+
+    assert exit_code == 7
+    assert captured["arguments"] == ["security", "--config", "custom.json"]
+    assert captured["options"]["repo_root"] == tmp_path.resolve()
 
 
 def test_help_discovers_config_service_fluent_resource_commands(capsys) -> None:
@@ -258,7 +283,7 @@ def test_guided_help_prints_hierarchy_and_returns_to_main_menu(
     capsys,
 ) -> None:
     """Guided mode should expose hierarchy help without creating a command runtime."""
-    responses = iter(["5", "q"])
+    responses = iter(["6", "q"])
     monkeypatch.setattr("builtins.input", lambda _prompt_text: next(responses))
 
     exit_code = cli.main([])
@@ -355,7 +380,7 @@ def test_main_without_arguments_supports_certificate_ensure_provider_config(
     capsys,
 ) -> None:
     """Guided mode should dispatch the provider certificate configuration helper."""
-    responses = iter(["4", "2", "q"])
+    responses = iter(["5", "2", "q"])
     captured: dict[str, object] = {}
 
     monkeypatch.setattr("builtins.input", lambda _: next(responses))

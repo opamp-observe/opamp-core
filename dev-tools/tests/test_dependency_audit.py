@@ -18,7 +18,7 @@ import logging
 from pathlib import Path
 from types import SimpleNamespace
 
-from opamp_cli import dependency_audit
+from opamp_dev_tools import dependency_audit
 
 
 def test_audit_locked_project_exports_and_audits_complete_graph(
