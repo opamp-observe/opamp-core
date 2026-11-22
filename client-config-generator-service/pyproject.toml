@@ -25,7 +25,7 @@ authors = [{ name = "Phil Wilkins" }]
 keywords = ["opamp", "consumer", "configuration", "generator", "schema", "ui"]
 dependencies = [
   "jsonschema>=4.21",
-  "opamp-shared==0.6.0",
+  "opamp-shared==0.7.0",
   "quart>=0.20.0",
 ]
 

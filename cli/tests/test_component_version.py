@@ -14,12 +14,24 @@
 
 from __future__ import annotations
 
+import json
+from importlib import resources
+
 from opamp_cli import component_version
 
 
 def test_component_version_text_reads_packaged_resource() -> None:
     """Packaged metadata should be returned for the CLI version surface."""
-    assert component_version.component_version_text() == "0.6.0"
+    assert component_version.component_version_text() == "0.7.0"
+
+
+def test_cli_version_label_matches_package_version() -> None:
+    """Keep the wheel's version label aligned with its distribution version."""
+    resource_text = resources.files("opamp_cli").joinpath("version.json").read_text(
+        encoding="utf-8"
+    )
+    payload = json.loads(resource_text)
+    assert payload["effective_label"] == payload["version"]
 
 
 def test_component_version_text_falls_back_for_invalid_json(monkeypatch) -> None:

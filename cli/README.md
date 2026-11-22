@@ -170,6 +170,10 @@ opamp-cli dev test renovate
 opamp-cli dev-containers
 ```
 
+`dev-version-bump` increments each configured component's minor version when no version is given.
+It also updates first-party dependency pins and regenerates the configured `uv.lock` files. The
+command validates all targets before writing and restores changed files if lock generation fails.
+
 Development regression tests:
 
 - `dev` is offered only when the independently packaged `opamp-dev-cli` executable is installed.

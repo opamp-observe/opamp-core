@@ -243,7 +243,7 @@ wheels = [
 
 [[package]]
 name = "catalog-service"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "../catalog-service" }
 dependencies = [
     { name = "opamp-shared" },
@@ -537,7 +537,7 @@ wheels = [
 
 [[package]]
 name = "client-config-generator-service"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "../client-config-generator-service" }
 dependencies = [
     { name = "jsonschema" },
@@ -570,7 +570,7 @@ wheels = [
 
 [[package]]
 name = "config-service"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "../config-service" }
 dependencies = [
     { name = "lark" },
@@ -1720,7 +1720,7 @@ wheels = [
 
 [[package]]
 name = "opamp-consumer"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "../consumer" }
 dependencies = [
     { name = "defusedxml" },
@@ -1765,7 +1765,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "opamp-server"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "../provider" }
 dependencies = [
     { name = "anyio" },
@@ -1819,7 +1819,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "opamp-shared"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "../shared" }
 dependencies = [
     { name = "quart", version = "0.22.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
@@ -1839,7 +1839,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "opamp-suite"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "." }
 
 [package.optional-dependencies]
@@ -2947,7 +2947,7 @@ wheels = [
 
 [[package]]
 name = "svr-credentials-manager-service"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "../svr-credentials-mgr" }
 dependencies = [
     { name = "keyring" },

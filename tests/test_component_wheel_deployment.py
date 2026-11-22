@@ -42,7 +42,8 @@ CONFIG_SERVICE_SETUP_PATH = REPOSITORY_ROOT / "config-service" / "setup.py"
 CONFIG_SERVICE_PYPROJECT_PATH = REPOSITORY_ROOT / "config-service" / "pyproject.toml"
 PROVIDER_PYPROJECT_PATH = REPOSITORY_ROOT / "provider" / "pyproject.toml"
 SHARED_PYPROJECT_PATH = REPOSITORY_ROOT / "shared" / "pyproject.toml"
-SHARED_DISTRIBUTION_REQUIREMENT = "opamp-shared==0.6.0"
+SUITE_PYPROJECT_PATH = REPOSITORY_ROOT / "opamp-suite" / "pyproject.toml"
+SHARED_DISTRIBUTION_REQUIREMENT = "opamp-shared==0.7.0"
 
 
 def _load_component_runner_module() -> ModuleType:
@@ -170,6 +171,32 @@ def test_runtime_components_depend_on_shared_distribution() -> None:
         assert pyproject_payload["tool"]["uv"]["sources"]["opamp-shared"]["path"] == "../shared"
 
 
+def test_suite_profiles_pin_current_component_versions() -> None:
+    """Keep install profiles aligned with the component wheels in this repository."""
+    suite_payload = tomllib.loads(SUITE_PYPROJECT_PATH.read_text(encoding="utf-8"))
+    component_paths = [
+        PROVIDER_PYPROJECT_PATH,
+        CONSUMER_PYPROJECT_PATH,
+        CATALOG_SERVICE_PYPROJECT_PATH,
+        CLIENT_CONFIG_GENERATOR_PYPROJECT_PATH,
+        CONFIG_SERVICE_PYPROJECT_PATH,
+        REPOSITORY_ROOT / "svr-credentials-mgr" / "pyproject.toml",
+    ]
+    expected_versions = {}
+    for pyproject_path in component_paths:
+        component_payload = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+        project = component_payload["project"]
+        expected_versions[project["name"]] = project["version"]
+
+    assert suite_payload["project"]["version"] == expected_versions["opamp-server"]
+    for profile, requirements in suite_payload["project"]["optional-dependencies"].items():
+        if profile == "dev":
+            continue
+        for requirement in requirements:
+            project_name, pinned_version = requirement.split("==")
+            assert pinned_version == expected_versions[project_name]
+
+
 def test_component_builds_do_not_claim_shared_package_files() -> None:
     """Ensure component build configuration leaves shared files to opamp-shared."""
     provider_payload = tomllib.loads(PROVIDER_PYPROJECT_PATH.read_text(encoding="utf-8"))
@@ -201,4 +228,5 @@ def test_shared_distribution_owns_shared_import_package() -> None:
     shared_payload = tomllib.loads(SHARED_PYPROJECT_PATH.read_text(encoding="utf-8"))
 
     assert shared_payload["project"]["name"] == "opamp-shared"
+    assert shared_payload["project"]["version"] == "0.7.0"
     assert shared_payload["tool"]["setuptools"]["packages"] == ["shared"]

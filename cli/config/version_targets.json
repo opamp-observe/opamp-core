@@ -1,5 +1,5 @@
 {
-  "description": "Version targets consumed by `opamp-cli dev-version-bump`. Each component has its own currentVersionSource so default bumps advance that component from its own current version. Targets are limited to release-owned project/package metadata; generated Git metadata, dependency versions, schema/API versions, and test fixture values are documented as exclusions.",
+  "description": "Version targets consumed by `opamp-cli dev-version-bump`. Each component has its own currentVersionSource so default bumps advance that component from its own current version. First-party dependency pins follow their owning packages, and configured uv locks are regenerated. Generated Git metadata, schema/API versions, and test fixture values remain excluded.",
   "components": [
     {
       "id": "agent-broker",
@@ -28,6 +28,11 @@
           "path": "catalog-service/pyproject.toml",
           "pattern": "^version = \"[^\"]+\"$",
           "replacement": "version = \"{version}\""
+        },
+        {
+          "path": "opamp-suite/pyproject.toml",
+          "pattern": "catalog-service==\\d+\\.\\d+\\.\\d+",
+          "replacement": "catalog-service=={version}"
         }
       ]
     },
@@ -65,17 +70,7 @@
           "path": "cli/pyproject.toml",
           "pattern": "^version = \"[^\"]+\"$",
           "replacement": "version = \"{version}\""
-        }
-      ]
-    },
-    {
-      "id": "opamp-cli-version-metadata",
-      "label": "OpAMP CLI version metadata",
-      "currentVersionSource": {
-        "path": "cli/src/opamp_cli/version.json",
-        "pattern": "  \"version\": \"([^\"]+)\""
-      },
-      "targets": [
+        },
         {
           "path": "cli/src/opamp_cli/version.json",
           "pattern": "  \"effective_label\": \"[^\"]+\",",
@@ -107,6 +102,16 @@
           "path": "config-service/build_config.py",
           "pattern": "^PACKAGE_VERSION = \"[^\"]+\"$",
           "replacement": "PACKAGE_VERSION = \"{version}\""
+        },
+        {
+          "path": "config-service/src/config_service/__init__.py",
+          "pattern": "^__version__ = \"[^\"]+\"$",
+          "replacement": "__version__ = \"{version}\""
+        },
+        {
+          "path": "opamp-suite/pyproject.toml",
+          "pattern": "config-service==\\d+\\.\\d+\\.\\d+",
+          "replacement": "config-service=={version}"
         }
       ]
     },
@@ -127,21 +132,11 @@
           "path": "client-config-generator-service/src/client_config_generator_service/__init__.py",
           "pattern": "^__version__ = \"[^\"]+\"$",
           "replacement": "__version__ = \"{version}\""
-        }
-      ]
-    },
-    {
-      "id": "config-service-backend-module",
-      "label": "Config service backend module",
-      "currentVersionSource": {
-        "path": "config-service/src/config_service/__init__.py",
-        "pattern": "^__version__ = \"([^\"]+)\"$"
-      },
-      "targets": [
+        },
         {
-          "path": "config-service/src/config_service/__init__.py",
-          "pattern": "^__version__ = \"[^\"]+\"$",
-          "replacement": "__version__ = \"{version}\""
+          "path": "opamp-suite/pyproject.toml",
+          "pattern": "client-config-generator-service==\\d+\\.\\d+\\.\\d+",
+          "replacement": "client-config-generator-service=={version}"
         }
       ]
     },
@@ -202,6 +197,11 @@
           "path": "consumer/pyproject.toml",
           "pattern": "^version = \"[^\"]+\"$",
           "replacement": "version = \"{version}\""
+        },
+        {
+          "path": "opamp-suite/pyproject.toml",
+          "pattern": "opamp-consumer==\\d+\\.\\d+\\.\\d+",
+          "replacement": "opamp-consumer=={version}"
         }
       ]
     },
@@ -251,6 +251,51 @@
       ]
     },
     {
+      "id": "opamp-shared",
+      "label": "Shared Python package",
+      "currentVersionSource": {
+        "path": "shared/pyproject.toml",
+        "pattern": "^version = \"([^\"]+)\"$"
+      },
+      "targets": [
+        {
+          "path": "shared/pyproject.toml",
+          "pattern": "^version = \"[^\"]+\"$",
+          "replacement": "version = \"{version}\""
+        },
+        {
+          "path": "agent_broker/pyproject.toml",
+          "pattern": "opamp-shared==\\d+\\.\\d+\\.\\d+",
+          "replacement": "opamp-shared=={version}"
+        },
+        {
+          "path": "catalog-service/pyproject.toml",
+          "pattern": "opamp-shared==\\d+\\.\\d+\\.\\d+",
+          "replacement": "opamp-shared=={version}"
+        },
+        {
+          "path": "client-config-generator-service/pyproject.toml",
+          "pattern": "opamp-shared==\\d+\\.\\d+\\.\\d+",
+          "replacement": "opamp-shared=={version}"
+        },
+        {
+          "path": "config-service/pyproject.toml",
+          "pattern": "opamp-shared==\\d+\\.\\d+\\.\\d+",
+          "replacement": "opamp-shared=={version}"
+        },
+        {
+          "path": "consumer/pyproject.toml",
+          "pattern": "opamp-shared==\\d+\\.\\d+\\.\\d+",
+          "replacement": "opamp-shared=={version}"
+        },
+        {
+          "path": "provider/pyproject.toml",
+          "pattern": "opamp-shared==\\d+\\.\\d+\\.\\d+",
+          "replacement": "opamp-shared=={version}"
+        }
+      ]
+    },
+    {
       "id": "provider",
       "label": "Provider Python package",
       "currentVersionSource": {
@@ -262,6 +307,31 @@
           "path": "provider/pyproject.toml",
           "pattern": "^version = \"[^\"]+\"$",
           "replacement": "version = \"{version}\""
+        },
+        {
+          "path": "opamp-suite/pyproject.toml",
+          "pattern": "opamp-server==\\d+\\.\\d+\\.\\d+",
+          "replacement": "opamp-server=={version}"
+        }
+      ]
+    },
+    {
+      "id": "opamp-suite",
+      "label": "OpAMP suite meta-package",
+      "currentVersionSource": {
+        "path": "opamp-suite/pyproject.toml",
+        "pattern": "^version = \"([^\"]+)\"$"
+      },
+      "targets": [
+        {
+          "path": "opamp-suite/pyproject.toml",
+          "pattern": "^version = \"[^\"]+\"$",
+          "replacement": "version = \"{version}\""
+        },
+        {
+          "path": "opamp-suite/src/opamp_suite/__init__.py",
+          "pattern": "^__version__ = \"[^\"]+\"$",
+          "replacement": "__version__ = \"{version}\""
         }
       ]
     },
@@ -277,6 +347,11 @@
           "path": "svr-credentials-mgr/pyproject.toml",
           "pattern": "^version = \"[^\"]+\"$",
           "replacement": "version = \"{version}\""
+        },
+        {
+          "path": "opamp-suite/pyproject.toml",
+          "pattern": "svr-credentials-manager-service==\\d+\\.\\d+\\.\\d+",
+          "replacement": "svr-credentials-manager-service=={version}"
         }
       ]
     },
@@ -341,10 +416,9 @@
     {
       "paths": [
         "**/node_modules/**",
-        "**/uv.lock",
         "config-service/sbom/**"
       ],
-      "reason": "Dependency, lock, and SBOM versions describe third-party packages or generated inventories."
+      "reason": "Generated third-party inventories are not OpAMP release identifiers."
     },
     {
       "paths": [
@@ -354,5 +428,13 @@
       ],
       "reason": "Schema, protocol, API, and infrastructure image versions are not OpAMP component release identifiers."
     }
+  ],
+  "lockProjects": [
+    "shared",
+    "provider",
+    "consumer",
+    "opamp-suite",
+    "cli",
+    "dev-tools"
   ]
 }

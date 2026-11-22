@@ -12,9 +12,8 @@
 
 """Tests for the OpAMP suite metadata package."""
 
-from pathlib import Path
-
 import tomllib
+from pathlib import Path
 
 from opamp_suite import __version__
 
@@ -33,7 +32,7 @@ EXPECTED_RUNTIME_PROFILES = {
 
 def test_package_version_matches_release_profile() -> None:
     """Verify the importable package exposes the profile release version."""
-    assert __version__ == "0.6.0"
+    assert __version__ == "0.7.0"
 
 
 def test_runtime_installation_profiles_are_declared() -> None:

@@ -30,7 +30,7 @@ REQUIRED_RUFF_RULES = {"E", "F", "I", "S", "UP"}
 REQUIRED_SECURITY_DEPENDENCIES = {
     "bandit>=1.9.4",
     "detect-secrets>=1.5.0",
-    "mcp==1.30.0",
+    "mcp==2.3.0",
     "opentelemetry-api>=1.45.2",
     "pip-audit>=2.10.1",
     "pytest>=8.0",

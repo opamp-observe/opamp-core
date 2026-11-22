@@ -298,7 +298,7 @@ Notes:
   - When APP_ENABLE_DEV_FEATURES=true and the MCP config utility is present, `dev-mcp-config` opens a guided MCP client configuration workflow.
   - When APP_ENABLE_DEV_FEATURES=true, `dev-pid-lookup` prompts for a regex and searches running processes for PID/name/command-line matches.
   - `dev-containers` appears when a container runtime and configured container starts are available.
-  - When APP_ENABLE_DEV_FEATURES=true, `dev-version-bump` updates configured component semantic versions independently.
+  - When APP_ENABLE_DEV_FEATURES=true, `dev-version-bump` updates configured component versions, linked dependency pins, and uv locks.
   - When opamp-dev-cli is installed, `dev` forwards commands to it and `dev-tests` remains as a compatibility alias for `dev test`.
   - `setup-venv` installs Python packages into `.venv`, runs npm installs for checked-in Node tooling, and prompts before opening an activated shell in interactive terminals.
   - Guided start/stop/restart actions run components directly instead of relying on repo wrapper scripts.

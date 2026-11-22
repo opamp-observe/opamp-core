@@ -39,7 +39,7 @@ def _run_cli(
 ) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ)
     env.update(extra_env or {})
-    return subprocess.run(
+    return subprocess.run(  # noqa: S603
         [sys.executable, str(_cli_entrypoint()), *args],
         cwd=str(cwd or _repo_root()),
         env=env,
@@ -100,7 +100,7 @@ def test_version_command_prints_packaged_version() -> None:
     completed = _run_cli("--version")
 
     assert completed.returncode == 0
-    assert completed.stdout.strip() == "opamp-cli 0.6.0"
+    assert completed.stdout.strip() == "opamp-cli 0.7.0"
 
 
 def test_status_command_reports_runtime_paths() -> None:

@@ -120,8 +120,8 @@ RUFF_TOOL_MODULE = "ruff"
 SECURITY_REPORT_DIRECTORY = Path("dev-tools/runtime/security-reports")
 SEMGREP_CONFIG_PATH = Path("security/semgrep.yml")
 SEMGREP_ENTRYPOINT_CODE = "from semgrep.console_scripts.pysemgrep import main; main()"
-SEMGREP_MCP_MODULE = "mcp.server.fastmcp"
-SEMGREP_MCP_REQUIREMENT = "mcp==1.29.0"
+SEMGREP_MCP_MODULE = "mcp.server.request_state"
+SEMGREP_MCP_REQUIREMENT = "mcp==2.3.0"
 SEMGREP_REPORT_FILE_NAME = "semgrep.sarif"
 SEMGREP_PIP_REQUIREMENT = "semgrep>=1.182.1"
 SEMGREP_TOOL_MODULE = "semgrep"

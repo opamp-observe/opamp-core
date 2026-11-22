@@ -2977,6 +2977,132 @@ def test_default_version_targets_config_matches_repo() -> None:
             ), f"version pattern did not match: {target['path']}"
 
 
+def test_default_version_targets_link_release_packages() -> None:
+    """Keep shared pins, suite profiles, and lock refreshes in the bump contract."""
+    repo_root = Path(__file__).resolve().parents[2]
+    config = version_bump._read_dev_version_config(  # type: ignore[attr-defined]
+        repo_root / "cli" / "config" / "version_targets.json"
+    )
+    by_id = {component["id"]: component for component in config["components"]}
+    shared_paths = {target["path"] for target in by_id["opamp-shared"]["targets"]}
+    assert shared_paths == {
+        "shared/pyproject.toml",
+        "agent_broker/pyproject.toml",
+        "catalog-service/pyproject.toml",
+        "client-config-generator-service/pyproject.toml",
+        "config-service/pyproject.toml",
+        "consumer/pyproject.toml",
+        "provider/pyproject.toml",
+    }
+    suite_path = "opamp-suite/pyproject.toml"
+    for component_id in (
+        "catalog-service-python",
+        "client-config-generator-service-python",
+        "config-service-python",
+        "consumer",
+        "provider",
+        "credentials-manager-python",
+    ):
+        assert suite_path in {target["path"] for target in by_id[component_id]["targets"]}
+    assert {target["path"] for target in by_id["opamp-suite"]["targets"]} == {
+        suite_path,
+        "opamp-suite/src/opamp_suite/__init__.py",
+    }
+    assert "cli/src/opamp_cli/version.json" in {
+        target["path"] for target in by_id["opamp-cli-python"]["targets"]
+    }
+    assert config["lockProjects"] == [
+        "shared", "provider", "consumer", "opamp-suite", "cli", "dev-tools"
+    ]
+
+
+def test_dev_version_bump_combines_linked_updates_and_refreshes_locks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Apply dependent pins after version updates, then lock the final metadata."""
+    repo_root = tmp_path / "repo"
+    config_path = _write_version_bump_fixture(repo_root)
+    cli_metadata = repo_root / "cli" / "pyproject.toml"
+    cli_metadata.write_text(
+        cli_metadata.read_text(encoding="utf-8") + 'dependency = "component==0.9.0"\n',
+        encoding="utf-8",
+    )
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["components"][1]["targets"].append(
+        {
+            "path": "cli/pyproject.toml",
+            "pattern": r"component==\d+\.\d+\.\d+",
+            "replacement": "component=={version}",
+        }
+    )
+    config["lockProjects"] = ["cli", "component"]
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    for project in config["lockProjects"]:
+        (repo_root / project / "uv.lock").write_text("old lock\n", encoding="utf-8")
+    monkeypatch.setattr(version_bump.shutil, "which", lambda _name: "C:/tools/uv.exe")
+    lock_calls: list[Path] = []
+
+    def fake_lock(command: list[str], **_options: Any) -> SimpleNamespace:
+        """Check every lock sees the complete staged package metadata."""
+        assert 'version = "1.3.0"' in cli_metadata.read_text(encoding="utf-8")
+        assert 'component==0.10.0' in cli_metadata.read_text(encoding="utf-8")
+        lock_calls.append(Path(command[-1]))
+        return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+    monkeypatch.setattr(version_bump.subprocess, "run", fake_lock)
+    code = version_bump.execute_dev_version_bump_workflow(
+        ["--config", str(config_path)],
+        repo_root_provider=lambda: repo_root,
+        dev_features_enabled=lambda: True,
+    )
+
+    assert code == 0
+    assert lock_calls == [repo_root / "cli", repo_root / "component"]
+    assert 'version = "1.3.0"' in cli_metadata.read_text(encoding="utf-8")
+    assert 'component==0.10.0' in cli_metadata.read_text(encoding="utf-8")
+
+
+def test_dev_version_bump_rolls_back_when_lock_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Restore package metadata and locks when a uv project cannot resolve."""
+    repo_root = tmp_path / "repo"
+    config_path = _write_version_bump_fixture(repo_root)
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["lockProjects"] = ["cli", "component"]
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    lock_paths = [repo_root / project / "uv.lock" for project in config["lockProjects"]]
+    for lock_path in lock_paths:
+        lock_path.write_text("old lock\n", encoding="utf-8")
+    monkeypatch.setattr(version_bump.shutil, "which", lambda _name: "C:/tools/uv.exe")
+
+    def fake_lock(command: list[str], **_options: Any) -> SimpleNamespace:
+        """Simulate one successful lock write followed by a resolution failure."""
+        project_path = Path(command[-1])
+        (project_path / "uv.lock").write_text("partial lock\n", encoding="utf-8")
+        return SimpleNamespace(
+            returncode=1 if project_path.name == "component" else 0,
+            stderr="resolution failed",
+            stdout="",
+        )
+
+    monkeypatch.setattr(version_bump.subprocess, "run", fake_lock)
+    code = version_bump.execute_dev_version_bump_workflow(
+        ["--config", str(config_path)],
+        repo_root_provider=lambda: repo_root,
+        dev_features_enabled=lambda: True,
+    )
+
+    assert code == 1
+    assert "Version update rolled back" in capsys.readouterr().err
+    assert 'version = "1.2.3"' in (repo_root / "cli" / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'version = "0.9.0"' in (repo_root / "component" / "pyproject.toml").read_text(encoding="utf-8")
+    assert all(lock_path.read_text(encoding="utf-8") == "old lock\n" for lock_path in lock_paths)
+
+
 def test_dev_version_bump_requires_developer_features(monkeypatch, capsys) -> None:
     monkeypatch.setattr(cli_main, "_dev_features_enabled", lambda: False)
 
