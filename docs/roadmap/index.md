@@ -23,7 +23,7 @@ Status terms used here:
 - **Planned**: sufficiently defined to begin implementation when prioritized.
 - **Research**: requires design or product decisions before implementation.
 
-Last reviewed: 13 November 2026.
+Last reviewed: 15 November 2026.
 
 ## Detailed roadmap specifications
 
@@ -118,6 +118,23 @@ self-monitoring destinations. The design should:
 - Add container image and runtime checks with Trivy or Grype, non-root assertions, minimal-package
   checks, and reviewed seccomp or AppArmor profiles.
 - Evaluate complementary API fuzzing only after ZAP coverage and ownership are stable.
+
+### Standardize TLS version policy
+
+**Planned.** Provide a shared, reusable TLS policy control so every component applies the same
+minimum supported protocol version whenever TLS is enabled. The control should default to TLS 1.2,
+permit deployments to raise the minimum to TLS 1.3, and prevent configuration from weakening the
+minimum below TLS 1.2. Implementation should:
+
+- expose common constants, validation, and Python `SSLContext` construction through
+  `opamp-shared`;
+- apply the policy consistently to server listeners, HTTP and WebSocket clients, generated OpAMP
+  connection settings, and cloud reverse-proxy configuration;
+- keep certificate and hostname verification controls independent from protocol-version policy;
+- reject unsupported versions and invalid minimum/maximum combinations at configuration
+  boundaries; and
+- add unit, configuration-contract, and end-to-end handshake tests proving that TLS 1.0 and 1.1
+  are rejected while enabled TLS 1.2 and TLS 1.3 paths continue to operate.
 
 ## Configuration intelligence
 
