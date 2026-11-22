@@ -199,13 +199,12 @@ def test_repo_security_pytest_uses_importlib_mode(monkeypatch, tmp_path: Path) -
         / "repository"
         / "ruff.sarif"
     )
-    assert runtime.commands[2][0:4] == [
-        "python",
-        "-c",
-        security.SEMGREP_ENTRYPOINT_CODE,
-        "scan",
-    ]
-    assert runtime.commands[3][0:4] == [
+    assert runtime.commands[2][0:3] == ["python", "-m", "venv"]
+    assert runtime.commands[3][1:4] == ["-m", "pip", "install"]
+    assert security.SEMGREP_PIP_REQUIREMENT in runtime.commands[3]
+    assert security.SEMGREP_MCP_REQUIREMENT in runtime.commands[3]
+    assert runtime.commands[4][1:4] == ["-c", security.SEMGREP_ENTRYPOINT_CODE, "scan"]
+    assert runtime.commands[5][0:4] == [
         "python",
         "-m",
         security.BANDIT_TOOL_MODULE,
@@ -493,8 +492,8 @@ def test_component_security_retains_component_scoped_reports(
     assert runtime.commands[0][-1] == f"--junitxml={report_directory / 'pytest.xml'}"
     assert str(report_directory / "ruff.sarif") in runtime.commands[1]
     assert str(report_directory / "pip-audit.json") in runtime.commands[2]
-    assert str(report_directory / "semgrep.sarif") in runtime.commands[3]
-    assert str(report_directory / "bandit.json") in runtime.commands[4]
+    assert str(report_directory / "semgrep.sarif") in runtime.commands[5]
+    assert str(report_directory / "bandit.json") in runtime.commands[6]
 
 
 def test_repo_security_continues_after_a_failed_step(monkeypatch, tmp_path: Path) -> None:
@@ -539,7 +538,7 @@ def test_repo_security_continues_after_a_failed_step(monkeypatch, tmp_path: Path
         security.run_repo_security_checks(runtime, python_exe="python")
 
     assert any(
-        command[0:4] == ["python", "-c", security.SEMGREP_ENTRYPOINT_CODE, "scan"]
+        command[1:4] == ["-c", security.SEMGREP_ENTRYPOINT_CODE, "scan"]
         for command in runtime.commands
     )
     assert any(

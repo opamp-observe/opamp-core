@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
@@ -120,11 +121,9 @@ RUFF_TOOL_MODULE = "ruff"
 SECURITY_REPORT_DIRECTORY = Path("dev-tools/runtime/security-reports")
 SEMGREP_CONFIG_PATH = Path("security/semgrep.yml")
 SEMGREP_ENTRYPOINT_CODE = "from semgrep.console_scripts.pysemgrep import main; main()"
-SEMGREP_MCP_MODULE = "mcp.server.request_state"
-SEMGREP_MCP_REQUIREMENT = "mcp==2.3.0"
+SEMGREP_MCP_REQUIREMENT = "mcp<2"
 SEMGREP_REPORT_FILE_NAME = "semgrep.sarif"
-SEMGREP_PIP_REQUIREMENT = "semgrep>=1.182.1"
-SEMGREP_TOOL_MODULE = "semgrep"
+SEMGREP_PIP_REQUIREMENT = "semgrep>=1.185.0"
 
 
 @dataclass(frozen=True)
@@ -182,18 +181,6 @@ def run_repo_security_checks(runtime: CommandRuntime, *, python_exe: str) -> boo
         python_exe=python_exe,
         module_name=PIP_AUDIT_TOOL_MODULE,
         pip_package=PIP_AUDIT_PIP_REQUIREMENT,
-    )
-    _ensure_cli_tool(
-        runtime,
-        python_exe=python_exe,
-        module_name=SEMGREP_TOOL_MODULE,
-        pip_package=SEMGREP_PIP_REQUIREMENT,
-    )
-    _ensure_cli_tool(
-        runtime,
-        python_exe=python_exe,
-        module_name=SEMGREP_MCP_MODULE,
-        pip_package=SEMGREP_MCP_REQUIREMENT,
     )
     _ensure_cli_tool(
         runtime,
@@ -348,18 +335,6 @@ def run_component_security_checks(
         python_exe=python_exe,
         module_name=DETECT_SECRETS_TOOL_MODULE,
         pip_package=DETECT_SECRETS_PIP_REQUIREMENT,
-    )
-    _ensure_cli_tool(
-        runtime,
-        python_exe=python_exe,
-        module_name=SEMGREP_TOOL_MODULE,
-        pip_package=SEMGREP_PIP_REQUIREMENT,
-    )
-    _ensure_cli_tool(
-        runtime,
-        python_exe=python_exe,
-        module_name=SEMGREP_MCP_MODULE,
-        pip_package=SEMGREP_MCP_REQUIREMENT,
     )
     _ensure_cli_tool(
         runtime,
@@ -874,7 +849,7 @@ def _run_semgrep_report(
     runtime:
         Shared command runtime used for process execution.
     python_exe:
-        Python interpreter containing Semgrep.
+        Python interpreter used to create an isolated Semgrep environment.
     targets:
         Repository-relative source paths Semgrep should inspect.
     env:
@@ -888,24 +863,49 @@ def _run_semgrep_report(
         scope=report_scope,
         file_name=SEMGREP_REPORT_FILE_NAME,
     )
-    runtime.run(
-        [
-            python_exe,
-            "-c",
-            SEMGREP_ENTRYPOINT_CODE,
-            "scan",
-            "--config",
-            str(runtime.repo_root / SEMGREP_CONFIG_PATH),
-            "--metrics",
-            "off",
-            "--sarif",
-            "--output",
-            str(report_path),
-            *targets,
-        ],
-        cwd=runtime.repo_root,
-        env=env,
-    )
+    # Semgrep still imports MCP v1 while the repository tests require MCP v2.
+    with tempfile.TemporaryDirectory(prefix="opamp-semgrep-") as environment_dir:
+        environment_path = Path(environment_dir)
+        semgrep_python = environment_path / (
+            "Scripts/python.exe" if os.name == "nt" else "bin/python"
+        )
+        runtime.run(
+            [python_exe, "-m", "venv", str(environment_path)],
+            cwd=runtime.repo_root,
+            env=env,
+        )
+        runtime.run(
+            [
+                str(semgrep_python),
+                "-m",
+                "pip",
+                "install",
+                "--disable-pip-version-check",
+                "--no-input",
+                SEMGREP_PIP_REQUIREMENT,
+                SEMGREP_MCP_REQUIREMENT,
+            ],
+            cwd=runtime.repo_root,
+            env=env,
+        )
+        runtime.run(
+            [
+                str(semgrep_python),
+                "-c",
+                SEMGREP_ENTRYPOINT_CODE,
+                "scan",
+                "--config",
+                str(runtime.repo_root / SEMGREP_CONFIG_PATH),
+                "--metrics",
+                "off",
+                "--sarif",
+                "--output",
+                str(report_path),
+                *targets,
+            ],
+            cwd=runtime.repo_root,
+            env=env,
+        )
 
 
 def _run_bandit_report(
