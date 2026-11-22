@@ -16,7 +16,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opamp-server"
-version = "0.6.0"
+version = "0.7.0"
 description = "OpAMP Server - upstream source https://github.com/opamp-observe/opamp-core "
 readme = "README.md"
 requires-python = ">=3.11"
