@@ -318,6 +318,25 @@ SIMULATOR_STATE_KEY_NAME = "name"
 SIMULATOR_STATE_KEY_PID = "pid"
 GUIDED_DESCRIPTION_COMMAND_PREFIX = "d"
 GUIDED_DESCRIPTION_LABEL = "scenario description"
+DEVELOPER_CLI_HELP_LINES = frozenset(
+    {
+        "  opamp-cli dev [developer-command...]",
+        (
+            "  opamp-cli dev-tests "
+            "[all|unit|e2e|security|dependencies|pip-audit|renovate|list|terminate] "
+            "[--config <path>]"
+        ),
+        "  # Open the optional developer CLI, or forward one of its commands",
+        "  opamp-cli dev",
+        "  opamp-cli dev test all",
+        "  # Run every configured development test suite",
+        "  opamp-cli dev-tests all",
+        (
+            "  - When opamp-dev-cli is installed, `dev` forwards commands to it and "
+            "`dev-tests` remains as a compatibility alias for `dev test`."
+        ),
+    }
+)
 SUPERVISOR_SEMAPHORE_FILENAME = "OpAMPSupervisor.signal"
 PROCESS_INFO_KEY_PID = "pid"
 PROCESS_INFO_KEY_NAME = "name"
@@ -1002,6 +1021,24 @@ def _dev_tests_available() -> bool:
     """Return whether the independently installed developer CLI is available."""
 
     return developer_cli.developer_cli_available()
+
+
+def _help_text_for_environment() -> str:
+    """Return help text limited to commands available in this installation.
+
+    The operator CLI remains independently deployable. Optional developer bridge
+    commands are removed from help when no developer CLI executable is discoverable,
+    matching the dynamically generated command list and completion surface.
+    """
+
+    if _dev_tests_available():
+        return HELP_TEXT
+    available_lines = [
+        help_line
+        for help_line in HELP_TEXT.splitlines()
+        if help_line not in DEVELOPER_CLI_HELP_LINES
+    ]
+    return "\n".join(available_lines) + "\n"
 
 
 def _prompt_text(
@@ -4532,7 +4569,7 @@ def _interactive_loop() -> int:  # noqa: PLR0912,PLR0915
             return 0
         if raw.strip().lower() in {COMMAND_HELP, "-h", "--help"}:
             logger.info("interactive help requested")
-            print(HELP_TEXT)
+            print(_help_text_for_environment())
             continue
         guided = _split_guided_command(raw)
         if guided is not None:
@@ -4578,7 +4615,7 @@ def main(argv: list[str] | None = None) -> int:
         return exit_code
     if args[0] in {"-h", "--help", COMMAND_HELP}:
         logger.info("CLI help requested argv=%s", args)
-        print(HELP_TEXT)
+        print(_help_text_for_environment())
         return 0
     if args[0] == VERSION_FLAG:
         logger.debug("CLI version requested")

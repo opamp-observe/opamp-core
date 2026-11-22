@@ -176,6 +176,9 @@ Development regression tests:
 - `opamp-cli` remains fully usable without `opamp-dev-cli`; no developer-tools runtime dependency is
   declared by the operator package.
 - `dev-tests` remains as a compatibility alias for `dev test` when the developer CLI is available.
+- The `opamp-cli-standalone-deployment` container regression installs only the
+  operator wheel and verifies that `--help` and `list` do not present `dev` or
+  `dev-tests` when the developer package is absent.
 - With no selection it prompts for `all`, `unit`, `e2e`, `security`, `dependencies`,
   `pip-audit`, or `renovate`.
 - `dev test list` shows the configured suites and tests after discovery without running them.

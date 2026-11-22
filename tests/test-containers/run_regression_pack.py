@@ -103,6 +103,7 @@ def _ensure_regression_directories(repo_root: Path) -> None:
     for directory in (
         repo_root / "dist" / "consumer",
         repo_root / "dist" / "test-reports" / "component-wheel-deployment",
+        repo_root / "dist" / "test-reports" / "opamp-cli-standalone-deployment",
         repo_root / "dist" / "test-reports" / "opamp-consumer-deployment" / "fluentbit",
         repo_root / "dist" / "test-reports" / "opamp-consumer-deployment" / "fluentd",
         repo_root / "dist" / "test-reports" / "opamp-consumer-deployment" / "elastic-heartbeat",
@@ -136,6 +137,10 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
         repo_root / "dist/test-reports/opamp-consumer-deployment"
     )
     config_service_ui_image = "config-service-ui-playwright-batch:latest"
+    standalone_cli_image = "opamp-cli-standalone-deployment:latest"
+    standalone_cli_reports = (
+        repo_root / "dist/test-reports/opamp-cli-standalone-deployment"
+    )
     st007_image = "opamp-st007-test:latest"
     st009_image = "opamp-st009-test:latest"
     st010_image = "opamp-st010-test:latest"
@@ -204,6 +209,39 @@ def _default_tests(repo_root: Path) -> list[RegressionTest]:
                     "-v",
                     f"{repo_root}:/workspace/opamp",
                     client_config_generator_deployment_image,
+                ),
+            ),
+        ),
+        RegressionTest(
+            test_id="opamp-cli-standalone-deployment",
+            description=(
+                "Builds and installs only the opamp-cli wheel, then verifies its help "
+                "and command list do not expose optional developer CLI commands."
+            ),
+            commands=(
+                (
+                    "docker",
+                    "build",
+                    "-f",
+                    str(
+                        repo_root
+                        / "tests/test-containers"
+                        / "opamp-cli-standalone-deployment"
+                        / "Dockerfile"
+                    ),
+                    "-t",
+                    standalone_cli_image,
+                    str(repo_root),
+                ),
+                (
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-e",
+                    "RESULTS_DIR=/host-output",
+                    "-v",
+                    f"{standalone_cli_reports}:/host-output",
+                    standalone_cli_image,
                 ),
             ),
         ),
