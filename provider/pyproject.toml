@@ -27,7 +27,7 @@ dependencies = [
   "anyio>=4.14.2",
   "authlib>=1.9.1",
   "certifi>=2026.10.19",
-  "opamp-shared==0.6.0",
+  "opamp-shared==0.7.0",
   "quart>=0.19",
   "pydantic>=2.6",
   "protobuf>=5.27",

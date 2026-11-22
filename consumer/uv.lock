@@ -1089,7 +1089,7 @@ wheels = [
 
 [[package]]
 name = "opamp-consumer"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "." }
 dependencies = [
     { name = "defusedxml" },
@@ -1144,7 +1144,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "opamp-shared"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "../shared" }
 dependencies = [
     { name = "quart", version = "0.20.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },

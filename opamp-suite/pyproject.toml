@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "opamp-suite"
-version = "0.6.0"
+version = "0.7.0"
 description = "Installation profiles for OpAMP server, editor, and consumer packages"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -27,40 +27,40 @@ dependencies = []
 
 [project.optional-dependencies]
 server = [
-  "catalog-service==0.6.0",
-  "client-config-generator-service==0.6.0",
-  "config-service==0.6.0",
-  "opamp-server==0.6.0",
-  "svr-credentials-manager-service==0.1.0",
+  "catalog-service==0.7.0",
+  "client-config-generator-service==0.7.0",
+  "config-service==0.7.0",
+  "opamp-server==0.7.0",
+  "svr-credentials-manager-service==0.2.0",
 ]
 editors = [
-  "catalog-service==0.6.0",
-  "client-config-generator-service==0.6.0",
-  "config-service==0.6.0",
-  "svr-credentials-manager-service==0.1.0",
+  "catalog-service==0.7.0",
+  "client-config-generator-service==0.7.0",
+  "config-service==0.7.0",
+  "svr-credentials-manager-service==0.2.0",
 ]
 config-editor = [
-  "config-service==0.6.0",
+  "config-service==0.7.0",
 ]
 catalog = [
-  "catalog-service==0.6.0",
+  "catalog-service==0.7.0",
 ]
 client-config-editor = [
-  "client-config-generator-service==0.6.0",
+  "client-config-generator-service==0.7.0",
 ]
 credentials-editor = [
-  "svr-credentials-manager-service==0.1.0",
+  "svr-credentials-manager-service==0.2.0",
 ]
 consumer = [
-  "opamp-consumer==0.6.0",
+  "opamp-consumer==0.7.0",
 ]
 all = [
-  "catalog-service==0.6.0",
-  "client-config-generator-service==0.6.0",
-  "config-service==0.6.0",
-  "opamp-consumer==0.6.0",
-  "opamp-server==0.6.0",
-  "svr-credentials-manager-service==0.1.0",
+  "catalog-service==0.7.0",
+  "client-config-generator-service==0.7.0",
+  "config-service==0.7.0",
+  "opamp-consumer==0.7.0",
+  "opamp-server==0.7.0",
+  "svr-credentials-manager-service==0.2.0",
 ]
 dev = [
   "pylint>=3.0",

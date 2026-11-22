@@ -17,8 +17,11 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import subprocess
 import sys
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +31,16 @@ from .constants import (
     COMMAND_DEV_VERSION_BUMP,
     TRUE_VALUES,
 )
+
+
+@dataclass
+class _VersionBumpPlan:
+    """Hold staged metadata edits and target validation results before writing."""
+
+    updates: list[dict[str, Any]] = field(default_factory=list)
+    staged_files: dict[Path, str] = field(default_factory=dict)
+    pattern_misses: list[Path] = field(default_factory=list)
+    optional_missing: list[Path] = field(default_factory=list)
 
 
 def _parse_semver(version: str) -> tuple[int, int, int] | None:
@@ -74,10 +87,14 @@ def _parse_dev_version_bump_args(args: list[str], *, repo_root: Path) -> dict[st
             if index >= len(args):
                 raise ValueError("--config requires a path")
             raw_path = Path(args[index]).expanduser()
-            config_path = raw_path.resolve() if raw_path.is_absolute() else (repo_root / raw_path).resolve()
+            config_path = (
+                raw_path.resolve() if raw_path.is_absolute() else (repo_root / raw_path).resolve()
+            )
         elif arg_text.startswith("--config="):
             raw_path = Path(arg_text.split("=", 1)[1]).expanduser()
-            config_path = raw_path.resolve() if raw_path.is_absolute() else (repo_root / raw_path).resolve()
+            config_path = (
+                raw_path.resolve() if raw_path.is_absolute() else (repo_root / raw_path).resolve()
+            )
         elif arg_text.startswith("--"):
             raise ValueError(f"unsupported {COMMAND_DEV_VERSION_BUMP} option: {arg_text}")
         elif requested_version:
@@ -184,8 +201,9 @@ def _planned_configured_version_target(
     repo_root: Path,
     target: dict[str, Any],
     version: str,
+    content: str | None = None,
 ) -> dict[str, Any]:
-    """Validate and stage one version target update without writing it."""
+    """Validate and stage one target against the latest planned file content."""
     target_path = _resolve_repo_path(repo_root, target.get("path"))
     pattern = str(target.get("pattern") or "").strip()
     replacement_template = str(target.get("replacement") or "")
@@ -205,7 +223,7 @@ def _planned_configured_version_target(
             }
         raise FileNotFoundError(f"version target not found: {target_path}")
     count = int(target.get("count", 0) or 0)
-    original = target_path.read_text(encoding="utf-8")
+    original = content if content is not None else target_path.read_text(encoding="utf-8")
     updated, replacements = re.subn(
         pattern,
         replacement_template.format(version=version),
@@ -220,6 +238,64 @@ def _planned_configured_version_target(
         "replacements": replacements,
         "updated": updated,
     }
+
+
+def _configured_lock_projects(repo_root: Path, config: dict[str, Any]) -> list[Path]:
+    """Validate projects whose locks must follow the package metadata update."""
+    configured_projects = config.get("lockProjects", [])
+    if not isinstance(configured_projects, list):
+        raise ValueError("lockProjects must be a list")
+    projects: list[Path] = []
+    for raw_project in configured_projects:
+        project_path = _resolve_repo_path(repo_root, raw_project)
+        if not (project_path / "pyproject.toml").is_file():
+            raise FileNotFoundError(f"lock project metadata not found: {project_path}")
+        if not (project_path / "uv.lock").is_file():
+            raise FileNotFoundError(f"lock file not found: {project_path / 'uv.lock'}")
+        if project_path not in projects:
+            projects.append(project_path)
+    if projects and shutil.which("uv") is None:
+        raise FileNotFoundError("uv is required to refresh configured lock files")
+    return projects
+
+
+def _regenerate_lock_files(repo_root: Path, projects: list[Path]) -> None:
+    """Regenerate each configured lock after all metadata updates are staged."""
+    uv_executable = shutil.which("uv") if projects else None
+    if projects and uv_executable is None:
+        raise FileNotFoundError("uv is required to refresh configured lock files")
+    for project_path in projects:
+        completed = subprocess.run(  # noqa: S603
+            [str(uv_executable), "lock", "--project", str(project_path)],
+            cwd=repo_root,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            detail = completed.stderr.strip() or completed.stdout.strip()
+            raise RuntimeError(f"uv lock failed for {project_path}: {detail}")
+        print(f"Refreshed {project_path / 'uv.lock'}")
+
+
+def _write_version_and_lock_updates(
+    *,
+    repo_root: Path,
+    staged_files: dict[Path, str],
+    lock_projects: list[Path],
+) -> None:
+    """Write staged metadata and restore every touched file if locking fails."""
+    touched_paths = set(staged_files)
+    touched_paths.update(project_path / "uv.lock" for project_path in lock_projects)
+    original_bytes = {path: path.read_bytes() for path in touched_paths}
+    try:
+        for target_path, updated_content in staged_files.items():
+            target_path.write_text(updated_content, encoding="utf-8")
+        _regenerate_lock_files(repo_root, lock_projects)
+    except (OSError, RuntimeError):
+        for target_path, original_content in original_bytes.items():
+            target_path.write_bytes(original_content)
+        raise
 
 
 def _update_configured_version_target(
@@ -242,6 +318,85 @@ def _update_configured_version_target(
     return target_path, replacements
 
 
+def _plan_component_targets(
+    repo_root: Path,
+    component: dict[str, Any],
+    version: str,
+    plan: _VersionBumpPlan,
+) -> list[dict[str, Any]]:
+    """Stage every target in a component against prior edits to the same file."""
+    targets: list[dict[str, Any]] = []
+    for raw_target in component["targets"]:
+        if not isinstance(raw_target, dict):
+            raise ValueError("each version target must be a JSON object")
+        target_path = _resolve_repo_path(repo_root, raw_target.get("path"))
+        planned_target = _planned_configured_version_target(
+            repo_root=repo_root,
+            target=raw_target,
+            version=version,
+            content=plan.staged_files.get(target_path),
+        )
+        if planned_target["missing"]:
+            plan.optional_missing.append(target_path)
+        elif planned_target["replacements"] <= 0:
+            plan.pattern_misses.append(target_path)
+        else:
+            plan.staged_files[target_path] = planned_target["updated"]
+        targets.append(planned_target)
+    return targets
+
+
+def _plan_version_updates(
+    repo_root: Path,
+    config: dict[str, Any],
+    requested_version: str | None,
+) -> _VersionBumpPlan:
+    """Validate all component versions and collect edits without writing files."""
+    plan = _VersionBumpPlan()
+    for index, component in enumerate(_version_config_components(config), start=1):
+        label = _version_component_label(component, index)
+        current_version = _read_version_from_config_source(
+            repo_root, component["currentVersionSource"]
+        )
+        next_version = str(requested_version or _next_minor_semver(current_version))
+        if not _semver_greater(next_version, current_version):
+            raise ValueError(
+                f"New version {next_version} for {label} must be greater than "
+                f"current version {current_version}."
+            )
+        targets = _plan_component_targets(repo_root, component, next_version, plan)
+        plan.updates.append(
+            {
+                "label": label,
+                "current_version": current_version,
+                "next_version": next_version,
+                "targets": targets,
+            }
+        )
+    return plan
+
+
+def _print_version_updates(plan: _VersionBumpPlan) -> None:
+    """Report each updated target and the total number of replacements."""
+    updated_count = 0
+    for planned_update in plan.updates:
+        print(
+            f"{planned_update['label']}: "
+            f"{planned_update['current_version']} -> {planned_update['next_version']}"
+        )
+        for planned_target in planned_update["targets"]:
+            target_path = Path(planned_target["path"])
+            if planned_target["missing"]:
+                print(f"Skipped optional missing target {target_path}")
+                continue
+            replacements = planned_target["replacements"]
+            updated_count += 1
+            print(f"Updated {target_path} ({replacements} replacement(s))")
+    if plan.optional_missing:
+        print(f"Optional missing targets skipped: {len(plan.optional_missing)}")
+    print(f"Version update complete: {updated_count} target(s) updated.")
+
+
 def execute_dev_version_bump_workflow(
     args: list[str] | None = None,
     *,
@@ -251,7 +406,8 @@ def execute_dev_version_bump_workflow(
     """Update configured component semantic versions in dev mode."""
     if dev_features_enabled() is not True:
         print(
-            f"{COMMAND_DEV_VERSION_BUMP} is only available when {APP_ENABLE_DEV_FEATURES_ENV}=true.",
+            f"{COMMAND_DEV_VERSION_BUMP} is only available when "
+            f"{APP_ENABLE_DEV_FEATURES_ENV}=true.",
             file=sys.stderr,
         )
         return 1
@@ -266,80 +422,33 @@ def execute_dev_version_bump_workflow(
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
-    planned_updates: list[dict[str, Any]] = []
-    pattern_misses: list[Path] = []
-    optional_missing: list[Path] = []
     try:
-        for index, component in enumerate(_version_config_components(config), start=1):
-            label = _version_component_label(component, index)
-            current_version = _read_version_from_config_source(repo_root, component["currentVersionSource"])
-            next_version = str(requested_version or _next_minor_semver(current_version))
-            is_greater = _semver_greater(next_version, current_version)
-            if is_greater is not True:
-                print(
-                    f"New version {next_version} for {label} must be greater than "
-                    f"current version {current_version}.",
-                    file=sys.stderr,
-                )
-                return 1
-            targets: list[dict[str, Any]] = []
-            for raw_target in component["targets"]:
-                if not isinstance(raw_target, dict):
-                    raise ValueError("each version target must be a JSON object")
-                planned_target = _planned_configured_version_target(
-                    repo_root=repo_root,
-                    target=raw_target,
-                    version=next_version,
-                )
-                if bool(planned_target.get("missing")):
-                    optional_missing.append(Path(planned_target["path"]))
-                elif int(planned_target["replacements"]) <= 0:
-                    pattern_misses.append(Path(planned_target["path"]))
-                targets.append(planned_target)
-            planned_updates.append(
-                {
-                    "label": label,
-                    "current_version": current_version,
-                    "next_version": next_version,
-                    "targets": targets,
-                }
-            )
+        plan = _plan_version_updates(repo_root, config, requested_version)
+        lock_projects = _configured_lock_projects(repo_root, config)
     except (FileNotFoundError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
-    if pattern_misses:
+    if plan.pattern_misses:
         print("Version update aborted before writing changes.", file=sys.stderr)
         print("The following target pattern(s) did not match:", file=sys.stderr)
-        for target_path in pattern_misses:
+        for target_path in plan.pattern_misses:
             print(f"  - {target_path}", file=sys.stderr)
         return 1
 
     print(f"Version target config: {config_path}")
-    print(f"Version components: {len(planned_updates)}")
+    print(f"Version components: {len(plan.updates)}")
 
-    updated_count = 0
-    for planned_update in planned_updates:
-        print(
-            f"{planned_update['label']}: "
-            f"{planned_update['current_version']} -> {planned_update['next_version']}"
+    try:
+        _write_version_and_lock_updates(
+            repo_root=repo_root,
+            staged_files=plan.staged_files,
+            lock_projects=lock_projects,
         )
-        for planned_target in planned_update["targets"]:
-            target_path = Path(planned_target["path"])
-            if bool(planned_target.get("missing")):
-                print(f"Skipped optional missing target {target_path}")
-                continue
-            replacements = int(planned_target["replacements"])
-            if replacements <= 0:
-                print(f"Skipped {target_path} (pattern not found)")
-                continue
-            updated = planned_target.get("updated")
-            if isinstance(updated, str):
-                target_path.write_text(updated, encoding="utf-8")
-            updated_count += 1
-            print(f"Updated {target_path} ({replacements} replacement(s))")
+    except (OSError, RuntimeError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        print("Version update rolled back.", file=sys.stderr)
+        return 1
 
-    if optional_missing:
-        print(f"Optional missing targets skipped: {len(optional_missing)}")
-    print(f"Version update complete: {updated_count} target(s) updated.")
+    _print_version_updates(plan)
     return 0

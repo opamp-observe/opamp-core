@@ -1350,7 +1350,7 @@ wheels = [
 
 [[package]]
 name = "opamp-server"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -1412,7 +1412,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "opamp-shared"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "../shared" }
 dependencies = [
     { name = "quart" },

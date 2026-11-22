@@ -24,7 +24,7 @@ license = "Apache-2.0"
 authors = [{ name = "Phil Wilkins" }]
 keywords = ["opamp", "observability", "catalog", "configuration", "ui"]
 dependencies = [
-  "opamp-shared==0.6.0",
+  "opamp-shared==0.7.0",
   "quart>=0.20.0",
   "opentelemetry-api",
   "opentelemetry-sdk",
