@@ -78,6 +78,8 @@ CFG_LOG_AGENT_API_RESPONSES = "log_agent_api_responses"
 # Consumer JSON key enabling verbose API logging.
 CFG_ALLOW_CUSTOM_CAPABILITIES = "allow_custom_capabilities"
 # Consumer JSON key allowing dynamic custom capabilities.
+CFG_CUSTOM_HANDLER_EXECUTION_MODES = "custom_handler_execution_modes"
+# Trusted local map of reverse-FQDN to sync/async execution mode.
 CFG_PRESERVE_PREVIOUS_CONFIG = "preserve_previous_config"
 # Consumer JSON key enabling preservation of replaced config files.
 CFG_CLIENT_STATUS_PORT = "client_status_port"  # Consumer JSON key for local status endpoint port.
@@ -208,6 +210,7 @@ class ConsumerConfig:
     allow_custom_capabilities: bool = (
         False  # Allow custom capability discovery/registration.
     )
+    custom_handler_execution_modes: dict[str, str] = field(default_factory=dict)
     preserve_previous_config: bool = (
         DEFAULT_PRESERVE_PREVIOUS_CONFIG
         # Preserve an existing config file by renaming it before replacement.
@@ -458,6 +461,22 @@ def _normalize_consumer_plugins(value: Any) -> list[dict[str, Any]]:
                 item,
             )
     return plugins
+
+
+def _normalize_handler_execution_modes(value: Any) -> dict[str, str]:
+    """Validate trusted local capability-to-execution-mode configuration."""
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError(f"{CFG_CUSTOM_HANDLER_EXECUTION_MODES} must be an object")
+    normalized: dict[str, str] = {}
+    for capability, raw_mode in value.items():
+        if not isinstance(capability, str) or not capability.strip():
+            raise ValueError("custom handler execution capability must be nonempty")
+        if raw_mode not in {"sync", "async"}:
+            raise ValueError(f"Invalid custom handler execution mode: {raw_mode}")
+        normalized[capability.strip()] = raw_mode
+    return normalized
 
 
 def _normalize_process_tracking(value: Any) -> str:
@@ -835,6 +854,9 @@ def load_config() -> ConsumerConfig:
         idp_grant_type=idp_grant_type,
         log_agent_api_responses=bool(log_agent_api_responses),
         allow_custom_capabilities=allow_custom_capabilities,
+        custom_handler_execution_modes=_normalize_handler_execution_modes(
+            consumer_raw.get(CFG_CUSTOM_HANDLER_EXECUTION_MODES)
+        ),
         preserve_previous_config=_coerce_bool(
             consumer_raw.get(CFG_PRESERVE_PREVIOUS_CONFIG),
             default=DEFAULT_PRESERVE_PREVIOUS_CONFIG,
@@ -1042,6 +1064,9 @@ def load_config_with_overrides(
         ),
         allow_custom_capabilities=bool(
             consumer_raw.get(CFG_ALLOW_CUSTOM_CAPABILITIES, False)
+        ),
+        custom_handler_execution_modes=_normalize_handler_execution_modes(
+            consumer_raw.get(CFG_CUSTOM_HANDLER_EXECUTION_MODES)
         ),
         preserve_previous_config=_coerce_bool(
             consumer_raw.get(CFG_PRESERVE_PREVIOUS_CONFIG),

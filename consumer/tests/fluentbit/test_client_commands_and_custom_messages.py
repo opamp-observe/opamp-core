@@ -123,6 +123,10 @@ def test_handle_custom_message_missing_capability_raises_agent_exception() -> No
 def test_handle_custom_message_execute_error_raises_agent_exception(monkeypatch) -> None:
     """A handler execute error should be converted to AgentException."""
     instance = client.OpAMPClient("http://localhost")
+    instance.config.allow_custom_capabilities = True
+    instance.handle_custom_capabilities(opamp_pb2.CustomCapabilities(
+        capabilities=["org.mp3monster.opamp_provider.chatopcommand"]
+    ))
 
     class _FakeHandler:
         def set_custom_message_handler(self, _custom_message):
@@ -142,7 +146,7 @@ def test_handle_custom_message_execute_error_raises_agent_exception(monkeypatch)
     custom_message.type = "test"
     custom_message.data = b'{"action":"run"}'
 
-    with pytest.raises(AgentException):
+    with pytest.raises(AgentException, match="bad execute"):
         instance.handle_custom_message(custom_message)
 
 
@@ -162,8 +166,8 @@ def test_get_custom_capabilities_payload_from_registry() -> None:
     payload = instance.get_custom_capabilities_payload()
 
     assert payload.capabilities == [
-        "request:org.mp3monster.opamp_provider.chatopcommand",
-        "request:org.mp3monster.opamp_provider.command_shutdown_agent",
+        "org.mp3monster.opamp_provider.chatopcommand",
+        "org.mp3monster.opamp_provider.command_shutdown_agent",
     ]
 
 
@@ -184,8 +188,8 @@ def test_populate_agent_to_server_includes_custom_capabilities() -> None:
 
     assert populated.HasField("custom_capabilities")
     assert populated.custom_capabilities.capabilities == [
-        "request:org.mp3monster.opamp_provider.chatopcommand",
-        "request:org.mp3monster.opamp_provider.command_shutdown_agent",
+        "org.mp3monster.opamp_provider.chatopcommand",
+        "org.mp3monster.opamp_provider.command_shutdown_agent",
     ]
 
 

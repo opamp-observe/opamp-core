@@ -256,12 +256,31 @@ That guide includes:
 | `consumer.idp-grant-type` | string | No | OAuth grant type for `idp` mode. Default `client_credentials`. | `"client_credentials"` |
 | `consumer.log_agent_api_responses` | boolean | No | Enables verbose logging of local API responses. | `false` |
 | `consumer.allow_custom_capabilities` | boolean | No | Enables publishing/discovery of custom capabilities. | `true` |
+| `consumer.custom_handler_execution_modes` | object | No | Trusted local reverse-FQDN to `sync` or `async` map. Existing handlers default to `sync`; use `async` for blocking scan work. | `{"org.example.scan":"async"}` |
 | `consumer.agent_capabilities` | integer, string, or array[string] | No | Optional capability enable list or mask. Configured values are merged with the mandatory capabilities, deduplicated, then intersected with the concrete client's supported-capability list. Unsupported configured values are warned and ignored. | `["AcceptsRemoteConfig","ReportsHeartbeat"]` |
 | `consumer.preserve_previous_config` | boolean | No | When `true`, an existing remote-config target file is renamed to `.replaced_yyyy-mm-dd--hh-mm-ss` before the new content is written. | `false` |
 | `consumer.service_name` | string | No | Reported service name in agent description. | `"Fluentbit"` |
 | `consumer.service_namespace` | string | No | Reported service namespace in agent description. | `"FluentBitNS"` |
 | `consumer.client_status_port` | integer | No | Local status polling port. If unset, parsed from agent config `http_port`. | `2020` |
 | `consumer.chat_ops_port` | integer | No | Local ChatOps port used by custom command handler. Defaults to `8888` when unset. | `8888` |
+
+Installed custom handlers may register a concrete `CustomMessageHandlerInterface`
+class through the `opamp_consumer.custom_handlers` entry-point group. Discovery
+requires `allow_custom_capabilities=true` and advertises the raw reverse-FQDN.
+The local `custom_handler_execution_modes` map selects `async` for blocking work;
+the handler then runs in a worker and returns an optional `CustomMessage` to the
+consumer coordinator. `sync` is the default for existing handlers. Completed
+results enter a bounded queue and join normal `AgentToServer` messages one at a
+time, preserving instance UID and sequence number. HTTP uses the next scheduled
+poll; WebSocket completion starts another exchange. Transport failure keeps the
+result for retry. Handlers must return results rather than call `send` directly.
+
+For example, a separately built wheel can declare:
+
+```toml
+[project.entry-points."opamp_consumer.custom_handlers"]
+network_security = "network_security_consumer.handler:NetworkSecurityHandler"
+```
 
 Authorization mode behavior:
 - `none`: no outbound `Authorization` header.

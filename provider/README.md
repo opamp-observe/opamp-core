@@ -296,6 +296,31 @@ For the shared provider+consumer guide on implementing and deploying custom acti
 
 - `../docs/dev/adding_your_own_custom_action.md`
 
+Separately installed custom commands register a factory or zero-argument class in the
+`opamp_provider.custom_commands` entry-point group. The object implements
+`opamp_provider.custom_commands.CustomCommandABC`: `command_id` selects it,
+`capability` is the raw reverse-FQDN, `validate(parameters)` checks typed input,
+`build_message(agent_id, request)` produces a `CustomMessage`, and the optional
+`handle_result(agent_id, message)` receives authenticated results. The provider
+publishes installed capabilities and metadata alongside built-in commands.
+
+`POST /api/clients/<client_id>/commands` accepts
+`{"command_id":"network-security-verifier","parameters":{...}}` for an installed
+command after that client advertises its capability. The provider stores the
+implementation-built request and sends it in `ServerToAgent.custom_message` at the
+next check-in. HTTP and WebSocket `AgentToServer.custom_message` results reach the
+registered implementation using the authenticated client ID. The implementation
+owns request IDs, result interpretation, and any separate history storage. Existing
+pair-based built-in commands retain their wire format. Component entry points
+register any extension API or UI routes under the provider's normal route auth.
+
+For example, a separately built wheel can declare:
+
+```toml
+[project.entry-points."opamp_provider.custom_commands"]
+network_security = "network_security_provider.command:create_command"
+```
+
 ## Web UI
 
 - Console: `http://localhost:8080/ui`

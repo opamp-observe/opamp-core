@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from abc import ABC, abstractmethod
@@ -30,7 +29,8 @@ if TYPE_CHECKING:
 UTF8_ENCODING = "utf-8"  # Text encoding used to decode custom-message payload bytes.
 DECODE_ERRORS_REPLACE = "replace"  # Decode error strategy for malformed payload bytes.
 PAYLOAD_ACTION_KEY = "action"  # JSON payload key used to select handler action.
-CLIENT_SEND_METHOD_NAME = "send"  # Client method name used to send custom responses upstream.
+EXECUTION_SYNC = "sync"
+EXECUTION_ASYNC = "async"
 
 
 class CommandHandlerInterface(ABC):
@@ -49,12 +49,16 @@ class CommandHandlerInterface(ABC):
         """Set the custom message payload to be processed by execute()."""
 
     @abstractmethod
-    def execute(self, opamp_client: OpAMPClientInterface) -> CommandException | None:
-        """Execute command logic and return a CommandException when execution fails."""
+    def execute(
+        self, opamp_client: OpAMPClientInterface
+    ) -> opamp_pb2.CustomMessage | CommandException | None:
+        """Execute command logic and return its optional response or failure."""
 
 
 class CustomMessageHandlerInterface(CommandHandlerInterface):
     """Defines the contract for custom message handlers."""
+
+    execution_mode = EXECUTION_SYNC
 
     def __init__(self) -> None:
         """Initialize storage for the latest custom message payload."""
@@ -80,10 +84,13 @@ class CustomMessageHandlerInterface(CommandHandlerInterface):
 
     def set_custom_message_handler(self, custom_message: opamp_pb2.CustomMessage) -> None:
         """Store the inbound custom message for execute()."""
-        self._custom_message = custom_message
+        self._custom_message = opamp_pb2.CustomMessage()
+        self._custom_message.CopyFrom(custom_message)
 
-    def execute(self, opamp_client: OpAMPClientInterface) -> CommandException | None:
-        """Execute the custom message handler and return CommandException on failure."""
+    def execute(
+        self, opamp_client: OpAMPClientInterface
+    ) -> opamp_pb2.CustomMessage | CommandException | None:
+        """Execute the custom message handler and return its optional response."""
         logger = logging.getLogger(__name__)
         fqdn = self.get_reverse_fqdn()
         logger.info("custom handler execute start fqdn=%s", fqdn)
@@ -106,26 +113,7 @@ class CustomMessageHandlerInterface(CommandHandlerInterface):
                     action = ""
 
             self.handle_message(payload_text, message_type)
-            custom_response = self.execute_action(action, opamp_client)
-            if custom_response is not None:
-                sender = getattr(opamp_client, CLIENT_SEND_METHOD_NAME, None)
-                if not callable(sender):
-                    return CommandException(
-                        "Custom response could not be sent: client send method unavailable"
-                    )
-                outbound = opamp_pb2.AgentToServer()
-                outbound.custom_message.CopyFrom(custom_response)
-                try:
-                    send_result = sender(msg=outbound, send_as_is=True)
-                    if not asyncio.iscoroutine(send_result):
-                        return CommandException(
-                            "Custom response could not be sent: send did not return coroutine"
-                        )
-                    asyncio.run(send_result)
-                except TypeError:
-                    return CommandException(
-                        "Custom response could not be sent: client send signature mismatch"
-                    )
+            return self.execute_action(action, opamp_client)
         except Exception as err:  # pragma: no cover - depends on implementation details
             return CommandException(f"Command handler execute failed: {err}")
         finally:

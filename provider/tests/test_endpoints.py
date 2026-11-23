@@ -20,7 +20,9 @@ from http import HTTPStatus
 import pytest
 
 from opamp_provider import auth as provider_auth
+from opamp_provider import commands as provider_commands
 from opamp_provider import config as provider_config
+from opamp_provider import custom_commands
 from opamp_provider.app import (
     ACTION_APPLY_CONFIG,
     ACTION_CHANGE_CONNECTIONS,
@@ -417,6 +419,37 @@ async def test_websocket_endpoint() -> None:
     server_msg = opamp_pb2.ServerToAgent()
     server_msg.ParseFromString(payload)
     assert server_msg.instance_uid == test_uid
+
+
+@pytest.mark.asyncio
+async def test_websocket_result_reaches_registered_command(monkeypatch) -> None:
+    """WebSocket results reach the registered callback with the trusted client ID."""
+    capability = "org.example.scan"
+    received: list[tuple[str, bytes]] = []
+
+    class ResultOwner:
+        """Minimal callback owner used at the authenticated transport boundary."""
+
+        capability = "org.example.scan"
+
+        @staticmethod
+        def handle_result(agent_id: str, message: opamp_pb2.CustomMessage) -> None:
+            """Record the trusted identity and returned bytes."""
+            received.append((agent_id, message.data))
+
+    monkeypatch.setattr(
+        custom_commands, "installed_commands", lambda: {"scan": ResultOwner()}
+    )
+    client_uid = b"authenticated-id"
+    agent_msg = opamp_pb2.AgentToServer(instance_uid=client_uid, sequence_num=1)
+    agent_msg.custom_message.CopyFrom(opamp_pb2.CustomMessage(
+        capability=capability, type="result", data=b"complete"
+    ))
+    async with app.test_client() as client:
+        async with client.websocket("/v1/opamp") as websocket_client:
+            await websocket_client.send(encode_message(agent_msg.SerializeToString()))
+            await websocket_client.receive()
+    assert received == [(client_uid.hex(), b"complete")]
 
 
 @pytest.mark.asyncio
@@ -2582,6 +2615,71 @@ async def test_queue_custom_nullcommand_and_emit_custom_message_payload() -> Non
             == "org.mp3monster.opamp_provider.nullcommand"
         )
         assert b'"dummyValue": "integration-check"' in server_msg.custom_message.data
+
+
+@pytest.mark.asyncio
+async def test_installed_command_http_round_trip(monkeypatch) -> None:
+    """The authenticated HTTP boundary queues and routes an installed command result."""
+    capability = "org.example.scan"
+    received: list[tuple[str, bytes]] = []
+
+    class InstalledCommand(custom_commands.CustomCommandABC):
+        """Small installed-command stand-in for the HTTP integration boundary."""
+
+        @property
+        def command_id(self) -> str:
+            """Return the API's stable selection key."""
+            return "network-security-verifier"
+
+        @property
+        def capability(self) -> str:
+            """Return the OpAMP custom capability."""
+            return capability
+
+        def validate(self, parameters: dict[str, object]) -> str:
+            """Require a typed target parameter."""
+            target = parameters.get("target")
+            if not isinstance(target, str):
+                raise ValueError("target is required")
+            return target
+
+        def build_message(self, agent_id: str, request: str) -> opamp_pb2.CustomMessage:
+            """Build the wire request from validated data."""
+            return opamp_pb2.CustomMessage(
+                capability=capability, type="request", data=request.encode()
+            )
+
+        def handle_result(self, agent_id: str, message: opamp_pb2.CustomMessage) -> None:
+            """Observe the trusted identity and returned data."""
+            received.append((agent_id, message.data))
+
+    command = InstalledCommand()
+    monkeypatch.setattr(custom_commands, "installed_commands", lambda: {command.command_id: command})
+    monkeypatch.setattr(provider_commands, "installed_commands", lambda: {command.command_id: command})
+    client_uid = bytes.fromhex("000000000000000000000000000000ab")
+    client_id = client_uid.hex()
+    async with app.test_client() as client:
+        advertisement = opamp_pb2.AgentToServer(instance_uid=client_uid, sequence_num=1)
+        advertisement.custom_capabilities.capabilities.append(capability)
+        first = await client.post("/v1/opamp", data=advertisement.SerializeToString())
+        assert first.status_code == 200
+        queued = await client.post(
+            f"/api/clients/{client_id}/commands",
+            json={"command_id": command.command_id, "parameters": {"target": "127.0.0.1"}},
+        )
+        assert queued.status_code == 201
+        poll = opamp_pb2.AgentToServer(instance_uid=client_uid, sequence_num=2)
+        response = await client.post("/v1/opamp", data=poll.SerializeToString())
+        request_message = opamp_pb2.ServerToAgent()
+        request_message.ParseFromString(await response.get_data())
+        assert request_message.custom_message.capability == capability
+        assert request_message.custom_message.data == b"127.0.0.1"
+        result = opamp_pb2.AgentToServer(instance_uid=client_uid, sequence_num=3)
+        result.custom_message.CopyFrom(opamp_pb2.CustomMessage(
+            capability=capability, type="result", data=b"complete"
+        ))
+        await client.post("/v1/opamp", data=result.SerializeToString())
+    assert received == [(client_id, b"complete")]
 
 
 @pytest.mark.asyncio

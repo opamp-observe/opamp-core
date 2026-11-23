@@ -52,6 +52,7 @@ from opamp_provider.component_features import (
     ui_menu_items_from_component_entries,
 )
 from opamp_provider.component_version import component_version_text
+from opamp_provider.custom_commands import dispatch_result
 from opamp_provider.exceptions import ServerToAgentException
 from opamp_provider.mcptool import register_mcp_transport, register_tool_routes
 from opamp_provider.metrics import PROVIDER_METRICS
@@ -808,6 +809,8 @@ def _build_http_success_response(
         channel=CHANNEL_HTTP,
         remote_addr=remote_addr,
     )
+    if agent_msg.HasField("custom_message"):
+        dispatch_result(client.client_id, agent_msg.custom_message)
     if not _is_heartbeat_only_message(agent_msg):
         _note_non_heartbeat_state_change_and_maybe_autosave()
     pending_command = STORE.next_pending_command(client.client_id)
@@ -823,6 +826,15 @@ def _build_http_success_response(
         STORE.mark_command_sent(client.client_id, pending_command)
         logger.info(LOG_SEND_COMMAND, client.client_id, datetime.now(timezone.utc))
     return Response(response_msg.SerializeToString(), content_type=CONTENT_TYPE_PROTO)
+
+
+def _safe_agent_message_text(agent_msg: opamp_pb2.AgentToServer) -> str:
+    """Format a message for diagnostics without exposing custom result bytes."""
+    safe_message = opamp_pb2.AgentToServer()
+    safe_message.CopyFrom(agent_msg)
+    if safe_message.HasField("custom_message"):
+        safe_message.custom_message.data = b"<redacted>"
+    return text_format.MessageToString(safe_message)
 
 
 def _build_websocket_auth_error_message(
@@ -965,6 +977,8 @@ def _process_websocket_agent_message(
         channel=CHANNEL_WEBSOCKET,
         remote_addr=remote_addr,
     )
+    if agent_msg.HasField("custom_message"):
+        dispatch_result(client.client_id, agent_msg.custom_message)
     if not _is_heartbeat_only_message(agent_msg):
         _note_non_heartbeat_state_change_and_maybe_autosave()
     _WEBSOCKET_CLIENTS[websocket] = client.client_id
@@ -987,7 +1001,7 @@ async def opamp_http() -> Response:
         if data:
             agent_msg.ParseFromString(data)
 
-        logger.info(LOG_HTTP_MSG, text_format.MessageToString(agent_msg))
+        logger.info(LOG_HTTP_MSG, _safe_agent_message_text(agent_msg))
         client_id = _extract_client_id(agent_msg)
         request_headers = _request_header_map()
         remote_addr = request.remote_addr
@@ -1090,7 +1104,7 @@ async def opamp_websocket() -> None:
                 else:
                     if payload:
                         agent_msg.ParseFromString(payload)
-                    logger.info(LOG_WS_MSG, text_format.MessageToString(agent_msg))
+                    logger.info(LOG_WS_MSG, _safe_agent_message_text(agent_msg))
                     (
                         response_msg,
                         pending_command,

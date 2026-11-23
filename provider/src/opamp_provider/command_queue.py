@@ -19,8 +19,10 @@ from collections.abc import Callable, Mapping
 from http import HTTPStatus
 from typing import Any
 
+from opamp_provider import custom_commands
 from opamp_provider.command_record import CommandRecord
 from opamp_provider.commands import command_object_factory
+from opamp_provider.custom_commands import COMMAND_ID_KEY
 from opamp_provider.state import ClientStore
 
 CLASSIFIER_COMMAND = "command"
@@ -104,6 +106,13 @@ def queue_command_from_payload(
     logger: logging.Logger,
 ) -> CommandRecord:
     """Validate and queue a command payload from `/api/clients/<id>/commands`."""
+    if isinstance(payload, dict) and COMMAND_ID_KEY in payload:
+        return _queue_registered_command(
+            client_id=client_id,
+            payload=payload,
+            store=store,
+            max_events=max_events,
+        )
     logger.debug("queue_command request client_id=%s payload=%s", client_id, payload)
     pairs = _extract_queue_payload_pairs(payload)
     if not pairs:
@@ -168,6 +177,51 @@ def queue_command_from_payload(
         cmd.received_at,
     )
     return cmd
+
+
+def _queue_registered_command(
+    *,
+    client_id: str,
+    payload: dict[str, Any],
+    store: ClientStore,
+    max_events: int,
+) -> CommandRecord:
+    """Validate an identifier-based request and queue only provider-built wire data."""
+    identifier = payload.get(COMMAND_ID_KEY)
+    if not isinstance(identifier, str) or not identifier.strip():
+        raise QueueCommandRequestError(
+            {"error": "command_id is required"}, HTTPStatus.BAD_REQUEST
+        )
+    if set(payload) - {COMMAND_ID_KEY, "parameters"}:
+        raise QueueCommandRequestError(
+            {"error": "unsupported command request fields"}, HTTPStatus.BAD_REQUEST
+        )
+    command = custom_commands.installed_commands().get(identifier.strip())
+    client = store.get(client_id)
+    if command is None:
+        raise QueueCommandRequestError(
+            {"error": "unsupported custom command identifier"}, HTTPStatus.BAD_REQUEST
+        )
+    if client is None or command.capability not in client.custom_capabilities_reported:
+        raise QueueCommandRequestError(
+            {"error": "agent has not advertised this custom capability"}, HTTPStatus.CONFLICT
+        )
+    try:
+        operation, values = custom_commands.prepare_command(
+            identifier.strip(), client_id, payload.get("parameters", {})
+        )
+    except (TypeError, ValueError) as error:
+        raise QueueCommandRequestError(
+            {"error": str(error)}, HTTPStatus.BAD_REQUEST
+        ) from error
+    return store.queue_command(
+        client_id,
+        classifier=CLASSIFIER_CUSTOM,
+        action=operation,
+        key_value_pairs=[{"key": key, "value": value} for key, value in values.items()],
+        event_description=f"{operation} command queued",
+        max_events=max_events,
+    )
 
 
 def _extract_queue_payload_pairs(payload: Any) -> list[Any]:
