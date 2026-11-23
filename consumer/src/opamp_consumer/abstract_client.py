@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import pathlib
 import platform
@@ -70,6 +71,7 @@ from opamp_consumer.custom_handlers import (  # noqa: F401
     create_handler,
     resolve_handler_folder,
 )
+from opamp_consumer.custom_handlers.result_queue import CustomResultQueue
 from opamp_consumer.full_update_controller import (
     AlwaysSend,
     FullUpdateControllerInterface,
@@ -227,6 +229,35 @@ class AbstractOpAMPClient(
             client_data=self.data,
             allow_custom_capabilities=bool(self.config.allow_custom_capabilities),
         )
+        self._custom_result_queue = CustomResultQueue()
+        self._server_custom_capabilities: set[str] = set()
+        self._custom_send_lock = asyncio.Lock()
+        self._custom_handler_tasks: set[asyncio.Task[None]] = set()
+        self._custom_result_send_task: asyncio.Task[None] | None = None
+
+    def _schedule_custom_result_send(self) -> None:
+        """Wake WebSocket delivery after a handler completes between heartbeat cycles."""
+        existing = self._custom_result_send_task
+        if existing is None or existing.done():
+            self._custom_result_send_task = asyncio.get_running_loop().create_task(
+                self._send_custom_result_websocket()
+            )
+
+    async def _send_custom_result_websocket(self) -> None:
+        """Drain ready results through normal messages while transport succeeds."""
+        while self._custom_result_queue.peek() is not None:
+            reply = await self.send()
+            if reply is None:
+                return
+            self._handle_server_to_agent(reply)
+
+    async def finalize_async(self) -> None:
+        """Wait for owned custom work before closing the client lifecycle."""
+        if self._custom_handler_tasks:
+            await asyncio.gather(*self._custom_handler_tasks, return_exceptions=True)
+        if self._custom_result_send_task is not None:
+            await asyncio.gather(self._custom_result_send_task, return_exceptions=True)
+        await super().finalize_async()
 
     @abstractmethod
     def get_custom_handler_folder(self) -> pathlib.Path:
@@ -662,7 +693,7 @@ class AbstractOpAMPClient(
 
         capabilities = sorted(
             {
-                f"{CAPABILITY_PREFIX_REQUEST}{str(fqdn).strip()}"
+                str(fqdn).strip()
                 for fqdn in self._custom_handler_lookup.keys()
                 if str(fqdn).strip()
             }

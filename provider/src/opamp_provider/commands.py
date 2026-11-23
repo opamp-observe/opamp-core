@@ -25,6 +25,7 @@ from opamp_provider.command_implementations.command_nullcommand import (
 )
 from opamp_provider.command_implementations.command_restart_agent import RestartAgent
 from opamp_provider.command_interface import CommandObjectInterface
+from opamp_provider.custom_commands import installed_commands
 
 _IMPLEMENTATIONS_PACKAGE = "opamp_provider.command_implementations"
 # Module discovery filter for command implementation files.
@@ -260,8 +261,14 @@ def get_registered_command_keys(
     filtered_registry = _get_command_registry_by_standard_filter(
         parameter_exclude_opamp_standard=parameter_exclude_opamp_standard
     )
+    external = installed_commands() if parameter_exclude_opamp_standard else {}
+    if external:
+        get_registered_command_fqdns()
     if not includedisplayname:
-        return tuple(sorted(filtered_registry.keys()))
+        keys = set(filtered_registry) | {
+            (_CLASSIFIER_CUSTOM, identifier) for identifier in external
+        }
+        return tuple(sorted(keys))
 
     display_map: dict[str, str] = {}
     for command_class in filtered_registry.values():
@@ -273,6 +280,8 @@ def get_registered_command_keys(
         if not normalized_fqdn:
             continue
         display_map[normalized_fqdn] = instance.getdisplayname()
+    for command in external.values():
+        display_map[command.capability] = command.display_name
     return display_map
 
 
@@ -299,7 +308,13 @@ def get_registered_command_fqdns() -> dict[CommandKey, str]:
     Returns:
         Mapping from `(classifier, operation)` to capability reverse-FQDN.
     """
-    return dict(_COMMAND_FQDN_MAP)
+    fqdns = dict(_COMMAND_FQDN_MAP)
+    for identifier, command in installed_commands().items():
+        key = (_CLASSIFIER_CUSTOM, identifier)
+        if key in fqdns or command.capability in fqdns.values():
+            raise ValueError("Installed custom command duplicates a built-in command")
+        fqdns[key] = command.capability
+    return fqdns
 
 
 def get_custom_capabilities_list() -> tuple[str, ...]:
@@ -308,7 +323,7 @@ def get_custom_capabilities_list() -> tuple[str, ...]:
     Returns:
         Sorted tuple of unique custom command capability names.
     """
-    return tuple(sorted(set(_COMMAND_FQDN_MAP.values())))
+    return tuple(sorted(set(get_registered_command_fqdns().values())))
 
 
 def get_command_fqdn(*, classifier: str, operation: str) -> str:
@@ -322,7 +337,7 @@ def get_command_fqdn(*, classifier: str, operation: str) -> str:
         Capability reverse-FQDN if known, else an empty string.
     """
     key = (classifier.strip().lower(), operation.strip().lower())
-    return _COMMAND_FQDN_MAP.get(key, "")
+    return get_registered_command_fqdns().get(key, "")
 
 
 def command_object_factory(
@@ -434,6 +449,18 @@ def get_command_metadata(
                 _KEY_SCHEMA: schema,
             }
         )
+    if parameter_exclude_opamp_standard:
+        for identifier, command in installed_commands().items():
+            metadata.append(
+                {
+                    _KEY_FQDN: command.capability,
+                    _KEY_DISPLAY_NAME: command.display_name,
+                    _KEY_DESCRIPTION: command.description,
+                    _KEY_CLASSIFIER: _CLASSIFIER_CUSTOM,
+                    _KEY_OPERATION: identifier,
+                    _KEY_SCHEMA: command.parameter_schema,
+                }
+            )
     metadata.sort(key=lambda item: str(item.get(_KEY_DISPLAY_NAME, "")).lower())
     return metadata
 

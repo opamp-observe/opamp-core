@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from typing import TYPE_CHECKING, TypeVar, cast
@@ -127,10 +128,29 @@ class ClientTransportAuthorizationMixin:
         Returns:
             ServerToAgent reply when send succeeds; otherwise None.
         """
+        send_lock = getattr(self, "_custom_send_lock", None)
+        if not isinstance(send_lock, asyncio.Lock):
+            return await self._send_unlocked(msg, send_as_is=send_as_is)
+        async with send_lock:  # pylint: disable=not-async-context-manager
+            return await self._send_unlocked(msg, send_as_is=send_as_is)
+
+    async def _send_unlocked(
+        self,
+        msg: opamp_pb2.AgentToServer | None,
+        *,
+        send_as_is: bool,
+    ) -> opamp_pb2.ServerToAgent | None:
+        """Populate and send one message while the caller owns the send lock."""
+        result_queue = getattr(self, "_custom_result_queue", None)
+        pending_result = None
         if not send_as_is:
             if msg is None:
                 msg = opamp_pb2.AgentToServer()
             msg = self._populate_agent_to_server(msg)
+            if result_queue is not None and not msg.HasField("custom_message"):
+                pending_result = result_queue.peek()
+                if pending_result is not None:
+                    msg.custom_message.CopyFrom(pending_result)
         response: opamp_pb2.ServerToAgent | None = None
         transport = (self.config.transport or TRANSPORT_HTTP).strip().lower()
         if transport == TRANSPORT_WEBSOCKET:
@@ -145,6 +165,8 @@ class ClientTransportAuthorizationMixin:
                     ),
                 )
         if response is not None:
+            if pending_result is not None:
+                result_queue.acknowledge()
             mark_remote_config_status_sent(data=self.data, msg=msg)
             if not send_as_is and self.data.full_update_controller is not None:
                 self.data.full_update_controller.update_sent()
@@ -152,6 +174,8 @@ class ClientTransportAuthorizationMixin:
 
         try:
             response = await self.send_http(msg)
+            if response is not None and pending_result is not None:
+                result_queue.acknowledge()
             mark_remote_config_status_sent(data=self.data, msg=msg)
             if not send_as_is and self.data.full_update_controller is not None:
                 self.data.full_update_controller.update_sent()

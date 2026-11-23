@@ -22,6 +22,7 @@ from typing import Any
 from google.protobuf import text_format
 
 from opamp_provider.command_record import CommandRecord
+from opamp_provider.custom_commands import COMMAND_ID_KEY, queued_message
 from opamp_provider.proto import opamp_pb2
 from opamp_provider.state import ClientRecord
 from shared.opamp_config import PB_FIELD_COMMAND, PB_FIELD_CUSTOM_MESSAGE, UTF8_ENCODING
@@ -225,6 +226,12 @@ class ServerToAgentResponseBuilder:
         )
         classifier = (pending_command.classifier or "").strip().lower()
         action = (pending_command.action or "").strip().lower()
+        queued_values = {
+            pair["key"]: pair["value"] for pair in pending_command.key_value_pairs
+        }
+        if COMMAND_ID_KEY in queued_values:
+            response.custom_message.CopyFrom(queued_message(queued_values))
+            return response
         if classifier == self.classifier_custom:
             try:
                 command_obj = self.command_object_factory(
@@ -237,8 +244,9 @@ class ServerToAgentResponseBuilder:
                 if hasattr(command_obj, "to_custom_message"):
                     response.custom_message.CopyFrom(command_obj.to_custom_message())
                     self.logger.debug(
-                        "created ServerToAgent.custom_message payload from custom command object: %s",
-                        text_format.MessageToString(response.custom_message).strip(),
+                        "created ServerToAgent.custom_message capability=%s type=%s",
+                        response.custom_message.capability,
+                        response.custom_message.type,
                     )
                     return response
             except ValueError:
@@ -258,8 +266,9 @@ class ServerToAgentResponseBuilder:
         else:
             response.custom_message.data = b""
         self.logger.debug(
-            "created ServerToAgent.custom_message payload: %s",
-            text_format.MessageToString(response.custom_message).strip(),
+            "created ServerToAgent.custom_message capability=%s type=%s",
+            response.custom_message.capability,
+            response.custom_message.type,
         )
         return response
 

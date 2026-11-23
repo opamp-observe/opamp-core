@@ -428,6 +428,24 @@ def test_allow_custom_capabilities_true_when_configured(
     assert loaded.allow_custom_capabilities is True
 
 
+def test_custom_handler_execution_modes_load_and_reject_invalid_values(
+    tmp_path, monkeypatch
+) -> None:
+    """Trusted local config accepts only explicit sync/async handler modes."""
+    raw = _base_consumer_config()
+    raw["consumer"]["custom_handler_execution_modes"] = {"org.example.scan": "async"}
+    config_path = tmp_path / "opamp.json"
+    config_path.write_text(json.dumps(raw), encoding="utf-8")
+    monkeypatch.setenv(consumer_config.ENV_OPAMP_CONFIG_PATH, str(config_path))
+    assert consumer_config.load_config().custom_handler_execution_modes == {
+        "org.example.scan": "async"
+    }
+    raw["consumer"]["custom_handler_execution_modes"] = {"org.example.scan": "background"}
+    config_path.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ValueError, match="Invalid custom handler execution mode"):
+        consumer_config.load_config()
+
+
 def test_chat_ops_port_defaults_none_when_missing(tmp_path, monkeypatch) -> None:
     raw = _base_consumer_config()
     config_path = tmp_path / "opamp.json"

@@ -21,8 +21,18 @@ from enum import IntEnum
 from typing import TYPE_CHECKING, cast
 
 from google.protobuf import text_format
+
+from opamp_consumer.client_message_builder import (
+    EFFECTIVE_CONFIG_CAPABILITY_NAME,
+    populate_agent_to_server_effective_config,
+)
+from opamp_consumer.common_config_handler import CommonConfigHandler
+from opamp_consumer.custom_handlers import build_factory_lookup, create_handler
+from opamp_consumer.custom_handlers.handler_interface import EXECUTION_ASYNC, EXECUTION_SYNC
+from opamp_consumer.exceptions import AgentException, CommandException
+from opamp_consumer.logging_utils import format_instance_uid_for_log
+from opamp_consumer.proto import opamp_pb2
 from shared.opamp_config import (
-    AgentCapabilities,
     PB_FIELD_AGENT_IDENTIFICATION,
     PB_FIELD_COMMAND,
     PB_FIELD_CONNECTION_SETTINGS,
@@ -33,18 +43,11 @@ from shared.opamp_config import (
     PB_FIELD_REMOTE_CONFIG,
     PB_FIELD_RETRY_INFO,
     PB_FLAG_REPORT_FULL_STATE,
+    AgentCapabilities,
     ServerCapabilities,
 )
 
-from opamp_consumer.common_config_handler import CommonConfigHandler
-from opamp_consumer.client_message_builder import (
-    EFFECTIVE_CONFIG_CAPABILITY_NAME,
-    populate_agent_to_server_effective_config,
-)
-from opamp_consumer.custom_handlers import build_factory_lookup, create_handler
-from opamp_consumer.exceptions import AgentException
-from opamp_consumer.logging_utils import format_instance_uid_for_log
-from opamp_consumer.proto import opamp_pb2
+MAX_CUSTOM_HANDLER_TASKS = 128
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -120,7 +123,11 @@ class ServerMessageHandlingMixin:
         if message is None:
             return "None"
 
-        rendered = text_format.MessageToString(message).rstrip()
+        safe_message = type(message)()
+        safe_message.CopyFrom(message)
+        if safe_message.HasField(PB_FIELD_CUSTOM_MESSAGE):
+            safe_message.custom_message.data = b"<redacted>"
+        rendered = text_format.MessageToString(safe_message).rstrip()
         capability_mask = int(getattr(message, "capabilities", 0) or 0)
         capability_line = f"capabilities: {capability_mask}"
         capability_labels = ServerMessageHandlingMixin._capability_mask_to_labels(
@@ -453,9 +460,9 @@ class ServerMessageHandlingMixin:
         Args:
             custom_capabilities: Custom capability list reported by the provider.
         """
-        logging.getLogger(__name__).info(
-            "notified of server custom_capabilities: %s",
-            text_format.MessageToString(custom_capabilities),
+        self._server_custom_capabilities = set(custom_capabilities.capabilities)
+        logging.getLogger(__name__).debug(
+            "received %s server custom capabilities", len(self._server_custom_capabilities)
         )
 
     def handle_custom_message(self, custom_message: opamp_pb2.CustomMessage) -> None:
@@ -465,9 +472,6 @@ class ServerMessageHandlingMixin:
             custom_message: Custom message payload containing capability and data.
         """
         logger = logging.getLogger(__name__)
-        logger.info(
-            "server custom_message: %s", text_format.MessageToString(custom_message)
-        )
         if custom_message is None:
             return
 
@@ -485,6 +489,11 @@ class ServerMessageHandlingMixin:
         capability = str(custom_message.capability or "").strip()
         if not capability:
             raise AgentException("CustomMessage capability is missing")
+        if not self.config.allow_custom_capabilities:
+            raise AgentException("Custom capabilities are disabled")
+        advertised = getattr(self, "_server_custom_capabilities", set())
+        if capability not in advertised:
+            raise AgentException(f"Server did not advertise capability: {capability}")
         logger.debug(
             "handling custom message capability=%s type=%s data_len=%s",
             capability,
@@ -508,6 +517,7 @@ class ServerMessageHandlingMixin:
             self._custom_handler_lookup = build_factory_lookup_fn(
                 self._custom_handler_folder,
                 client_data=self.data,
+                allow_custom_capabilities=bool(self.config.allow_custom_capabilities),
             )
             handler = create_handler_fn(
                 capability,
@@ -532,6 +542,44 @@ class ServerMessageHandlingMixin:
             capability,
             handler.__class__.__name__,
         )
-        command_error = handler.execute(cast("OpAMPClientInterface", self))
-        if command_error is not None:
-            raise AgentException(str(command_error))
+        mode = self.config.custom_handler_execution_modes.get(
+            capability, getattr(handler, "execution_mode", EXECUTION_SYNC)
+        )
+        if mode == EXECUTION_ASYNC:
+            if len(self._custom_handler_tasks) >= MAX_CUSTOM_HANDLER_TASKS:
+                raise AgentException("Too many asynchronous custom handlers")
+            task = asyncio.get_running_loop().create_task(
+                self._execute_custom_handler_async(handler)
+            )
+            self._custom_handler_tasks.add(task)
+            task.add_done_callback(self._custom_handler_tasks.discard)
+            return
+        if mode != EXECUTION_SYNC:
+            raise AgentException(f"Invalid custom handler execution mode: {mode}")
+        self._accept_custom_handler_result(handler.execute(cast("OpAMPClientInterface", self)))
+
+    def _accept_custom_handler_result(
+        self, result: opamp_pb2.CustomMessage | CommandException | None
+    ) -> None:
+        """Queue a completed result or propagate a handler failure."""
+        if isinstance(result, CommandException):
+            raise AgentException(str(result))
+        if result is not None:
+            if not isinstance(result, opamp_pb2.CustomMessage):
+                raise AgentException("Custom handler returned an invalid result type")
+            try:
+                self._custom_result_queue.enqueue(result)
+            except OverflowError as error:
+                raise AgentException("Custom result queue is full") from error
+            if str(self.config.transport).lower() == "websocket":
+                self._schedule_custom_result_send()
+
+    async def _execute_custom_handler_async(
+        self, handler: CustomMessageHandlerInterface
+    ) -> None:
+        """Run blocking third-party work off the event loop and accept its response."""
+        try:
+            result = await asyncio.to_thread(handler.execute, cast("OpAMPClientInterface", self))
+            self._accept_custom_handler_result(result)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logging.getLogger(__name__).exception("Asynchronous custom handler failed")

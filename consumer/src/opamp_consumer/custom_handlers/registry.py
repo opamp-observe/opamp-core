@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 import importlib.util
 import inspect
 import logging
@@ -25,6 +26,8 @@ from typing import TYPE_CHECKING
 from opamp_consumer.custom_handlers.handler_interface import (
     CustomMessageHandlerInterface,
 )
+
+HANDLER_ENTRY_POINT_GROUP = "opamp_consumer.custom_handlers"
 
 if TYPE_CHECKING:
     from opamp_consumer.abstract_client import OpAMPClientData
@@ -119,6 +122,22 @@ def _discover_handler_classes(
     return classes
 
 
+def _installed_handler_classes() -> list[type[CustomMessageHandlerInterface]]:
+    """Load handler classes supplied by separately installed distributions."""
+    classes: list[type[CustomMessageHandlerInterface]] = []
+    entry_points = importlib.metadata.entry_points().select(group=HANDLER_ENTRY_POINT_GROUP)
+    for entry_point in sorted(entry_points, key=lambda item: (item.name, item.value)):
+        candidate = entry_point.load()
+        if not inspect.isclass(candidate) or not issubclass(
+            candidate, CustomMessageHandlerInterface
+        ):
+            raise TypeError(f"Invalid custom handler entry point: {entry_point.name}")
+        if inspect.isabstract(candidate):
+            raise TypeError(f"Abstract custom handler entry point: {entry_point.name}")
+        classes.append(candidate)
+    return classes
+
+
 def discover_handlers(
     folder: str | pathlib.Path,
     client_data: OpAMPClientData | None = None,
@@ -148,15 +167,19 @@ def build_factory_lookup(
         )
         return {}
     folder_path = pathlib.Path(folder)
-    if not folder_path.exists():
-        return {}
     lookup: dict[str, type[CustomMessageHandlerInterface]] = {}
-    for cls in _discover_handler_classes(folder_path):
+    folder_classes = _discover_handler_classes(folder_path) if folder_path.exists() else []
+    for cls in [*folder_classes, *_installed_handler_classes()]:
         try:
             instance = cls()
             if client_data is not None:
                 instance.set_client_data(client_data)
-            lookup[instance.get_reverse_fqdn()] = cls
+            capability = instance.get_reverse_fqdn().strip()
+            if not capability or capability in lookup:
+                raise ValueError(f"Duplicate or empty custom handler capability: {capability}")
+            lookup[capability] = cls
+        except ValueError:
+            raise
         except Exception as err:
             logger.warning(
                 "Custom handler class initialization failed class=%s error=%s",
