@@ -16,7 +16,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opamp-consumer"
-version = "0.7.0"
+version = "0.8.0"
 description = "OpAMP client (as a supervisor) designed primarily for Fluent Bit & Fluentd  using Quart transport semantics"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -28,7 +28,7 @@ dependencies = [
   "protobuf>=5.27",
   "grpcio-tools>=1.60",
   "httpx>=0.27",
-  "opamp-shared==0.7.0",
+  "opamp-shared==0.8.0",
   "opentelemetry-api",
   "opentelemetry-sdk",
   "opentelemetry-exporter-otlp",

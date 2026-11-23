@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "catalog-service"
-version = "0.7.0"
+version = "0.8.0"
 description = "Standalone OpAMP configuration catalog backend and UI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,7 +24,7 @@ license = "Apache-2.0"
 authors = [{ name = "Phil Wilkins" }]
 keywords = ["opamp", "observability", "catalog", "configuration", "ui"]
 dependencies = [
-  "opamp-shared==0.7.0",
+  "opamp-shared==0.8.0",
   "quart>=0.20.0",
   "opentelemetry-api",
   "opentelemetry-sdk",
