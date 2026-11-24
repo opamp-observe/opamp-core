@@ -98,6 +98,14 @@ class LegacyCustomCommandAdapter(CustomCommandABC):
         """Preserve the legacy command description."""
         return self._command_type().get_command_description()
 
+    @property
+    def parameter_schema(self) -> list[dict[str, object]]:
+        """Expose user parameters declared by the legacy command, when available."""
+        schema_provider = getattr(self._command_type(), "get_user_parameter_schema", None)
+        if not callable(schema_provider):
+            return []
+        return [dict(parameter) for parameter in schema_provider()]
+
     def validate(self, parameters: dict[str, Any]) -> dict[str, str]:
         """Keep legacy key/value semantics while rejecting structured raw data."""
         if set(parameters) & {

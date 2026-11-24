@@ -19,13 +19,36 @@ import logging
 import pytest
 
 from opamp_provider import custom_commands
+from opamp_provider.command_implementations.command_nullcommand import CommandNullCommand
 from opamp_provider.command_queue import QueueCommandRequestError, queue_command_from_payload
-from opamp_provider.custom_commands import CustomCommandABC, dispatch_result, queued_message
+from opamp_provider.custom_commands import (
+    CustomCommandABC,
+    LegacyCustomCommandAdapter,
+    dispatch_result,
+    queued_message,
+)
 from opamp_provider.proto import opamp_pb2
 from opamp_provider.state import ClientStore
 
 CAPABILITY = "org.example.scan"
 COMMAND_ID = "network-security-verifier"
+
+
+def test_legacy_adapter_preserves_user_parameter_schema() -> None:
+    """Show a legacy command's editable parameters in installed-command metadata."""
+    adapter = LegacyCustomCommandAdapter(CommandNullCommand)
+    expected_schema = CommandNullCommand().get_user_parameter_schema()
+
+    assert adapter.parameter_schema == expected_schema
+    assert adapter.parameter_schema is not expected_schema
+    assert adapter.parameter_schema[0] is not expected_schema[0]
+
+
+def test_legacy_adapter_without_schema_returns_empty_list(monkeypatch) -> None:
+    """Keep old command types that lack optional schema metadata usable."""
+    monkeypatch.setattr(CommandNullCommand, "get_user_parameter_schema", None)
+
+    assert LegacyCustomCommandAdapter(CommandNullCommand).parameter_schema == []
 
 
 class ScanCommand(CustomCommandABC):

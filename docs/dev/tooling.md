@@ -19,6 +19,9 @@ it with the component-specific READMEs when setting up or auditing a machine.
 The checked-in `pyproject.toml`, `package.json`, workflow, and container files
 remain the version source of truth; this page explains where each tool is used.
 
+For reviewed builds on the on-demand private CI runner, see
+[On-demand local CI runner](local_runner.md).
+
 ## Workstation Tools
 
 | Tool | Requirement | Repository use |
