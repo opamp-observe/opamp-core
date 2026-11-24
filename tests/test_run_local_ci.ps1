@@ -36,6 +36,25 @@ try {
     if ($global:mockCalls[1] -notcontains "source_sha=$reviewedSha") {
         throw 'The reviewed SHA was not dispatched.'
     }
+    if ($global:mockCalls[1] -notcontains 'test_suite=all') {
+        throw 'The complete suite was not the dispatch default.'
+    }
+
+    $global:mockCalls = @()
+    & $scriptPath -ReviewedSha $reviewedSha -TestSuite regression-pack -RegressionTestId st001 | Out-Null
+    if ($global:mockCalls[1] -notcontains 'test_suite=regression-pack' -or
+        $global:mockCalls[1] -notcontains 'regression_test_id=st001') {
+        throw 'Selected regression scenario was not dispatched.'
+    }
+
+    $global:mockCalls = @()
+    try {
+        & $scriptPath -ReviewedSha $reviewedSha -TestSuite syntax -RegressionTestId st001 | Out-Null
+        throw 'Scenario was accepted for syntax-only mode.'
+    } catch {
+        if ($_.Exception.Message -eq 'Scenario was accepted for syntax-only mode.') { throw }
+    }
+    if ($global:mockCalls.Count -ne 0) { throw 'Invalid test selection reached GitHub.' }
 
     $global:mockCalls = @()
     $global:mockApiSha = '0000000000000000000000000000000000000000'

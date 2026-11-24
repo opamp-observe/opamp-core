@@ -26,14 +26,21 @@ runner without granting public workflows access to the machine.
 2. Start the runner from the separate `D:\dev\opamp-runner` bundle:
    `D:\dev\opamp-runner\scripts\runner.cmd start`.
 3. Dispatch from this repository:
-   `.\scripts\run_local_ci.cmd -ReviewedSha <full-commit-sha>`.
+   `.\scripts\run_local_ci.cmd -ReviewedSha <full-commit-sha> -TestSuite all`.
 4. Inspect the run in the private CI repository's Actions tab. The hosted
    validation job checks the allowlist and SHA; the local job verifies checkout
-   and runs a Python syntax check.
+   and runs the configured unit, end-to-end, security, and dependency tests.
+   Reports are uploaded even when a test fails. To retrieve them, run
+   `.\scripts\get_local_ci_artifacts.cmd -RunId <run-id>`; the default output
+   directory is `dist/local-ci-artifacts/<run-id>`.
 5. Once the runner is idle, stop it:
    `D:\dev\opamp-runner\scripts\runner.cmd stop`.
 
-The local runner bundle documents enrollment of further public source
+Use `-TestSuite regression-pack` to run the 16 container scenarios alone,
+optionally with `-RegressionTestId <scenario-id>`. Use `-TestSuite syntax` for
+a quick source check. The local runner bundle's
+`docs/runner_capabilities.md` describes the available runner types, reports,
+and limits. It also documents enrollment of further public source
 repositories and the limits of runner fallback. Keep CI workflow edits in the
 private repository restricted to trusted maintainers. Never dispatch a commit
 whose code or dependencies have not been reviewed.
