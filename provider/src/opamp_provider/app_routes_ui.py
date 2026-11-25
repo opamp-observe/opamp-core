@@ -1,3 +1,15 @@
+# Copyright 2026 opamp.info
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """UI and static asset route registration for provider app."""
 
 from __future__ import annotations
@@ -7,8 +19,66 @@ from typing import Any
 
 from quart import Quart, Response, jsonify, redirect
 
+from opamp_provider.commands import get_available_command_keys
 
-def register_ui_routes(  # noqa: PLR0913
+VERSION_KEY = "version"
+PLUGINS_KEY = "plugins"
+PLUGIN_NAME_KEY = "name"
+PLUGIN_AVAILABLE_KEY = "available"
+PLUGIN_DESCRIPTION_KEY = "description"
+CUSTOM_COMMANDS_NAME = "Custom Commands"
+CONFIG_EDITOR_NAME = "Config Editor"
+CLIENT_CONFIG_GENERATOR_NAME = "Client Config Generator"
+CONFIG_CATALOG_NAME = "Config Catalog"
+CONFIG_EDITOR_ENTRY_POINT = "config_service.opamp_integration:register_config_service_feature"
+CLIENT_CONFIG_GENERATOR_ENTRY_POINT = (
+    "client_config_generator_service.opamp_integration:register_client_config_generator_feature"
+)
+CONFIG_CATALOG_ENTRY_POINT = "catalog_service.opamp_integration:register_catalog_feature"
+
+
+def build_provider_version_summary(
+    *,
+    version: str,
+    registered_entry_points: list[str],
+    custom_command_count: int,
+) -> dict[str, object]:
+    """Build a path-free description of the running provider's plugins.
+
+    Parameters
+    ----------
+    version:
+        Packaged provider version shown to operators.
+    registered_entry_points:
+        Component entry points successfully registered by this process.
+    custom_command_count:
+        Number of discoverable non-standard commands.
+    """
+    registered = set(registered_entry_points)
+    plugin_descriptions = (
+        (CUSTOM_COMMANDS_NAME, custom_command_count > 0,
+         f"{custom_command_count} custom command(s) available for connected clients."),
+        (CONFIG_EDITOR_NAME, CONFIG_EDITOR_ENTRY_POINT in registered,
+         "Edit client configuration in the provider UI."),
+        (CLIENT_CONFIG_GENERATOR_NAME, CLIENT_CONFIG_GENERATOR_ENTRY_POINT in registered,
+         "Generate client configuration from the provider UI."),
+        (CONFIG_CATALOG_NAME, CONFIG_CATALOG_ENTRY_POINT in registered,
+         "Browse and select configuration from the provider UI."),
+    )
+    return {
+        VERSION_KEY: version,
+        PLUGINS_KEY: [
+            {
+                PLUGIN_NAME_KEY: name,
+                PLUGIN_AVAILABLE_KEY: available,
+                PLUGIN_DESCRIPTION_KEY: description,
+            }
+            for name, available, description in plugin_descriptions
+        ],
+    }
+
+
+def register_ui_routes(  # noqa: PLR0913  # pylint: disable=too-many-arguments,too-many-locals
     app: Quart,
     *,
     ui_assets: Any,
@@ -127,6 +197,17 @@ def register_ui_routes(  # noqa: PLR0913
                 "component_entry_points_registered": registered_component_entry_points,
             }
         )
+
+    @app.get("/api/ui/version")
+    async def ui_version() -> Response:
+        """Return the provider version and registered plugin availability without paths."""
+        command_keys = get_available_command_keys(includedisplayname=False)
+        summary = build_provider_version_summary(
+            version=component_version_text(),
+            registered_entry_points=registered_component_entry_points,
+            custom_command_count=len(command_keys),
+        )
+        return jsonify(summary)
 
     @app.get("/create.ico")
     async def favicon() -> Response:

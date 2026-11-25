@@ -1,3 +1,17 @@
+/*
+ * Copyright 2026 opamp.info
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
     const state = {
       clients: [],
       pendingApprovals: [],
@@ -204,9 +218,12 @@
     const serverOpampConfigOutput = document.getElementById(
       "serverOpampConfigOutput"
     );
+    const providerVersionText = document.getElementById("providerVersionText");
+    const providerPluginsList = document.getElementById("providerPluginsList");
     const settingsTabPanels = {
       server: document.getElementById("settings-tab-server"),
       client: document.getElementById("settings-tab-client"),
+      version: document.getElementById("settings-tab-version"),
       "server-opamp-config": document.getElementById("settings-tab-server-opamp-config"),
     };
     const tabButtons = Array.from(document.querySelectorAll(".tab-button"));
@@ -396,6 +413,8 @@
             setAllBlockBtn,
             serverOpampConfigPathOutput,
             serverOpampConfigOutput,
+            providerVersionText,
+            providerPluginsList,
             settingsTabPanels,
             tabButtons,
             tabPanels,

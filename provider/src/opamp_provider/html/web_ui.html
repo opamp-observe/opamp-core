@@ -1,3 +1,16 @@
+<!--
+Copyright 2026 opamp.info
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
 <!doctype html>
 <html lang="en">
 <head>
@@ -276,6 +289,7 @@
       <div class="modal-tabs">
         <button class="settings-tab-button active" data-settings-tab="server">Server Settings</button>
         <button class="settings-tab-button" data-settings-tab="client">Client Settings</button>
+        <button class="settings-tab-button" data-settings-tab="version">Version</button>
         <button
           id="settingsTabServerOpampConfigBtn"
           class="settings-tab-button hidden"
@@ -510,6 +524,20 @@
                 <code id="serverOpampConfigPathOutput">Not loaded</code>
               </div>
               <pre id="serverOpampConfigOutput" class="diagnostic-config-output">Diagnostic mode disabled.</pre>
+            </div>
+          </div>
+        </div>
+        <div id="settings-tab-version" class="tab-panel">
+          <div class="settings-form">
+            <div class="settings-group">
+              <div class="settings-group-title">Software Version</div>
+              <p id="providerVersionText" class="version-summary-text">Loading version information…</p>
+            </div>
+            <div class="settings-group">
+              <div class="settings-group-title">Provider Plugins</div>
+              <div id="providerPluginsList" class="version-plugin-list" aria-live="polite">
+                Loading plugin information…
+              </div>
             </div>
           </div>
         </div>

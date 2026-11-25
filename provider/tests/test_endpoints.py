@@ -34,6 +34,16 @@ from opamp_provider.app import (
     _tls_certificate_expiry_metadata,
     app,
 )
+from opamp_provider.app_routes_ui import (
+    CLIENT_CONFIG_GENERATOR_ENTRY_POINT,
+    CONFIG_CATALOG_ENTRY_POINT,
+    CONFIG_EDITOR_ENTRY_POINT,
+    PLUGIN_AVAILABLE_KEY,
+    PLUGIN_NAME_KEY,
+    PLUGINS_KEY,
+    VERSION_KEY,
+    build_provider_version_summary,
+)
 from opamp_provider.command_implementations.command_shutdown_agent import (
     SHUTDOWN_AGENT_CAPABILITY,
 )
@@ -472,6 +482,45 @@ async def test_ui_features_endpoint_returns_configuration_driven_items_shape() -
         assert "label" in item
         assert "url" in item
         assert "target" in item
+
+
+def test_provider_version_summary_reports_registered_plugins_without_paths() -> None:
+    """Show only named provider features and never expose entry point paths."""
+    summary = build_provider_version_summary(
+        version="v1.2.3",
+        registered_entry_points=[CONFIG_EDITOR_ENTRY_POINT, CONFIG_CATALOG_ENTRY_POINT],
+        custom_command_count=2,
+    )
+
+    assert summary[VERSION_KEY] == "v1.2.3"
+    plugins = summary[PLUGINS_KEY]
+    assert isinstance(plugins, list)
+    availability = {plugin[PLUGIN_NAME_KEY]: plugin[PLUGIN_AVAILABLE_KEY] for plugin in plugins}
+    assert availability == {
+        "Custom Commands": True,
+        "Config Editor": True,
+        "Client Config Generator": False,
+        "Config Catalog": True,
+    }
+    assert CLIENT_CONFIG_GENERATOR_ENTRY_POINT not in str(summary)
+    assert CONFIG_EDITOR_ENTRY_POINT not in str(summary)
+    assert CONFIG_CATALOG_ENTRY_POINT not in str(summary)
+    assert "2 custom command(s)" in str(summary)
+
+
+@pytest.mark.asyncio
+async def test_ui_version_endpoint_returns_display_safe_summary() -> None:
+    """Expose provider version and fixed plugin descriptions through the UI API."""
+    async with app.test_client() as client:
+        response = await client.get("/api/ui/version")
+
+    assert response.status_code == 200
+    payload = await response.get_json()
+    assert isinstance(payload[VERSION_KEY], str)
+    assert len(payload[PLUGINS_KEY]) == 4
+    assert all(isinstance(plugin[PLUGIN_AVAILABLE_KEY], bool) for plugin in payload[PLUGINS_KEY])
+    assert "entry_point" not in str(payload)
+    assert "site-packages" not in str(payload)
 
 
 @pytest.mark.asyncio
@@ -3240,6 +3289,8 @@ async def test_web_ui_references_external_javascript_bundle(monkeypatch) -> None
         assert '<script src="/web_ui_functions.js"></script>' in ui_html
         assert '<script src="/web_ui_framework.js"></script>' in ui_html
         assert '<script src="/web_ui_bindings.js"></script>' in ui_html
+        assert 'data-settings-tab="version"' in ui_html
+        assert 'id="settings-tab-version"' in ui_html
         assert 'id="shutdownButton"' not in ui_html
         assert "Shutdown Server" not in ui_html
         assert ui_html.index('id="saveConfigBtn"') < ui_html.index('id="remoteConfigEnhancedPanel"')

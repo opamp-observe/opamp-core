@@ -1,3 +1,17 @@
+/*
+ * Copyright 2026 opamp.info
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
     const CATALOG_FEATURE_ENTRY_POINT = "catalog_service.opamp_integration:register_catalog_feature";
     const CONFIG_SERVICE_FEATURE_ENTRY_POINT = "config_service.opamp_integration:register_config_service_feature";
     const CATALOG_SELECTION_CALLBACK_QUERY = "selection_callback";
@@ -1919,6 +1933,36 @@
       saveGlobalSettingsBtn.classList.toggle("hidden", tabName === "server-opamp-config");
       if (tabName === "server-opamp-config") {
         void loadServerOpampConfigTab();
+      } else if (tabName === "version") {
+        void loadProviderVersionTab();
+      }
+    }
+
+    async function loadProviderVersionTab() {
+      // Load only the provider's display-safe version and registered plugin summary.
+      if (!providerVersionText || !providerPluginsList) return;
+      providerVersionText.textContent = "Loading version information…";
+      providerPluginsList.textContent = "Loading plugin information…";
+      try {
+        const response = await apiFetch("/api/ui/version");
+        if (!response.ok) throw new Error("Version request failed");
+        const summary = await response.json();
+        providerVersionText.textContent = String(summary.version || "Unknown");
+        providerPluginsList.replaceChildren();
+        const plugins = Array.isArray(summary.plugins) ? summary.plugins : [];
+        plugins.forEach(plugin => {
+          const row = document.createElement("div");
+          row.className = "version-plugin-row";
+          const heading = document.createElement("strong");
+          heading.textContent = `${String(plugin.name || "Plugin")}: ${plugin.available === true ? "Available" : "Unavailable"}`;
+          const description = document.createElement("span");
+          description.textContent = String(plugin.description || "");
+          row.append(heading, description);
+          providerPluginsList.appendChild(row);
+        });
+      } catch (error) {
+        providerVersionText.textContent = "Version information unavailable.";
+        providerPluginsList.textContent = "Plugin information unavailable.";
       }
     }
 
