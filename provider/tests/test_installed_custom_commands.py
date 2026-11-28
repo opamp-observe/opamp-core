@@ -65,7 +65,6 @@ class ScanCommand(CustomCommandABC):
     def capability(self) -> str:
         """Use one raw reverse-FQDN for request and result."""
         return CAPABILITY
-
     def validate(self, parameters: dict[str, object]) -> str:
         """Require a typed target and reject opaque wire fields."""
         if set(parameters) != {"target"} or not isinstance(parameters["target"], str):
@@ -81,6 +80,11 @@ class ScanCommand(CustomCommandABC):
     def handle_result(self, agent_id: str, message: opamp_pb2.CustomMessage) -> None:
         """Record result attribution from the provider's authenticated client record."""
         self.received.append((agent_id, message.data))
+
+
+def test_custom_command_without_version_has_no_override() -> None:
+    """Allow the Version tab to fall back to distribution or core metadata."""
+    assert ScanCommand().version is None
 
 
 def test_registered_command_requires_agent_capability_and_routes_result(monkeypatch) -> None:

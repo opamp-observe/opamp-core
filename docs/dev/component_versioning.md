@@ -42,6 +42,7 @@ Runtime loading remains component-local (`component_version.py` in each service)
 
 - Server CLI: `opamp-provider --help` and `opamp-provider --version`
 - Server UI help page: `http://localhost:8080/help`
+- Server UI Global Settings Version tab: the `opamp-server` package version from `provider/pyproject.toml` in a source checkout, or installed distribution metadata in a wheel. `opamp-cli dev-version-bump` updates the source package version; the Git-derived `version.json` is refreshed separately by the hook and build tooling.
 - Broker CLI: `python -m opamp_broker.broker_app --help` and `--version`
 - Consumer CLI help payload (`--help`): includes `component_version` in JSON output
 - Consumer simulator launcher: `python consumer-sim/src/consumer_sim_launcher.py --help` and `--version`

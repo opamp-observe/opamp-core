@@ -15,11 +15,18 @@
 from __future__ import annotations
 
 import json
+import tomllib
+from importlib import metadata
 from pathlib import Path
 from typing import Any
 
 COMPONENT_NAME = "server"
 _VERSION_FILE_PATH = Path(__file__).with_name("version.json")
+_SOURCE_PROJECT_PATH = Path(__file__).resolve().parents[2] / "pyproject.toml"
+_DISTRIBUTION_NAME = "opamp-server"
+_PROJECT_KEY = "project"
+_NAME_KEY = "name"
+_VERSION_KEY = "version"
 _UNKNOWN_VALUE = "unknown"
 
 
@@ -55,3 +62,25 @@ def load_component_version_info() -> dict[str, str]:
 def component_version_text() -> str:
     """Return formatted component version value for UI/CLI help output."""
     return str(load_component_version_info().get("version", _UNKNOWN_VALUE))
+
+
+def product_version_text() -> str:
+    """Return the provider package version, preferring source metadata in an editable checkout.
+
+    The package version is updated by the version-bump workflow. An installed
+    wheel uses its distribution metadata because the source pyproject is absent.
+    """
+    try:
+        project = tomllib.loads(_SOURCE_PROJECT_PATH.read_text(encoding="utf-8")).get(
+            _PROJECT_KEY, {}
+        )
+        if isinstance(project, dict) and project.get(_NAME_KEY) == _DISTRIBUTION_NAME:
+            source_version = str(project.get(_VERSION_KEY, "")).strip()
+            if source_version:
+                return source_version
+    except (OSError, ValueError, tomllib.TOMLDecodeError):
+        pass
+    try:
+        return metadata.version(_DISTRIBUTION_NAME)
+    except metadata.PackageNotFoundError:
+        return _UNKNOWN_VALUE

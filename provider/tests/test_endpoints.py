@@ -39,6 +39,7 @@ from opamp_provider.app_routes_ui import (
     CONFIG_CATALOG_ENTRY_POINT,
     CONFIG_EDITOR_ENTRY_POINT,
     PLUGIN_AVAILABLE_KEY,
+    PLUGIN_COMMANDS_KEY,
     PLUGIN_NAME_KEY,
     PLUGINS_KEY,
     VERSION_KEY,
@@ -489,7 +490,10 @@ def test_provider_version_summary_reports_registered_plugins_without_paths() -> 
     summary = build_provider_version_summary(
         version="v1.2.3",
         registered_entry_points=[CONFIG_EDITOR_ENTRY_POINT, CONFIG_CATALOG_ENTRY_POINT],
-        custom_command_count=2,
+        custom_commands=[
+            {"name": "First Command", "version": "v1.2.3"},
+            {"name": "Second Command", "version": "v2.0.0"},
+        ],
     )
 
     assert summary[VERSION_KEY] == "v1.2.3"
@@ -505,7 +509,8 @@ def test_provider_version_summary_reports_registered_plugins_without_paths() -> 
     assert CLIENT_CONFIG_GENERATOR_ENTRY_POINT not in str(summary)
     assert CONFIG_EDITOR_ENTRY_POINT not in str(summary)
     assert CONFIG_CATALOG_ENTRY_POINT not in str(summary)
-    assert "2 custom command(s)" in str(summary)
+    assert "2 custom commands" in str(summary)
+    assert plugins[0][PLUGIN_COMMANDS_KEY][1][VERSION_KEY] == "v2.0.0"
 
 
 @pytest.mark.asyncio
@@ -519,6 +524,11 @@ async def test_ui_version_endpoint_returns_display_safe_summary() -> None:
     assert isinstance(payload[VERSION_KEY], str)
     assert len(payload[PLUGINS_KEY]) == 4
     assert all(isinstance(plugin[PLUGIN_AVAILABLE_KEY], bool) for plugin in payload[PLUGINS_KEY])
+    commands = payload[PLUGINS_KEY][0][PLUGIN_COMMANDS_KEY]
+    assert {command[PLUGIN_NAME_KEY] for command in commands} >= {
+        "ChatOps Command", "Null Command", "Shutdown Agent"
+    }
+    assert all(command[VERSION_KEY] == payload[VERSION_KEY] for command in commands)
     assert "entry_point" not in str(payload)
     assert "site-packages" not in str(payload)
 

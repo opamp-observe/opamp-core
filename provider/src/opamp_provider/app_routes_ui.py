@@ -19,13 +19,15 @@ from typing import Any
 
 from quart import Quart, Response, jsonify, redirect
 
-from opamp_provider.commands import get_available_command_keys
+from opamp_provider.component_version import product_version_text
+from opamp_provider.provider_version import custom_command_summaries
 
 VERSION_KEY = "version"
 PLUGINS_KEY = "plugins"
 PLUGIN_NAME_KEY = "name"
 PLUGIN_AVAILABLE_KEY = "available"
 PLUGIN_DESCRIPTION_KEY = "description"
+PLUGIN_COMMANDS_KEY = "commands"
 CUSTOM_COMMANDS_NAME = "Custom Commands"
 CONFIG_EDITOR_NAME = "Config Editor"
 CLIENT_CONFIG_GENERATOR_NAME = "Client Config Generator"
@@ -41,7 +43,7 @@ def build_provider_version_summary(
     *,
     version: str,
     registered_entry_points: list[str],
-    custom_command_count: int,
+    custom_commands: list[dict[str, str]],
 ) -> dict[str, object]:
     """Build a path-free description of the running provider's plugins.
 
@@ -51,13 +53,13 @@ def build_provider_version_summary(
         Packaged provider version shown to operators.
     registered_entry_points:
         Component entry points successfully registered by this process.
-    custom_command_count:
-        Number of discoverable non-standard commands.
+    custom_commands:
+        Display names and resolved versions of installed custom commands.
     """
     registered = set(registered_entry_points)
     plugin_descriptions = (
-        (CUSTOM_COMMANDS_NAME, custom_command_count > 0,
-         f"{custom_command_count} custom command(s) available for connected clients."),
+        (CUSTOM_COMMANDS_NAME, bool(custom_commands),
+         f"{len(custom_commands)} custom commands available for connected clients."),
         (CONFIG_EDITOR_NAME, CONFIG_EDITOR_ENTRY_POINT in registered,
          "Edit client configuration in the provider UI."),
         (CLIENT_CONFIG_GENERATOR_NAME, CLIENT_CONFIG_GENERATOR_ENTRY_POINT in registered,
@@ -72,6 +74,7 @@ def build_provider_version_summary(
                 PLUGIN_NAME_KEY: name,
                 PLUGIN_AVAILABLE_KEY: available,
                 PLUGIN_DESCRIPTION_KEY: description,
+                **({PLUGIN_COMMANDS_KEY: custom_commands} if name == CUSTOM_COMMANDS_NAME else {}),
             }
             for name, available, description in plugin_descriptions
         ],
@@ -201,11 +204,11 @@ def register_ui_routes(  # noqa: PLR0913  # pylint: disable=too-many-arguments,t
     @app.get("/api/ui/version")
     async def ui_version() -> Response:
         """Return the provider version and registered plugin availability without paths."""
-        command_keys = get_available_command_keys(includedisplayname=False)
+        core_version = product_version_text()
         summary = build_provider_version_summary(
-            version=component_version_text(),
+            version=core_version,
             registered_entry_points=registered_component_entry_points,
-            custom_command_count=len(command_keys),
+            custom_commands=custom_command_summaries(core_version),
         )
         return jsonify(summary)
 

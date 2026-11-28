@@ -1958,6 +1958,16 @@
           const description = document.createElement("span");
           description.textContent = String(plugin.description || "");
           row.append(heading, description);
+          if (Array.isArray(plugin.commands) && plugin.commands.length > 0) {
+            const commandList = document.createElement("ul");
+            commandList.className = "version-command-list";
+            plugin.commands.forEach(command => {
+              const commandItem = document.createElement("li");
+              commandItem.textContent = `${String(command.name || "Command")} — version ${String(command.version || summary.version || "Unknown")}`;
+              commandList.appendChild(commandItem);
+            });
+            row.appendChild(commandList);
+          }
           providerPluginsList.appendChild(row);
         });
       } catch (error) {

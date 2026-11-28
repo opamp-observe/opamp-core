@@ -303,6 +303,9 @@ Separately installed custom commands register a factory or zero-argument class i
 `build_message(agent_id, request)` produces a `CustomMessage`, and the optional
 `handle_result(agent_id, message)` receives authenticated results. The provider
 publishes installed capabilities and metadata alongside built-in commands.
+An extension may override the optional `version` property to display a command
+specific version in Global Settings. Otherwise the Version tab uses its Python
+distribution version when unambiguous, then the core provider package version.
 
 `POST /api/clients/<client_id>/commands` accepts
 `{"command_id":"network-security-verifier","parameters":{...}}` for an installed
@@ -328,6 +331,7 @@ network_security = "network_security_provider.command:create_command"
 - Optional catalog UI (when enabled): `http://localhost:8080/catalog`
 - Optional catalog help page (when enabled): `http://localhost:8080/catalog/help`
 - The help page includes the server component version generated from git commit/date metadata.
+- Global Settings → Version shows the `opamp-server` package version and every installed custom command with its version. In a source checkout, the package version comes from `provider/pyproject.toml`, which `opamp-cli dev-version-bump` updates.
 - Footer `Latest docs` links in the HTML pages go via `http://localhost:8080/doc-set`.
 - By default, that provider redirect points at the published landing page preview URL from `provider.latest_docs_url`.
 - Starting the provider with `--diagnostic` enables the `server-opamp-config` settings tab and other diagnostic-only endpoints used for local inspection/testing.

@@ -32,7 +32,11 @@ COMMAND_ID_KEY = "command_id"
 
 
 class CustomCommandABC(ABC):
-    """Own one installed command's validation, request payload, and optional results."""
+    """Own one installed command's validation, request payload, and optional results.
+
+    The optional version property lets an extension report a command-specific
+    version when it differs from its Python distribution version.
+    """
 
     @property
     @abstractmethod
@@ -69,6 +73,11 @@ class CustomCommandABC(ABC):
     def parameter_schema(self) -> list[dict[str, object]]:
         """Return parameter metadata displayed by the provider UI."""
         return []
+
+    @property
+    def version(self) -> str | None:
+        """Return an optional command-specific version for the Version tab."""
+        return None
 
 
 class LegacyCustomCommandAdapter(CustomCommandABC):
